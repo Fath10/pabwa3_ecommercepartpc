@@ -41,7 +41,7 @@
             </div>
             <div class="space-y-4">
               <p class="leading-relaxed text-sm" style="color: #94a3b8;">
-                Proyek ini dikerjakan oleh <strong style="color: #c7d2fe;">9 anggota kelompok</strong> dengan pembagian tugas yang merata, mencakup desain UI/UX, pengembangan frontend dengan <strong style="color: #c7d2fe;">Vue.js 3</strong>, pengelolaan state, routing, dan dokumentasi teknis.
+                Proyek ini dikerjakan oleh <strong style="color: #c7d2fe;">8 anggota kelompok</strong> dengan pembagian tugas yang merata, mencakup desain UI/UX, pengembangan frontend dengan <strong style="color: #c7d2fe;">Vue.js 3</strong>, pengelolaan state, routing, dan dokumentasi teknis.
               </p>
               <p class="leading-relaxed text-sm" style="color: #94a3b8;">
                 Kami berkomitmen untuk menghadirkan pengalaman belanja yang <strong style="color: #c7d2fe;">aman, nyaman, dan terpercaya</strong> — didukung oleh antarmuka modern, informasi produk yang jelas, dan panduan artikel yang bermanfaat bagi komunitas PC Indonesia.
@@ -87,7 +87,7 @@
           <h2 class="text-3xl font-black text-white mb-2">Anggota <span style="color: #818cf8;">Kelompok</span></h2>
           <p class="text-sm" style="color: #64748b;">PABWA — Semester Genap 2024/2025</p>
         </div>
-        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div class="grid sm:grid-cols-2 lg:grid-cols-2 gap-3">
           <div
             v-for="member in team"
             :key="member.nim"
@@ -120,7 +120,7 @@
             class="flex flex-col items-center gap-2 p-4 rounded-2xl transition-all duration-200 hover:-translate-y-1 cursor-default"
             style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);"
           >
-            <span class="text-3xl">{{ tech.icon }}</span>
+            <img :src="tech.logo" :alt="tech.name + ' logo'" class="w-12 h-12 object-contain" />
             <span class="text-xs font-bold text-white">{{ tech.name }}</span>
             <span class="text-xs text-center" style="color: #64748b;">{{ tech.desc }}</span>
           </div>
@@ -158,8 +158,7 @@
 <script setup>
 const team = [
   { nim: '11211035', name: 'Edis Nabila Ramadhani',    gradient: 'linear-gradient(135deg, #ec4899, #be185d)' },
-  { nim: '11221009', name: 'Farizi Fattah',             gradient: 'linear-gradient(135deg, #4f46e5, #7c3aed)' },
-  { nim: '11221071', name: 'Cinta Satila',              gradient: 'linear-gradient(135deg, #f59e0b, #d97706)' },
+  { nim: '11221071', name: 'Cinta Satila',              gradient: 'linear-gradient(135deg, #a799b7, #9888a5)' },
   { nim: '11221079', name: 'Andi Cole',                 gradient: 'linear-gradient(135deg, #0ea5e9, #0284c7)' },
   { nim: '11231007', name: 'Alief Rachmattul Islam',    gradient: 'linear-gradient(135deg, #10b981, #059669)' },
   { nim: '11231031', name: 'Imam Dzulvan Muffid',       gradient: 'linear-gradient(135deg, #8b5cf6, #6d28d9)' },
@@ -170,17 +169,17 @@ const team = [
 
 const stats = [
   { icon: '🎓', value: '2025',  label: 'Tahun Proyek' },
-  { icon: '👥', value: '9',     label: 'Anggota Tim' },
+  { icon: '👥', value: '8',     label: 'Anggota Tim' },
   { icon: '📦', value: '6+',    label: 'Produk Demo' },
   { icon: '⭐', value: '100%',  label: 'Semangat Tim' },
 ]
 
 const techStack = [
-  { icon: '💚', name: 'Vue.js 3',   desc: 'Framework' },
-  { icon: '⚡', name: 'Vite',       desc: 'Build Tool' },
-  { icon: '🎨', name: 'Tailwind',   desc: 'Styling' },
-  { icon: '🗂️', name: 'Vue Router', desc: 'Routing' },
-  { icon: '📦', name: 'Pinia',      desc: 'State Mgmt' },
-  { icon: '🌐', name: 'HTML5',      desc: 'Markup' },
+  { logo: '/Icons/Vue.svg', name: 'Vue.js 3', desc: 'Framework' },
+  { logo: '/Icons/vite.svg', name: 'Vite', desc: 'Build Tool' },
+  { logo: '/Icons/tailwindcss.svg', name: 'Tailwind', desc: 'Styling' },
+  { logo: '/Icons/pinia.svg', name: 'Pinia', desc: 'State Mgmt' },
+  { logo: '/Icons/html5.svg', name: 'HTML5', desc: 'Markup' },
+  { logo: '/Icons/javascript.svg', name: 'JavaScript', desc: 'Language' },
 ]
 </script>
