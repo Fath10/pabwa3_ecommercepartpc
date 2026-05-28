@@ -1,6 +1,7 @@
 <template>
   <main class="pt-24 pb-16 min-h-screen bg-dark-900">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+
       <!-- Header -->
       <div class="text-center mb-12">
         <h1 class="text-4xl font-black text-white mb-3">Artikel & <span class="gradient-text">Tips</span></h1>
@@ -8,40 +9,72 @@
       </div>
 
       <!-- Featured Article -->
-      <div class="relative rounded-3xl overflow-hidden mb-12 group cursor-pointer">
+      <RouterLink :to="`/artikel/1`" class="block relative rounded-3xl overflow-hidden mb-12 group cursor-pointer">
         <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent z-10"></div>
         <img src="/hero_banner.png" alt="Featured" class="w-full h-72 object-cover group-hover:scale-105 transition-transform duration-700" />
         <div class="absolute bottom-0 left-0 right-0 p-8 z-20">
           <span class="inline-block px-3 py-1 bg-indigo-600 rounded-full text-xs font-bold text-white mb-3">🔥 Artikel Utama</span>
           <h2 class="text-2xl font-black text-white mb-2">Panduan Lengkap Merakit PC Gaming 2024</h2>
-          <p class="text-gray-300 text-sm">Pelajari cara memilih dan merakit komponen PC gaming dengan budget optimal...</p>
+          <p class="text-gray-300 text-sm mb-4">Pelajari cara memilih dan merakit komponen PC gaming dengan budget optimal...</p>
+          <span class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-white text-xs font-bold transition-all duration-200 group-hover:gap-3" style="background: rgba(79,70,229,0.8); backdrop-filter: blur(8px);">
+            Baca Selengkapnya →
+          </span>
         </div>
-      </div>
+      </RouterLink>
 
       <!-- Article Grid -->
       <div class="grid md:grid-cols-2 gap-6">
         <article
           v-for="article in articles"
           :key="article.id"
-          class="group bg-gradient-to-b from-white/5 to-white/[0.02] rounded-2xl border border-white/10 hover:border-indigo-500/40 overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-2"
+          class="group bg-gradient-to-b from-white/5 to-white/[0.02] rounded-2xl border border-white/10 hover:border-indigo-500/40 overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-2 flex flex-col"
         >
           <div class="h-40 bg-gradient-to-br from-indigo-900/50 to-purple-900/50 relative overflow-hidden flex items-center justify-center">
             <span class="text-6xl">{{ article.emoji }}</span>
             <div class="absolute inset-0 bg-gradient-to-t from-dark-900/80 to-transparent"></div>
           </div>
-          <div class="p-5">
+          <div class="p-5 flex flex-col flex-1">
             <span class="inline-block px-2 py-0.5 rounded-full text-xs font-semibold mb-3 bg-indigo-600/20 text-indigo-400 border border-indigo-500/30">
               {{ article.category }}
             </span>
             <h3 class="text-white font-bold text-base mb-2 group-hover:text-indigo-300 transition-colors">{{ article.title }}</h3>
-            <p class="text-gray-400 text-sm leading-relaxed mb-4 line-clamp-2">{{ article.excerpt }}</p>
-            <div class="flex items-center justify-between text-xs text-gray-500">
-              <span>{{ article.date }}</span>
-              <span>{{ article.readTime }}</span>
+            <p class="text-gray-400 text-sm leading-relaxed mb-4 line-clamp-2 flex-1">{{ article.excerpt }}</p>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3 text-xs text-gray-500">
+                <span>{{ article.date }}</span>
+                <span>·</span>
+                <span>{{ article.readTime }}</span>
+              </div>
+              <RouterLink
+                :to="`/artikel/${article.id}`"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white transition-all duration-200 hover:gap-2.5"
+                style="background: linear-gradient(135deg, #4f46e5, #7c3aed);"
+              >
+                Baca <span class="transition-transform duration-200 group-hover:translate-x-1">→</span>
+              </RouterLink>
             </div>
           </div>
         </article>
       </div>
+
+      <!-- Newsletter CTA -->
+      <div class="mt-16 rounded-3xl p-8 text-center" style="background: linear-gradient(135deg, rgba(79,70,229,0.15), rgba(124,58,237,0.15)); border: 1px solid rgba(79,70,229,0.25);">
+        <div class="text-4xl mb-4">📬</div>
+        <h2 class="text-2xl font-black text-white mb-2">Dapatkan Tips Terbaru</h2>
+        <p class="text-gray-400 text-sm mb-6">Subscribe dan dapatkan artikel & tips PC gaming langsung di email Anda</p>
+        <div class="flex gap-3 max-w-md mx-auto">
+          <input
+            type="email"
+            placeholder="email@anda.com"
+            class="flex-1 px-4 py-2.5 rounded-xl text-sm outline-none"
+            style="background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12); color: #fff;"
+          />
+          <button class="px-5 py-2.5 rounded-xl text-white font-bold text-sm transition-all duration-200 hover:opacity-90" style="background: linear-gradient(135deg, #4f46e5, #7c3aed);">
+            Subscribe
+          </button>
+        </div>
+      </div>
+
     </div>
   </main>
 </template>
@@ -54,7 +87,7 @@ const articles = [
     category: 'Tutorial',
     title: 'Cara Merakit PC Gaming untuk Pemula',
     excerpt: 'Panduan step-by-step merakit PC gaming dari awal hingga selesai. Cocok untuk pemula yang belum pernah merakit PC sebelumnya.',
-    date: '15 November 2024',
+    date: '15 Nov 2024',
     readTime: '8 menit baca',
   },
   {
@@ -63,7 +96,7 @@ const articles = [
     category: 'Review',
     title: 'AMD Ryzen 9 7950X vs Intel Core i9-14900K',
     excerpt: 'Perbandingan mendalam antara dua prosesor flagship terbaik 2024. Mana yang lebih worth it untuk kebutuhan Anda?',
-    date: '10 November 2024',
+    date: '10 Nov 2024',
     readTime: '12 menit baca',
   },
   {
@@ -72,7 +105,7 @@ const articles = [
     category: 'Tips',
     title: '5 Tips Memilih GPU Terbaik dengan Budget Terbatas',
     excerpt: 'Tidak perlu budget besar untuk mendapatkan performa gaming yang baik. Temukan tips cerdas memilih GPU yang sesuai kantong.',
-    date: '5 November 2024',
+    date: '5 Nov 2024',
     readTime: '6 menit baca',
   },
   {
@@ -81,7 +114,7 @@ const articles = [
     category: 'Guide',
     title: 'Panduan Sistem Pendingin PC yang Optimal',
     excerpt: 'Panas berlebih bisa merusak komponen PC Anda. Pelajari cara memilih dan mengkonfigurasi sistem pendingin yang tepat.',
-    date: '1 November 2024',
+    date: '1 Nov 2024',
     readTime: '10 menit baca',
   },
 ]
