@@ -36,16 +36,18 @@
         <!-- Right: Account + Cart + Hamburger -->
         <div class="flex items-center gap-1">
 
-          <!-- Account Icon -->
-          <button
+          <!-- Account / Login Link -->
+          <RouterLink
             id="account-btn"
-            title="Akun Saya"
-            class="w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:text-white hover:bg-white/8 transition-all duration-150"
+            to="/login"
+            title="Login / Akun Saya"
+            class="flex items-center gap-1.5 px-3 h-9 rounded-lg text-gray-400 hover:text-white hover:bg-white/8 transition-all duration-150 text-sm font-medium"
           >
-            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+            <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
               <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
-          </button>
+            <span class="hidden sm:inline">Login</span>
+          </RouterLink>
 
           <!-- Cart Icon -->
           <RouterLink

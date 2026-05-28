@@ -7,6 +7,8 @@ import KatalogPage from './views/KatalogPage.vue'
 import ArtikelPage from './views/ArtikelPage.vue'
 import TentangPage from './views/TentangPage.vue'
 import CartPage from './views/CartPage.vue'
+import LoginPage from './views/LoginPage.vue'
+import RegisterPage from './views/RegisterPage.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -16,6 +18,8 @@ const router = createRouter({
     { path: '/artikel', component: ArtikelPage, meta: { title: 'e-BuildPC | Artikel' } },
     { path: '/tentang', component: TentangPage, meta: { title: 'e-BuildPC | Tentang Kami' } },
     { path: '/cart', component: CartPage, meta: { title: 'e-BuildPC | Keranjang' } },
+    { path: '/login', component: LoginPage, meta: { title: 'e-BuildPC | Login' } },
+    { path: '/register', component: RegisterPage, meta: { title: 'e-BuildPC | Buat Akun' } },
   ],
   scrollBehavior() {
     return { top: 0 }
