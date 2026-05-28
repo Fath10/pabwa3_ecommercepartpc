@@ -1,150 +1,186 @@
 <template>
-  <main class="pt-16" style="background: #f8fafc; min-height: 100vh;">
-    <!-- Hero Banner -->
-    <section class="py-12 text-white" style="background: #111827; position: relative;">
-      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <h1 class="text-3xl font-bold mb-2">Tentang <span style="color: #60a5fa;">e-BuildPC</span></h1>
-        <p class="text-sm" style="color: #9ca3af;">Platform PC Komponen Terpercaya di Indonesia</p>
+  <main class="min-h-screen" style="background: #0d1117; padding-top: 64px;">
+
+    <!-- ─── HERO ─── -->
+    <section class="relative overflow-hidden py-24 text-white" style="background: linear-gradient(135deg, #0e1524 0%, #1a1040 50%, #0e1524 100%);">
+      <div class="absolute top-0 left-1/4 w-96 h-96 rounded-full pointer-events-none" style="background: radial-gradient(circle, rgba(79,70,229,0.2), transparent 70%); filter: blur(60px);"></div>
+      <div class="absolute bottom-0 right-1/4 w-80 h-80 rounded-full pointer-events-none" style="background: radial-gradient(circle, rgba(124,58,237,0.15), transparent 70%); filter: blur(60px);"></div>
+
+      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+        <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold mb-6" style="background: rgba(79,70,229,0.2); border: 1px solid rgba(79,70,229,0.4); color: #a5b4fc;">
+          🎓 Kelompok PABWA — 2024/2025
+        </div>
+        <h1 class="font-black mb-4 leading-tight" style="font-size: clamp(2rem, 5vw, 3.5rem);">
+          Tentang <span style="background: linear-gradient(135deg, #818cf8, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">e-BuildPC</span>
+        </h1>
+        <p class="text-lg mb-2" style="color: #94a3b8;">Platform E-Commerce Komponen PC Terpercaya di Indonesia</p>
+        <p class="text-sm font-medium" style="color: #6366f1;">Pemrograman Aplikasi Berbasis Web dan Aplikasi</p>
       </div>
     </section>
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <!-- Mission & Vision -->
-      <div class="grid md:grid-cols-2 gap-6 mb-12">
-        <div class="p-7 rounded-xl transition-all duration-200 hover:shadow-md" style="background: #fff; border: 1px solid #e5e7eb;">
-          <div class="text-4xl mb-4">🚀</div>
-          <h2 class="text-xl font-bold mb-3" style="color: #111827;">Visi Kami</h2>
-          <p style="color: #6b7280; font-size: 0.875rem;" class="leading-relaxed">
-            Menjadi platform e-commerce komponen PC terkemuka di Asia Tenggara yang memberikan pengalaman belanja terbaik, produk asli, dan harga yang kompetitif untuk setiap pengguna.
-          </p>
-        </div>
-        <div class="p-7 rounded-xl transition-all duration-200 hover:shadow-md" style="background: #fff; border: 1px solid #e5e7eb;">
-          <div class="text-4xl mb-4">🎯</div>
-          <h2 class="text-xl font-bold mb-3" style="color: #111827;">Misi Kami</h2>
-          <p style="color: #6b7280; font-size: 0.875rem;" class="leading-relaxed">
-            Memudahkan setiap orang untuk merakit PC impian mereka dengan menyediakan komponen berkualitas tinggi, layanan pelanggan terbaik, dan panduan yang komprehensif.
-          </p>
-        </div>
-      </div>
-      <!-- Story -->
-      <div class="text-center mb-16 max-w-3xl mx-auto">
-        <h2 class="text-2xl font-bold mb-5" style="color: #111827;">Cerita <span style="color: #4f46e5;">Kami</span></h2>
-        <p class="leading-relaxed mb-3" style="color: #6b7280; font-size: 0.875rem;">
-          e-BuildPC didirikan pada tahun 2020 oleh sekelompok penggemar PC yang frustasi dengan sulitnya menemukan komponen PC original dengan harga terjangkau di Indonesia. Kami memulai dari sebuah toko kecil dan kini telah berkembang menjadi platform digital dengan ribuan produk.
-        </p>
-        <p class="leading-relaxed" style="color: #6b7280; font-size: 0.875rem;">
-          Dengan lebih dari 50.000 pelanggan yang puas dan ribuan transaksi sukses, e-BuildPC terus berkomitmen untuk memberikan pengalaman belanja PC terbaik di Indonesia.
-        </p>
-      </div>
-      <!-- Team -->
-      <div class="mb-16">
-        <h2 class="text-2xl font-bold text-center mb-2" style="color: #111827;">Tim <span style="color: #4f46e5;">Kami</span></h2>
-        <p class="text-center text-sm mb-8" style="color: #6b7280;">Kelompok pengembang di balik platform e-BuildPC</p>
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5">
-          <div
-            v-for="member in team"
-            :key="member.name"
-            class="group p-5 rounded-xl text-center transition-all duration-200 hover:-translate-y-1 hover:shadow-md relative"
-            style="background: #fff; border: 1px solid #e5e7eb;"
-          >
-            <!-- Badge Ketua -->
-            <span
-              v-if="member.isLeader"
-              class="absolute top-3 right-3 px-2 py-0.5 rounded-full text-[10px] font-bold text-white"
-              style="background: #4f46e5;"
-            >Ketua</span>
-            <div
-              class="w-20 h-20 rounded-full bg-gradient-to-br mx-auto mb-4 flex items-center justify-center text-3xl font-black text-white shadow-lg group-hover:scale-110 transition-transform"
-              :class="member.gradient"
-            >
-              {{ member.name[0] }}
+
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 space-y-20">
+
+      <!-- ─── TENTANG KAMI ─── -->
+      <div class="rounded-3xl p-10 relative overflow-hidden" style="background: linear-gradient(135deg, rgba(15,23,42,0.9), rgba(30,27,75,0.7)); border: 1px solid rgba(79,70,229,0.2);">
+        <div class="absolute top-0 right-0 w-72 h-72 rounded-full pointer-events-none" style="background: radial-gradient(circle, rgba(79,70,229,0.15), transparent 70%); filter: blur(50px);"></div>
+        <div class="relative z-10">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style="background: rgba(79,70,229,0.2);">💡</div>
+            <h2 class="text-2xl font-black text-white">Tentang <span style="color: #818cf8;">Kami</span></h2>
+          </div>
+          <div class="grid md:grid-cols-2 gap-8">
+            <div class="space-y-4">
+              <p class="leading-relaxed text-sm" style="color: #94a3b8;">
+                <strong style="color: #c7d2fe;">e-BuildPC</strong> adalah platform e-commerce komponen PC yang dibangun sebagai proyek tugas akhir mata kuliah
+                <strong style="color: #c7d2fe;">Pemrograman Aplikasi Berbasis Web dan Aplikasi (PABWA)</strong>.
+                Platform ini dirancang untuk memudahkan siapa saja dalam menemukan dan membeli komponen PC berkualitas tinggi dengan harga yang kompetitif.
+              </p>
+              <p class="leading-relaxed text-sm" style="color: #94a3b8;">
+                Kami hadir sebagai solusi bagi para <strong style="color: #c7d2fe;">PC builder</strong> — dari pemula hingga enthusiast — yang ingin merakit PC impian mereka tanpa kebingungan. Mulai dari prosesor, GPU, RAM, storage, hingga aksesoris, semuanya tersedia dalam satu platform yang bersih dan mudah digunakan.
+              </p>
             </div>
-            <p class="font-bold mb-0.5 text-sm" style="color: #111827;">{{ member.name }}</p>
-            <p class="text-xs font-medium mb-1" style="color: #4f46e5;">{{ member.role }}</p>
-            <p class="text-xs leading-relaxed" style="color: #6b7280;">{{ member.desc }}</p>
+            <div class="space-y-4">
+              <p class="leading-relaxed text-sm" style="color: #94a3b8;">
+                Proyek ini dikerjakan oleh <strong style="color: #c7d2fe;">9 anggota kelompok</strong> dengan pembagian tugas yang merata, mencakup desain UI/UX, pengembangan frontend dengan <strong style="color: #c7d2fe;">Vue.js 3</strong>, pengelolaan state, routing, dan dokumentasi teknis.
+              </p>
+              <p class="leading-relaxed text-sm" style="color: #94a3b8;">
+                Kami berkomitmen untuk menghadirkan pengalaman belanja yang <strong style="color: #c7d2fe;">aman, nyaman, dan terpercaya</strong> — didukung oleh antarmuka modern, informasi produk yang jelas, dan panduan artikel yang bermanfaat bagi komunitas PC Indonesia.
+              </p>
+            </div>
           </div>
         </div>
       </div>
-      <!-- Stats -->
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-        <div
-          v-for="stat in stats"
-          :key="stat.label"
-          class="p-5 rounded-xl text-center transition-all duration-200 hover:shadow-md"
-          style="background: #fff; border: 1px solid #e5e7eb;"
+
+      <!-- ─── VISI & MISI ─── -->
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="group p-8 rounded-3xl transition-all duration-300 hover:-translate-y-1" style="background: linear-gradient(135deg, rgba(79,70,229,0.1), rgba(124,58,237,0.05)); border: 1px solid rgba(79,70,229,0.25);">
+          <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl mb-6" style="background: rgba(79,70,229,0.2);">🚀</div>
+          <h2 class="text-xl font-black text-white mb-4">Visi Kami</h2>
+          <p style="color: #94a3b8; font-size: 0.9rem; line-height: 1.8;">
+            Menjadi platform e-commerce komponen PC terkemuka di Indonesia yang memberikan pengalaman belanja terbaik, produk original berkualitas, dan harga kompetitif untuk setiap builder PC.
+          </p>
+        </div>
+        <div class="group p-8 rounded-3xl transition-all duration-300 hover:-translate-y-1" style="background: linear-gradient(135deg, rgba(124,58,237,0.1), rgba(79,70,229,0.05)); border: 1px solid rgba(124,58,237,0.25);">
+          <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl mb-6" style="background: rgba(124,58,237,0.2);">🎯</div>
+          <h2 class="text-xl font-black text-white mb-4">Misi Kami</h2>
+          <p style="color: #94a3b8; font-size: 0.9rem; line-height: 1.8;">
+            Memudahkan setiap orang merakit PC impian mereka dengan menyediakan komponen berkualitas tinggi, layanan pelanggan responsif, panduan komprehensif, dan antarmuka belanja yang intuitif.
+          </p>
+        </div>
+      </div>
+
+      <!-- ─── STATS ─── -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-5">
+        <div v-for="stat in stats" :key="stat.label"
+          class="p-6 rounded-2xl text-center transition-all duration-300 hover:-translate-y-1"
+          style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);"
         >
-          <div class="text-3xl font-bold mb-1" style="color: #4f46e5;">{{ stat.value }}</div>
-          <div class="text-xs" style="color: #6b7280;">{{ stat.label }}</div>
+          <div class="text-2xl mb-1">{{ stat.icon }}</div>
+          <div class="text-2xl font-black mb-1" style="background: linear-gradient(135deg, #818cf8, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">{{ stat.value }}</div>
+          <div class="text-xs font-medium" style="color: #64748b;">{{ stat.label }}</div>
         </div>
       </div>
-      <!-- Contact CTA -->
-      <div class="rounded-2xl p-8 text-center" style="background: #111827;">
-        <h2 class="text-2xl font-bold text-white mb-3">Ada Pertanyaan?</h2>
-        <p class="mb-6 text-sm" style="color: #9ca3af;">Tim kami siap membantu Anda 24/7. Hubungi kami sekarang!</p>
-        <div class="flex flex-wrap justify-center gap-4">
-          <a href="mailto:hello@e-buildpc.id" id="email-contact-btn"
-            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-white text-sm transition-all hover:opacity-90"
-            style="background: #2563eb;"
+
+      <!-- ─── TIM KELOMPOK ─── -->
+      <div>
+        <div class="text-center mb-10">
+          <h2 class="text-3xl font-black text-white mb-2">Anggota <span style="color: #818cf8;">Kelompok</span></h2>
+          <p class="text-sm" style="color: #64748b;">PABWA — Semester Genap 2024/2025</p>
+        </div>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div
+            v-for="member in team"
+            :key="member.nim"
+            class="group flex items-center gap-4 p-5 rounded-2xl transition-all duration-300 hover:-translate-y-1 cursor-default"
+            style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);"
           >
-            📧 Email Kami
-          </a>
-          <a href="https://wa.me/6281234567890" id="whatsapp-contact-btn"
-            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-white text-sm transition-all hover:opacity-90"
-            style="background: #16a34a;"
-          >
-            💬 WhatsApp
-          </a>
+            <!-- Avatar -->
+            <div
+              class="w-14 h-14 rounded-2xl flex-shrink-0 flex items-center justify-center text-xl font-black text-white shadow-lg group-hover:scale-110 transition-transform duration-300"
+              :style="{ background: member.gradient }"
+            >
+              {{ member.name.split(' ').map(w => w[0]).slice(0, 2).join('') }}
+            </div>
+            <!-- Info -->
+            <div class="min-w-0">
+              <p class="font-bold text-white text-sm leading-snug truncate">{{ member.name }}</p>
+              <p class="text-xs font-mono mt-0.5" style="color: #6366f1;">{{ member.nim }}</p>
+            </div>
+          </div>
         </div>
       </div>
+
+      <!-- ─── TECH STACK ─── -->
+      <div class="rounded-3xl p-8" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.07);">
+        <h2 class="text-xl font-black text-white mb-6 text-center">Tech Stack yang Digunakan</h2>
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div
+            v-for="tech in techStack"
+            :key="tech.name"
+            class="flex flex-col items-center gap-2 p-4 rounded-2xl transition-all duration-200 hover:-translate-y-1 cursor-default"
+            style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);"
+          >
+            <span class="text-3xl">{{ tech.icon }}</span>
+            <span class="text-xs font-bold text-white">{{ tech.name }}</span>
+            <span class="text-xs text-center" style="color: #64748b;">{{ tech.desc }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── CONTACT CTA ─── -->
+      <div class="rounded-3xl p-10 text-center relative overflow-hidden" style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e1b4b 100%);">
+        <div class="absolute inset-0 pointer-events-none" style="background: radial-gradient(ellipse at center, rgba(99,102,241,0.3), transparent 70%);"></div>
+        <div class="relative z-10">
+          <div class="text-4xl mb-4">💬</div>
+          <h2 class="text-2xl font-black text-white mb-3">Ada Pertanyaan?</h2>
+          <p class="mb-8 text-sm" style="color: #a5b4fc;">Tim kami siap membantu Anda. Hubungi kami sekarang!</p>
+          <div class="flex flex-wrap justify-center gap-4">
+            <a href="mailto:kelompok.pabwa@gmail.com" id="email-contact-btn"
+              class="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white text-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
+              style="background: #2563eb;"
+            >
+              📧 Email Kami
+            </a>
+            <a href="https://wa.me/6281234567890" id="whatsapp-contact-btn"
+              class="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white text-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
+              style="background: #16a34a;"
+            >
+              💬 WhatsApp
+            </a>
+          </div>
+        </div>
+      </div>
+
     </div>
   </main>
 </template>
+
 <script setup>
-// ──────────────────────────────────────────────
-// STRUKTUR DATA TIM — placeholder untuk 5 anggota kelompok.
-// Tinggal isi `name` dan `desc` masing-masing anggota.
-// (1 Ketua + 4 Anggota)
-// ──────────────────────────────────────────────
 const team = [
-  {
-    name: 'Nama Ketua',
-    role: 'Founder & Lead Front-End',
-    desc: 'Tulis narasi singkat ketua kelompok di sini — fokus pada arsitektur antarmuka dan koordinasi tim.',
-    gradient: 'from-indigo-500 to-purple-600',
-    isLeader: true,
-  },
-  {
-    name: 'Nama Anggota 2',
-    role: 'Backend Developer',
-    desc: 'Tulis narasi singkat di sini — fokus pada pengembangan API, basis data, dan logika server.',
-    gradient: 'from-blue-500 to-cyan-600',
-    isLeader: false,
-  },
-  {
-    name: 'Nama Anggota 3',
-    role: 'UI/UX Designer',
-    desc: 'Tulis narasi singkat di sini — fokus pada desain pengalaman pengguna dan sistem visual.',
-    gradient: 'from-pink-500 to-rose-600',
-    isLeader: false,
-  },
-  {
-    name: 'Nama Anggota 4',
-    role: 'QA Engineer',
-    desc: 'Tulis narasi singkat di sini — fokus pada pengujian, jaminan mutu, dan stabilitas aplikasi.',
-    gradient: 'from-amber-500 to-orange-600',
-    isLeader: false,
-  },
-  {
-    name: 'Nama Anggota 5',
-    role: 'Product Manager',
-    desc: 'Tulis narasi singkat di sini — fokus pada perencanaan fitur, roadmap, dan kebutuhan pengguna.',
-    gradient: 'from-green-500 to-emerald-600',
-    isLeader: false,
-  },
+  { nim: '11211035', name: 'Edis Nabila Ramadhani',    gradient: 'linear-gradient(135deg, #ec4899, #be185d)' },
+  { nim: '11221009', name: 'Farizi Fattah',             gradient: 'linear-gradient(135deg, #4f46e5, #7c3aed)' },
+  { nim: '11221071', name: 'Cinta Satila',              gradient: 'linear-gradient(135deg, #f59e0b, #d97706)' },
+  { nim: '11221079', name: 'Andi Cole',                 gradient: 'linear-gradient(135deg, #0ea5e9, #0284c7)' },
+  { nim: '11231007', name: 'Alief Rachmattul Islam',    gradient: 'linear-gradient(135deg, #10b981, #059669)' },
+  { nim: '11231031', name: 'Imam Dzulvan Muffid',       gradient: 'linear-gradient(135deg, #8b5cf6, #6d28d9)' },
+  { nim: '11231045', name: 'Muhamad Faisal',            gradient: 'linear-gradient(135deg, #ef4444, #b91c1c)' },
+  { nim: '11231055', name: 'Muhammad Fatwa Al Choiri',  gradient: 'linear-gradient(135deg, #06b6d4, #0891b2)' },
+  { nim: '11231073', name: 'Nurfauzan Gymnastiar',      gradient: 'linear-gradient(135deg, #f97316, #ea580c)' },
 ]
+
 const stats = [
-  { value: '2020', label: 'Tahun Berdiri' },
-  { value: '50K+', label: 'Pelanggan Aktif' },
-  { value: '5000+', label: 'Produk Tersedia' },
-  { value: '99%', label: 'Kepuasan Pelanggan' },
+  { icon: '🎓', value: '2025',  label: 'Tahun Proyek' },
+  { icon: '👥', value: '9',     label: 'Anggota Tim' },
+  { icon: '📦', value: '6+',    label: 'Produk Demo' },
+  { icon: '⭐', value: '100%',  label: 'Semangat Tim' },
+]
+
+const techStack = [
+  { icon: '💚', name: 'Vue.js 3',   desc: 'Framework' },
+  { icon: '⚡', name: 'Vite',       desc: 'Build Tool' },
+  { icon: '🎨', name: 'Tailwind',   desc: 'Styling' },
+  { icon: '🗂️', name: 'Vue Router', desc: 'Routing' },
+  { icon: '📦', name: 'Pinia',      desc: 'State Mgmt' },
+  { icon: '🌐', name: 'HTML5',      desc: 'Markup' },
 ]
 </script>
