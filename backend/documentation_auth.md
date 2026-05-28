@@ -1,12 +1,6 @@
-# 📝 Dokumentasi Teknis Sistem Autentikasi e-BuildPC
+## 🔄 Aliran Kerja Autentikasi (JWT & Bcrypt)
 
-Dokumen ini berisi penjelasan teknis mendalam mengenai sistem autentikasi terintegrasi (*Client-Server*) yang telah dibangun untuk aplikasi **e-BuildPC**. Dokumentasi ini mencakup daftar berkas yang dikembangkan, teknologi yang digunakan, spesifikasi REST API, serta cara menjalankan dan mengujinya.
-
----
-
-## 🔄 Aliran Arsitektur Autentikasi (JWT & Bcrypt)
-
-Berikut adalah diagram alir interaksi antara antarmuka pengguna (Frontend Vue 3) dengan server API (Backend Express.js) menggunakan enkripsi kata sandi *Bcrypt* dan token sesi *JSON Web Tokens (JWT)*:
+Diagram interaksi antara frontend (Vue 3) dan backend (Express.js) saat proses registrasi dan login berlangsung:
 
 ```mermaid
 sequenceDiagram
@@ -16,76 +10,74 @@ sequenceDiagram
     participant BE as Backend (Express.js)
     participant DB as Local Database (users.json)
 
-    Note over User, FE: Prosedur Pendaftaran (Register)
-    User->>FE: Isi Nama, Email, & Sandi
+    Note over User, FE: Proses Pendaftaran Akun (Register)
+    User->>FE: Isi Nama, Email, & Password
     FE->>BE: POST /api/auth/register
-    BE->>BE: Validasi Input & Cek Duplikasi Email
-    BE->>BE: Enkripsi Sandi (Bcrypt Hash)
-    BE->>DB: Simpan User Baru ke users.json
+    BE->>BE: Validasi input & cek apakah email sudah dipakai
+    BE->>BE: Amankan password (di-hash pakai Bcrypt)
+    BE->>DB: Tulis user baru ke users.json
     BE-->>FE: HTTP 210 (Registrasi Sukses)
-    FE-->>User: Tampilkan Notifikasi & Alihkan ke Login
+    FE-->>User: Muncul notifikasi & dialihkan ke halaman login
 
-    Note over User, FE: Prosedur Masuk (Login)
-    User->>FE: Isi Email & Sandi
+    Note over User, FE: Proses Masuk Sesi (Login)
+    User->>FE: Isi Email & Password
     FE->>BE: POST /api/auth/login
-    BE->>DB: Cari User berdasarkan Email
-    BE->>BE: Cocokkan Sandi (Bcrypt Compare)
-    BE->>BE: Hasilkan Token Sesi (JWT Sign)
+    BE->>DB: Cari data user berdasarkan email
+    BE->>BE: Cocokkan password (pakai Bcrypt compare)
+    BE->>BE: Buat token sesi digital (JWT Sign)
     BE-->>FE: HTTP 200 (Login Sukses + JWT Token)
-    FE->>FE: Simpan JWT & Info User di userStore (localStorage)
-    FE-->>User: Alihkan ke Beranda & Navbar Dinamis Aktif
+    FE->>FE: Simpan JWT & info user di store reaktif (localStorage)
+    FE-->>User: Masuk ke Beranda & Navbar otomatis berubah dinamis
 ```
 
 ---
 
-## 🛠️ Apa Saja yang Telah Dibuat?
+## 🛠️ Apa Saja yang Sudah Dibuat?
 
-Integrasi penuh ini melibatkan pembuatan folder backend baru serta modifikasi reaktif pada berkas-berkas frontend yang telah ada:
+### 1. Sisi Backend Express.js (Ada di folder `/backend`)
+*   **`backend/package.json`**: Tempat mengatur pustaka/pacakge yang dipakai, menyetel ES Modules (`"type": "module"`), dan membuat perintah cepat start/dev.
+*   **`backend/.env` & `.env.example`**: Konfigurasi port (3000) dan kunci enkripsi JWT rahasia kita.
+*   **`backend/server.js`**: Gerbang utama server Express. Di sini kita menyetel middleware CORS (biar frontend bisa akses backend), parser JSON, logger request, dan rute API.
+*   **`backend/data/users.json`**: Database lokal sederhana berbasis berkas JSON untuk menyimpan data pengguna terdaftar beserta password-nya yang sudah terenkripsi aman.
+*   **`backend/middleware/auth.js`**: Filter keamanan untuk memeriksa dan membaca token JWT yang dikirim oleh frontend di header request.
+*   **`backend/routes/auth.js`**: Berisi seluruh logika rute autentikasi (mulai dari register, login, sampai validasi profil user aktif `/me`).
 
-### 1. Sisi Backend Express.js (Folder `/backend`)
-*   **`backend/package.json`**: Mengonfigurasi dependensi server, tipe modul ES (`"type": "module"`), dan skrip live-reload dev.
-*   **`backend/.env` & `.env.example`**: Konfigurasi port server (3000) dan kunci enkripsi sesi JWT rahasia.
-*   **`backend/server.js`**: File *entrypoint* utama server yang menginisialisasi Express, mengaktifkan proteksi CORS, mem-parsing body JSON, melakukan logging request, serta memetakan router.
-*   **`backend/data/users.json`**: *Flat-file database* lokal berbasis JSON yang bertugas menyimpan records user terdaftar dengan password terenkripsi.
-*   **`backend/middleware/auth.js`**: Middleware proteksi untuk mengekstrak token `Bearer` dari header `Authorization` dan men-decode isinya.
-*   **`backend/routes/auth.js`**: Berisi seluruh logika pemrosesan rute autentikasi (Registrasi, Login, dan pencocokan data profil `/me`).
-
-### 2. Sisi Frontend Vue 3 (Folder `/src`)
-*   **`src/store.js`**: Ditambahkan objek reaktif global **`userStore`** yang menyimpan status sesi user saat ini (`isLoggedIn`, `user`, `token`) serta metode pembantu `login()` dan `logout()`.
-*   **`src/views/RegisterPage.vue`**: Menghubungkan fungsi formulir registrasi untuk melakukan request API `POST` ke backend, lengkap dengan penanganan status *loading* tombol dan popup notifikasi.
-*   **`src/views/LoginPage.vue`**: Menghubungkan fungsi formulir login untuk memanggil API backend, merekam JWT token ke store reaktif global, dan mengalihkan pengguna ke Beranda.
-*   **`src/components/NavBar.vue`**: Menghubungkan tampilan navbar agar reaktif terhadap status login di `userStore` (Menampilkan nama pengguna terdaftar serta tombol **Keluar / Logout** jika sudah masuk).
+### 2. Sisi Frontend Vue 3 (Ada di folder `/src`)
+*   **`src/store.js`**: Kita tambahkan objek reaktif **`userStore`** agar seluruh halaman frontend bisa tahu status login pengguna secara instan (`isLoggedIn`, `user`, `token`).
+*   **`src/views/RegisterPage.vue`**: Form registrasi sekarang langsung mengirim request `POST` ke backend, lengkap dengan animasi tombol loading dan notifikasi sukses/gagal.
+*   **`src/views/LoginPage.vue`**: Form masuk terhubung ke API backend, menyimpan token masuk ke `userStore`, lalu mengalihkan pengguna ke halaman Beranda.
+*   **`src/components/NavBar.vue`**: Desain tombol akun di kanan atas sekarang reaktif! Kalau belum login muncul tombol **"Login"**, dan kalau sudah login otomatis berubah jadi **"Halo, [Nama Pengguna] 🚪 Keluar"**.
 
 ---
 
-## 📦 Apa Saja Teknologi yang Digunakan?
+## 📦 Teknologi yang Digunakan
 
-### Backend Dependencies (Node.js)
-*   **`express`** (^4.19.2): Web framework utama untuk membangun REST API endpoints secara cepat dan modular.
-*   **`cors`** (^2.8.5): Middleware untuk mengizinkan permintaan lintas domain (*Cross-Origin Resource Sharing*) agar frontend di port 5173 bisa mengakses backend di port 3000 tanpa hambatan browser.
-*   **`bcryptjs`** (^2.4.3): Algoritma *hashing* satu arah untuk mengamankan kata sandi pengguna sebelum disimpan ke database.
-*   **`jsonwebtoken`** (^9.0.2): Pustaka pembuatan token berbasis JWT untuk otentikasi sesi *stateless* yang aman dan ringan.
-*   **`dotenv`** (^16.4.5): Untuk memisahkan konfigurasi sensitif (seperti port dan kunci keamanan) ke berkas `.env` eksternal.
-*   **`nodemon`** (^3.1.0) *(Dev Dependency)*: Utilitas yang memantau perubahan berkas backend dan otomatis me-restart server selama tahap pengembangan.
+### Dependensi Backend (Node.js)
+*   **`express`**: Framework web minimalis andalan untuk membuat rute API secara cepat dan rapi.
+*   **`cors`**: Middleware wajib biar browser mengizinkan frontend kita (port 5173) mengambil data dari backend kita (port 3000).
+*   **`bcryptjs`**: Algoritma enkripsi satu arah untuk menyamarkan password user agar database kita aman dari kebocoran data.
+*   **`jsonwebtoken`**: Pustaka pembuat token JWT rahasia sebagai penanda sesi masuk yang ringan dan aman.
+*   **`dotenv`**: Pustaka untuk mengamankan konfigurasi sensitif ke file `.env` terpisah agar tidak tidak sengaja ter-upload ke Git.
+*   **`nodemon`** *(Dev Tool)*: Asisten otomatis yang memantau perubahan kode backend dan otomatis me-restart server sendiri biar kita tidak perlu restart manual.
 
 ---
 
-## 📋 Spesifikasi REST API Endpoints
+## 📋 Detail REST API Endpoints
 
-### 1. Health Check
+### 1. Cek Kesehatan Server
 *   **Endpoint**: `GET /api/health`
-*   **Fungsi**: Memastikan server backend aktif dan berjalan lancar.
-*   **Format Response (JSON)**:
+*   **Fungsi**: Memastikan server backend menyala dan berjalan normal.
+*   **Contoh Response (JSON)**:
     ```json
     {
       "status": "OK",
-      "message": "e-BuildPC API Server berjalan dengan lancar!"
+      "message": "e-BuildPC API Server berjalan lancar!"
     }
     ```
 
-### 2. Registrasi Akun
+### 2. Pendaftaran Akun Baru (Register)
 *   **Endpoint**: `POST /api/auth/register`
-*   **Format Request Body (JSON)**:
+*   **Contoh Request Body (JSON)**:
     ```json
     {
       "fullname": "Imam D.M.",
@@ -93,7 +85,7 @@ Integrasi penuh ini melibatkan pembuatan folder backend baru serta modifikasi re
       "password": "password123"
     }
     ```
-*   **Format Response Sukses (JSON)**:
+*   **Contoh Response Sukses (JSON)**:
     ```json
     {
       "message": "Registrasi akun berhasil!",
@@ -107,16 +99,16 @@ Integrasi penuh ini melibatkan pembuatan folder backend baru serta modifikasi re
     }
     ```
 
-### 3. Login Akun
+### 3. Masuk ke Akun (Login)
 *   **Endpoint**: `POST /api/auth/login`
-*   **Format Request Body (JSON)**:
+*   **Contoh Request Body (JSON)**:
     ```json
     {
       "email": "imam@email.com",
       "password": "password123"
     }
     ```
-*   **Format Response Sukses (JSON)**:
+*   **Contoh Response Sukses (JSON)**:
     ```json
     {
       "message": "Login berhasil!",
@@ -130,10 +122,10 @@ Integrasi penuh ini melibatkan pembuatan folder backend baru serta modifikasi re
     }
     ```
 
-### 4. Detail Akun Aktif (Protected Route)
+### 4. Ambil Data Pengguna Aktif (Protected Route)
 *   **Endpoint**: `GET /api/auth/me`
-*   **Headers**: `Authorization: Bearer <JWT_TOKEN_ANDA>`
-*   **Format Response Sukses (JSON)**:
+*   **Header Wajib**: `Authorization: Bearer <TOKEN_JWT_KALIAN>`
+*   **Contoh Response Sukses (JSON)**:
     ```json
     {
       "user": {
@@ -149,71 +141,64 @@ Integrasi penuh ini melibatkan pembuatan folder backend baru serta modifikasi re
 
 ---
 
-## 🚀 Cara Menjalankan & Menggunakan
+## How-To
 
-Ikuti panduan langkah demi langkah berikut untuk memasang dan menjalankan sistem di laptop Anda atau laptop rekan satu tim:
-
-### A. Persiapan Awal
-1.  Buka terminal Anda, lalu pastikan Anda masuk ke dalam direktori `/backend`:
+### A. Persiapan
+1.  Buka terminal baru di VS Code, lalu masuk ke folder backend:
     ```bash
     cd backend
     ```
-2.  Pasang seluruh pustaka dependensi yang dibutuhkan:
+2.  Instal seluruh paket dependensi yang diperlukan:
     ```bash
     npm install
     ```
-3.  Pastikan berkas `.env` sudah terisi dengan benar (sesuai panduan `.env.example`).
+3.  Duplikat berkas `.env.example` lalu ubah nama salinannya menjadi **`.env`** di dalam folder backend.
 
-### B. Menjalankan Server Backend
+### B. Menyalakan Server Backend
 1.  Di terminal backend, jalankan perintah development:
     ```bash
     npm run dev
     ```
-2.  Server akan aktif di `http://localhost:3000` dan otomatis memuat ulang (*hot-reload*) jika Anda mengubah baris kode.
+2.  Server Express kita sekarang aktif di `http://localhost:3000`. Jika kalian mengedit kode backend, server otomatis memuat ulang sendiri secara instan!
 
-### C. Menjalankan Server Frontend
-1.  Buka terminal baru di root direktori project, lalu jalankan frontend Vue 3 Anda:
+### C. Menyalakan Server Frontend
+1.  Buka terminal baru lagi di root folder project, lalu nyalakan frontend Vue 3:
     ```bash
     npm run dev
     ```
-2.  Buka aplikasi di peramban browser via `http://localhost:5173`.
+2.  Akses aplikasi kalian di browser via alamat: `http://localhost:5173`.
 
-### D. Menguji Sistem Autentikasi
-1.  Akses halaman pendaftaran pada `http://localhost:5173/register`.
-2.  Masukkan data akun uji coba baru, klik **Buat Akun**. Pengguna akan otomatis diarahkan ke formulir masuk.
-3.  Buka berkas `backend/data/users.json` untuk memverifikasi bahwa akun Anda berhasil tercatat dengan kata sandi terenkripsi.
-4.  Masukkan email dan kata sandi di formulir masuk, klik **Masuk**.
-5.  Perhatikan pojok kanan atas navigasi navbar Anda: nama akun sukses ditampilkan secara dinamis beserta tombol keluar 🚪.
+### D. Cara Uji Coba Fitur
+1.  Buka halaman pendaftaran di browser via `http://localhost:5173/register`.
+2.  Masukkan data akun baru secara bebas, lalu klik **Buat Akun**. Kalian akan otomatis dialihkan ke formulir masuk.
+3.  Cek file `backend/data/users.json` di VS Code untuk memastikan akun baru sudah tercatat rapi dengan password berformat hash Bcrypt yang aman.
+4.  Masukkan email dan password di formulir masuk, lalu klik **Masuk**.
+5. Kalian akan masuk ke Beranda dan cek nama kalian di pojok kanan atas navbar sama tombol keluar 🚪.
 
 ---
 
-## 📋 Fitur yang Masih Perlu Diimplementasikan (Future Backlog)
+## 📋 Future Backlog
 
-Untuk menyempurnakan aplikasi e-BuildPC menjadi platform siap produksi yang lengkap, berikut adalah daftar fitur backend dan integrasi lanjutan yang masih perlu Anda bangun di fase berikutnya:
+### 1. Migrasi ke Database SQL Asli (MySQL atau PostgreSQL)
+*   **Rencana**: Mengganti database lokal `users.json` dengan database relasional sesungguhnya.
+*   **Langkah**: Menyiapkan tabel relasional memakai ORM modern seperti **Prisma** atau **Sequelize**, membuat migrasi database (`npx prisma migrate dev`), dan mengalihkan pembacaan data autentikasi ke database SQL server kita.
 
-### 1. Migrasi ke Database Relasional Asli (SQL)
-*   **Deskripsi**: Mengganti berkas penyimpanan lokal `users.json` dengan database relasional nyata (MySQL atau PostgreSQL).
-*   **Langkah**: Menyiapkan skema tabel menggunakan ORM seperti **Prisma** atau **Sequelize**, membuat migrasi database (`npx prisma migrate dev`), dan mengalihkan penulisan data di rute autentikasi ke database SQL.
-
-### 2. API Katalog & Pencarian Komponen PC (`GET /api/products`)
-*   **Deskripsi**: Membaca basis data produk dari database SQL untuk disajikan secara dinamis pada halaman **Katalog** (`KatalogPage.vue`).
-*   **Spesifikasi**: Harus mendukung penyaringan reaktif berdasarkan kategori (Processor, GPU, RAM, dll.), pencarian berbasis teks (`LIKE` query), dan pengurutan (*sorting*) berdasarkan harga terendah, tertinggi, atau rating terbaik.
+### 2. API Katalog & Fitur Pencarian Produk (`GET /api/products`)
+*   **Rencana**: Menyajikan data produk dari database ke halaman **Katalog** (`KatalogPage.vue`) secara dinamis.
+*   **Fitur**: Mendukung pencarian teks kata kunci, penyaringan per kategori komponen, serta pengurutan (*sorting*) berdasarkan harga dan rating.
 
 ### 3. API Keranjang Belanja Persisten (`/api/cart`)
-*   **Deskripsi**: Menyimpan isi keranjang belanja pengguna terautentikasi langsung ke database.
-*   **Manfaat**: Mencegah hilangnya barang belanjaan di keranjang saat pengguna melakukan refresh browser atau mengakses dari perangkat berbeda.
+*   **Rencana**: Menyimpan data item di keranjang belanja langsung ke database.
+*   **Manfaat**: Biar barang di keranjang belanja user tidak hilang ketika mereka me-refresh browser, logout, atau berganti perangkat (misal dari laptop pindah ke HP).
 
-### 4. API Checkout, Transaksi, & Invoice WhatsApp (`POST /api/orders/checkout`)
-*   **Deskripsi**: Memproses pesanan akhir dari keranjang belanja.
-*   **Logika Bisnis**:
-    *   Mengurangi jumlah stok barang di database secara aman (*Database Transaction*).
-    *   Menghasilkan tautan invoice otomatis yang memformat pesan WhatsApp (menyebutkan daftar barang dan total biaya) dan mengalihkan pembeli untuk melakukan konfirmasi langsung ke nomor WhatsApp admin toko.
+### 4. API Transaksi, Pengurangan Stok, & Invoice WhatsApp (`POST /api/orders/checkout`)
+*   **Rencana**: Mengatur alur belanja akhir (*checkout*).
+*   **Logika**: Mengurangi jumlah stok produk di database secara aman (*Database Transaction*) dan otomatis menghasilkan tautan invoice WhatsApp berisi rekap belanjaan untuk dikirim langsung ke admin toko.
 
-### 5. Integrasi Backend AI Chat Assistant (`POST /api/chat`)
-*   **Deskripsi**: Menghubungkan chatbot melayang di pojok kanan bawah dengan mesin kecerdasan buatan (AI) di backend.
-*   **Langkah**: Membuat rute Express yang meneruskan riwayat percakapan pengguna ke API lokal **Ollama (Llama 3 / Mistral)** atau cloud API (Gemini API) untuk memberikan rekomendasi spesifikasi rakitan PC secara cerdas dan interaktif.
+### 5. API Obrolan Asisten AI Rakitan PC (`POST /api/chat`)
+*   **Rencana**: Menghidupkan fitur asisten AI melayang di pojok kanan bawah.
+*   **Langkah**: Membuat rute backend Express yang menghubungkan chat pengguna ke API AI lokal **Ollama (Llama 3 / Mistral)** atau cloud API (Gemini API) untuk memberikan rekomendasi spesifikasi PC rakitan secara interaktif.
 
-### 6. Peningkatan Keamanan & Route Guards (Frontend)
-*   **Deskripsi**: Memproteksi rute sensitif di sisi frontend Vue.
-*   **Langkah**: Memodifikasi Router Navigation Guards di `src/main.js` menggunakan properti metadata (`meta: { requiresAuth: true }`) untuk mencegah pengguna tidak dikenal mengakses halaman keranjang belanja (`/cart`) sebelum masuk ke akun mereka.
-
+### 6. Peningkatan Keamanan & Proteksi Rute (Frontend Navigation Guards)
+*   **Rencana**: Memproteksi halaman-halaman penting di frontend.
+*   **Langkah**: Mengedit konfigurasi router di `src/main.js` agar pengguna yang belum login/tidak dikenal otomatis tertolak dan dialihkan ke halaman login saat mencoba mengakses halaman penting seperti keranjang belanja (`/cart`).
