@@ -120,7 +120,7 @@
             class="flex flex-col items-center gap-2 p-4 rounded-2xl transition-all duration-200 hover:-translate-y-1 cursor-default"
             style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);"
           >
-            <img :src="tech.logo" :alt="tech.name + ' logo'" class="w-12 h-12 object-contain" />
+            <img :src="tech.logo" :alt="tech.name + ' logo'" class="w-12 h-12 object-contain brightness-0 invert opacity-90" />
             <span class="text-xs font-bold text-white">{{ tech.name }}</span>
             <span class="text-xs text-center" style="color: #64748b;">{{ tech.desc }}</span>
           </div>
