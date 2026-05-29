@@ -8,7 +8,7 @@
 
       <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
         <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold mb-6" style="background: rgba(79,70,229,0.2); border: 1px solid rgba(79,70,229,0.4); color: #a5b4fc;">
-          🎓 Kelompok PABWA — 2024/2025
+          🎓 Kelompok PABWA3 — 2025/2026
         </div>
         <h1 class="font-black mb-4 leading-tight" style="font-size: clamp(2rem, 5vw, 3.5rem);">
           Tentang <span style="background: linear-gradient(135deg, #818cf8, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">e-BuildPC</span>
@@ -32,7 +32,7 @@
             <div class="space-y-4">
               <p class="leading-relaxed text-sm" style="color: #94a3b8;">
                 <strong style="color: #c7d2fe;">e-BuildPC</strong> adalah platform e-commerce komponen PC yang dibangun sebagai proyek tugas akhir mata kuliah
-                <strong style="color: #c7d2fe;">Pemrograman Aplikasi Berbasis Web dan Aplikasi (PABWA)</strong>.
+                <strong style="color: #c7d2fe;">Pemrograman Aplikasi Berbasis Web dan Aplikasi (PABWA3)</strong>.
                 Platform ini dirancang untuk memudahkan siapa saja dalam menemukan dan membeli komponen PC berkualitas tinggi dengan harga yang kompetitif.
               </p>
               <p class="leading-relaxed text-sm" style="color: #94a3b8;">
@@ -70,7 +70,7 @@
       </div>
 
       <!-- ─── STATS ─── -->
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-5">
+      <div class="grid grid-cols-2 lg:grid-cols-2 gap-5">
         <div v-for="stat in stats" :key="stat.label"
           class="p-6 rounded-2xl text-center transition-all duration-300 hover:-translate-y-1"
           style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);"
@@ -85,9 +85,11 @@
       <div>
         <div class="text-center mb-10">
           <h2 class="text-3xl font-black text-white mb-2">Anggota <span style="color: #818cf8;">Kelompok</span></h2>
-          <p class="text-sm" style="color: #64748b;">PABWA — Semester Genap 2024/2025</p>
+          <p class="text-sm" style="color: #64748b;">PABWA3 — Semester Genap 2025/2026</p>
         </div>
-        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+
+        <!-- Grid anggota (full-width) -->
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-8">
           <div
             v-for="member in team"
             :key="member.nim"
@@ -108,6 +110,30 @@
             </div>
           </div>
         </div>
+
+        <!-- Card peran tim (di bawah anggota, 3 kolom) -->
+        <div class="grid sm:grid-cols-3 gap-4">
+          <div
+            v-for="role in roles"
+            :key="role.title"
+            class="group p-5 rounded-2xl transition-all duration-300 hover:-translate-y-1"
+            :style="{ background: role.bg, border: role.border }"
+          >
+            <div class="flex items-center gap-3 mb-2">
+              <div
+                class="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
+                :style="{ background: role.iconBg }"
+              >
+                {{ role.icon }}
+              </div>
+              <div>
+                <p class="font-black text-white text-base leading-none">{{ role.title }}</p>
+                <p class="text-xs mt-1" :style="{ color: role.accent }">{{ role.count }} orang</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
 
       <!-- ─── TECH STACK ─── -->
@@ -120,36 +146,13 @@
             class="flex flex-col items-center gap-2 p-4 rounded-2xl transition-all duration-200 hover:-translate-y-1 cursor-default"
             style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);"
           >
-            <span class="text-3xl">{{ tech.icon }}</span>
+            <img :src="tech.logo" :alt="tech.name + ' logo'" class="w-12 h-12 object-contain brightness-0 invert opacity-90" />
             <span class="text-xs font-bold text-white">{{ tech.name }}</span>
             <span class="text-xs text-center" style="color: #64748b;">{{ tech.desc }}</span>
           </div>
         </div>
       </div>
 
-      <!-- ─── CONTACT CTA ─── -->
-      <div class="rounded-3xl p-10 text-center relative overflow-hidden" style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e1b4b 100%);">
-        <div class="absolute inset-0 pointer-events-none" style="background: radial-gradient(ellipse at center, rgba(99,102,241,0.3), transparent 70%);"></div>
-        <div class="relative z-10">
-          <div class="text-4xl mb-4">💬</div>
-          <h2 class="text-2xl font-black text-white mb-3">Ada Pertanyaan?</h2>
-          <p class="mb-8 text-sm" style="color: #a5b4fc;">Tim kami siap membantu Anda. Hubungi kami sekarang!</p>
-          <div class="flex flex-wrap justify-center gap-4">
-            <a href="mailto:kelompok.pabwa@gmail.com" id="email-contact-btn"
-              class="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white text-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
-              style="background: #2563eb;"
-            >
-              📧 Email Kami
-            </a>
-            <a href="https://wa.me/6281234567890" id="whatsapp-contact-btn"
-              class="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white text-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
-              style="background: #16a34a;"
-            >
-              💬 WhatsApp
-            </a>
-          </div>
-        </div>
-      </div>
 
     </div>
   </main>
@@ -158,8 +161,8 @@
 <script setup>
 const team = [
   { nim: '11211035', name: 'Edis Nabila Ramadhani',    gradient: 'linear-gradient(135deg, #ec4899, #be185d)' },
-  { nim: '11221009', name: 'Farizi Fattah',             gradient: 'linear-gradient(135deg, #4f46e5, #7c3aed)' },
-  { nim: '11221071', name: 'Cinta Satila',              gradient: 'linear-gradient(135deg, #f59e0b, #d97706)' },
+  { nim: '11221037', name: 'Muhammad Akmal Al Fathan', gradient: 'linear-gradient(135deg, #6366f1, #4f46e5)' },
+  { nim: '11221071', name: 'Cinta Satila',              gradient: 'linear-gradient(135deg, #a799b7, #9888a5)' },
   { nim: '11221079', name: 'Andi Cole',                 gradient: 'linear-gradient(135deg, #0ea5e9, #0284c7)' },
   { nim: '11231007', name: 'Alief Rachmattul Islam',    gradient: 'linear-gradient(135deg, #10b981, #059669)' },
   { nim: '11231031', name: 'Imam Dzulvan Muffid',       gradient: 'linear-gradient(135deg, #8b5cf6, #6d28d9)' },
@@ -169,18 +172,46 @@ const team = [
 ]
 
 const stats = [
-  { icon: '🎓', value: '2025',  label: 'Tahun Proyek' },
+  { icon: '🎓', value: '2026',  label: 'Tahun Proyek' },
   { icon: '👥', value: '9',     label: 'Anggota Tim' },
-  { icon: '📦', value: '6+',    label: 'Produk Demo' },
-  { icon: '⭐', value: '100%',  label: 'Semangat Tim' },
+]
+
+const roles = [
+  {
+    title: 'Frontend',
+    icon: '🖥️',
+    count: 4,
+    bg: 'linear-gradient(135deg, rgba(79,70,229,0.1), rgba(124,58,237,0.05))',
+    border: '1px solid rgba(79,70,229,0.25)',
+    iconBg: 'rgba(79,70,229,0.2)',
+    accent: '#a5b4fc',
+  },
+  {
+    title: 'Backend',
+    icon: '⚙️',
+    count: 2,
+    bg: 'linear-gradient(135deg, rgba(16,185,129,0.08), rgba(5,150,105,0.04))',
+    border: '1px solid rgba(16,185,129,0.2)',
+    iconBg: 'rgba(16,185,129,0.15)',
+    accent: '#6ee7b7',
+  },
+  {
+    title: 'LLM / AI',
+    icon: '🤖',
+    count: 2,
+    bg: 'linear-gradient(135deg, rgba(245,158,11,0.08), rgba(217,119,6,0.04))',
+    border: '1px solid rgba(245,158,11,0.2)',
+    iconBg: 'rgba(245,158,11,0.15)',
+    accent: '#fcd34d',
+  },
 ]
 
 const techStack = [
-  { icon: '💚', name: 'Vue.js 3',   desc: 'Framework' },
-  { icon: '⚡', name: 'Vite',       desc: 'Build Tool' },
-  { icon: '🎨', name: 'Tailwind',   desc: 'Styling' },
-  { icon: '🗂️', name: 'Vue Router', desc: 'Routing' },
-  { icon: '📦', name: 'Pinia',      desc: 'State Mgmt' },
-  { icon: '🌐', name: 'HTML5',      desc: 'Markup' },
+  { logo: '/Icons/Vue.svg', name: 'Vue.js 3', desc: 'Framework' },
+  { logo: '/Icons/vite.svg', name: 'Vite', desc: 'Build Tool' },
+  { logo: '/Icons/tailwindcss.svg', name: 'Tailwind', desc: 'Styling' },
+  { logo: '/Icons/pinia.svg', name: 'Pinia', desc: 'State Mgmt' },
+  { logo: '/Icons/html5.svg', name: 'HTML5', desc: 'Markup' },
+  { logo: '/Icons/javascript.svg', name: 'JavaScript', desc: 'Language' },
 ]
 </script>

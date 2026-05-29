@@ -4,27 +4,30 @@
     :class="isScrolled ? 'py-2' : 'py-3'"
     style="background: #111111; border-bottom: 1px solid rgba(255,255,255,0.06);"
   >
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex items-center justify-between">
+    <!-- Gunakan w-full px-3 agar konten hampir menyentuh tepi kiri & kanan -->
+    <div class="w-full px-3">
+      <div class="flex items-center gap-2">
 
-        <!-- Logo -->
-        <RouterLink to="/" class="flex items-center gap-2.5 group">
-          <!-- Logo image -->
+        <!-- Logo — hampir menyentuh tepi kiri -->
+        <RouterLink to="/" class="flex items-center gap-2 group flex-shrink-0">
           <img
             src="/logo.png"
             alt="e-BuildPC logo"
             class="w-8 h-8 rounded object-cover"
           />
-          <span class="font-bold text-white text-sm tracking-wide">e-BuildPC</span>
+          <span class="font-bold text-white text-sm tracking-wide whitespace-nowrap">e-BuildPC</span>
         </RouterLink>
 
-        <!-- Desktop Nav Links -->
-        <div class="hidden md:flex items-center gap-0.5">
+        <!-- Divider visual -->
+        <div class="hidden md:block w-px h-5 flex-shrink-0" style="background: rgba(255,255,255,0.1);"></div>
+
+        <!-- Desktop Nav Links (rapat di samping logo) -->
+        <div class="hidden md:flex items-center gap-0.5 flex-shrink-0">
           <RouterLink
             v-for="link in navLinks"
             :key="link.path"
             :to="link.path"
-            class="px-4 py-2 text-sm font-medium transition-colors duration-150 rounded-md"
+            class="px-3 py-2 text-sm font-medium transition-colors duration-150 rounded-md whitespace-nowrap"
             :class="$route.path === link.path
               ? 'text-white bg-white/10'
               : 'text-gray-400 hover:text-white hover:bg-white/5'"
@@ -33,8 +36,48 @@
           </RouterLink>
         </div>
 
-        <!-- Right: Account + Cart + Hamburger -->
-        <div class="flex items-center gap-1">
+        <!-- Search Bar — mengisi sisa ruang tengah -->
+        <div class="hidden md:flex flex-1 relative mx-2" ref="searchContainer">
+          <div class="relative w-full">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+            </svg>
+            <input
+              v-model="searchQuery"
+              @input="onSearchInput"
+              @keyup.enter="doSearch"
+              @focus="showSuggestions = true"
+              type="text"
+              placeholder="Cari produk atau kategori..."
+              class="w-full pl-9 pr-4 py-2 text-sm rounded-lg outline-none text-white transition-all duration-200"
+              style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);"
+            />
+            <!-- Suggestions dropdown -->
+            <Transition name="dropdown">
+              <div
+                v-if="showSuggestions && filteredSuggestions.length > 0"
+                class="absolute top-full left-0 right-0 mt-1 rounded-xl overflow-hidden shadow-2xl z-50"
+                style="background: #1a1f2e; border: 1px solid rgba(255,255,255,0.1);"
+              >
+                <button
+                  v-for="s in filteredSuggestions"
+                  :key="s.label"
+                  class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition-colors hover:bg-white/5"
+                  @mousedown.prevent="selectSuggestion(s)"
+                >
+                  <span class="text-base">{{ s.icon }}</span>
+                  <div>
+                    <p class="text-white font-medium leading-none">{{ s.label }}</p>
+                    <p class="text-xs text-gray-500 mt-0.5">{{ s.type }}</p>
+                  </div>
+                </button>
+              </div>
+            </Transition>
+          </div>
+        </div>
+
+        <!-- Right: Account + Cart + Hamburger — hampir menyentuh tepi kanan -->
+        <div class="flex items-center gap-1 flex-shrink-0 ml-auto md:ml-0">
 
           <!-- Account / Login Link -->
           <RouterLink
@@ -104,12 +147,17 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 
-defineProps({ cartCount: { type: Number, default: 0 } })
+const props = defineProps({ cartCount: { type: Number, default: 0 } })
+const router = useRouter()
 
 const mobileMenuOpen = ref(false)
 const isScrolled = ref(false)
+const searchQuery = ref('')
+const showSuggestions = ref(false)
+const searchContainer = ref(null)
 
 const navLinks = [
   { label: 'Beranda', path: '/' },
@@ -118,9 +166,58 @@ const navLinks = [
   { label: 'Tentang Kami', path: '/tentang' },
 ]
 
+// Daftar saran pencarian (kategori + produk populer)
+const allSuggestions = [
+  { label: 'Processor (CPU)', icon: '🧠', type: 'Kategori', query: 'processor' },
+  { label: 'Kartu Grafis (GPU)', icon: '🎮', type: 'Kategori', query: 'gpu' },
+  { label: 'RAM Memory', icon: '💾', type: 'Kategori', query: 'ram' },
+  { label: 'Motherboard', icon: '🖱️', type: 'Kategori', query: 'motherboard' },
+  { label: 'Storage SSD', icon: '📲', type: 'Kategori', query: 'ssd' },
+  { label: 'Power Supply', icon: '🔋', type: 'Kategori', query: 'psu' },
+  { label: 'Casing PC', icon: '🖥️', type: 'Kategori', query: 'casing' },
+  { label: 'Pendingin (Cooler)', icon: '❄️', type: 'Kategori', query: 'cooler' },
+]
+
+const filteredSuggestions = computed(() => {
+  if (!searchQuery.value.trim()) return allSuggestions.slice(0, 5)
+  const q = searchQuery.value.toLowerCase()
+  return allSuggestions.filter(s =>
+    s.label.toLowerCase().includes(q) || s.query.toLowerCase().includes(q)
+  ).slice(0, 6)
+})
+
+function onSearchInput() {
+  showSuggestions.value = true
+}
+
+function selectSuggestion(s) {
+  searchQuery.value = s.label
+  showSuggestions.value = false
+  router.push({ path: '/katalog', query: { q: s.query } })
+}
+
+function doSearch() {
+  if (!searchQuery.value.trim()) return
+  showSuggestions.value = false
+  router.push({ path: '/katalog', query: { q: searchQuery.value.trim() } })
+}
+
+// Tutup dropdown saat klik di luar
+function handleClickOutside(e) {
+  if (searchContainer.value && !searchContainer.value.contains(e.target)) {
+    showSuggestions.value = false
+  }
+}
+
 function handleScroll() { isScrolled.value = window.scrollY > 40 }
-onMounted(() => window.addEventListener('scroll', handleScroll))
-onUnmounted(() => window.removeEventListener('scroll', handleScroll))
+onMounted(() => {
+  window.addEventListener('scroll', handleScroll)
+  document.addEventListener('click', handleClickOutside)
+})
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll)
+  document.removeEventListener('click', handleClickOutside)
+})
 </script>
 
 <style scoped>
@@ -131,4 +228,7 @@ onUnmounted(() => window.removeEventListener('scroll', handleScroll))
 
 .slide-down-enter-active, .slide-down-leave-active { transition: all 0.25s ease; }
 .slide-down-enter-from, .slide-down-leave-to { opacity: 0; transform: translateY(-8px); }
+
+.dropdown-enter-active, .dropdown-leave-active { transition: all 0.15s ease; }
+.dropdown-enter-from, .dropdown-leave-to { opacity: 0; transform: translateY(-6px); }
 </style>
