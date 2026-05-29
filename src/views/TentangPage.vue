@@ -180,7 +180,7 @@ const roles = [
   {
     title: 'Frontend',
     icon: '🖥️',
-    count: 4,
+    count: 5,
     bg: 'linear-gradient(135deg, rgba(79,70,229,0.1), rgba(124,58,237,0.05))',
     border: '1px solid rgba(79,70,229,0.25)',
     iconBg: 'rgba(79,70,229,0.2)',
