@@ -1,37 +1,67 @@
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import authRoutes from './routes/auth.js';
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import authRoutes from "./routes/auth.js";
+import productRoutes from "./routes/products.js";
+import categoryRoutes from "./routes/categories.js";
+import cartRoutes from "./routes/carts.js";
 
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
-// Global Middleware
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+app.use(cors());
+
 app.use(express.json());
 
-// Request logger
-app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-  next();
-});
+app.use(
+  "/uploads",
+  express.static("uploads")
+);
 
-// API Routes
-app.use('/api/auth', authRoutes);
+app.use(
+  "/api/auth",
+  authRoutes
+);
 
-// Health check
-app.get('/api/health', (req, res) => {
-  res.status(200).json({ status: 'OK', message: 'e-BuildPC API Server berjalan lancar!' });
-});
+app.get(
+  "/api/health",
+  (req, res) => {
+    res.json({
+      status: "OK",
+      message:
+        "e-BuildPC API berjalan",
+    });
+  }
+);
 
-// Start Server
+app.use(
+  "/uploads",
+  express.static("uploads")
+);
+
+app.use(
+  "/api/products",
+  productRoutes
+);
+
+app.use(
+  "/api/categories",
+  categoryRoutes
+);
+
+app.use(
+  "/api/cart",
+  cartRoutes
+);
+
+
+
+const PORT =
+  process.env.PORT || 3000;
+
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(
+    `Server running on port ${PORT}`
+  );
 });
-
