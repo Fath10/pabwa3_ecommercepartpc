@@ -84,11 +84,15 @@ Website sudah bisa digunakan! 🎉
 
 ## 🌿 Struktur Branch
 
-| Branch | Keterangan |
+| Branch | Kepemilikan |
 |---|---|
-| `main` | Branch utama yang stabil |
-| `frontend-feature` | Pengembangan fitur frontend tahap 1 |
-| `frontend-feature.v.2` | Pengembangan fitur frontend tahap 2 |
+| `main` | Branch utama yang stabil — semua anggota |
+| `frontend-feature` | Edis Nabila Ramadhani |
+| `frontend-feature.v.2` | Edis Nabila Ramadhani |
+| `fe-edis` | Edis Nabila Ramadhani |
+| `fe-1137` | Muhammad Akmal Al Fathan |
+| `backend` | Alief Rachmattul Islam |
+| `backend-auth` | Imam Dzulvan Muffid |
 
 ---
 
