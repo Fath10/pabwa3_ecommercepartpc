@@ -87,11 +87,11 @@ Website sudah bisa digunakan! 🎉
 | Branch | Kepemilikan |
 |---|---|
 | `main` | Branch utama yang stabil — semua anggota |
-| `frontend-feature` | Edis Nabila Ramadhani |
-| `frontend-feature.v.2` | Edis Nabila Ramadhani |
+| `frontend-feature` | Muhammad Fatwa Al Choiri |
+| `frontend-feature.v.2` | Nurfauzan Gymnastiar |
 | `fe-edis` | Edis Nabila Ramadhani |
 | `fe-1137` | Muhammad Akmal Al Fathan |
-| `backend` | Alief Rachmattul Islam |
+| `backend` | Andi Cole |
 | `backend-auth` | Imam Dzulvan Muffid |
 
 ---
