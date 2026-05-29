@@ -26,7 +26,7 @@
     <!-- Router View -->
     <RouterView v-slot="{ Component }">
       <Transition name="page" mode="out-in">
-        <component :is="Component" @add-to-cart="handleAddToCart" />
+        <component :is="Component" @add-to-cart="handleAddToCart" @show-toast="showToast" />
       </Transition>
     </RouterView>
 

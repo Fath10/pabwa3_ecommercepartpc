@@ -52,19 +52,11 @@
 
               <!-- Controls -->
               <div class="flex flex-col items-end justify-between">
-                <!-- Remove -->
-                <button
-                  @click="cartStore.removeItem(item.id)"
-                  title="Hapus item"
-                  class="remove-btn w-8 h-8 rounded-full flex items-center justify-center text-lg leading-none transition-all duration-150"
-                >
-                  ×
-                </button>
                 <!-- Quantity stepper -->
                 <div class="qty-stepper flex items-center rounded-full overflow-hidden"
                   style="border: 1px solid #e2e8f0; background: #f8fafc;">
                   <button
-                    @click="cartStore.updateQuantity(item.id, item.quantity - 1)"
+                    @click="decreaseQuantity(item)"
                     class="qty-btn w-8 h-8 flex items-center justify-center text-base font-semibold transition-colors"
                   >−</button>
                   <span class="w-9 text-center text-sm font-bold select-none" style="color: #0f172a;">{{ item.quantity }}</span>
@@ -80,12 +72,12 @@
           <!-- Clear Cart -->
           <button
             @click="cartStore.clearCart()"
-            class="text-sm font-medium flex items-center gap-2 transition-colors"
+            class="w-11 h-11 text-xl font-medium flex items-center gap-2 transition-all cursor-pointer hover:scale-105 active:scale-95"
             style="color: #ef4444;"
             @mouseenter="e => e.currentTarget.style.color = '#b91c1c'"
             @mouseleave="e => e.currentTarget.style.color = '#ef4444'"
           >
-            🗑️ Kosongkan Keranjang
+            🗑️
           </button>
         </div>
 
@@ -155,15 +147,130 @@
           </div>
         </div>
       </div>
+
+      <!-- Product Suggestions -->
+      <section class="mt-12">
+        <div class="mb-5">
+          <h2 class="text-xl font-bold mb-1" style="color: #0f172a;">
+            Saran Produk
+          </h2>
+          <div class="flex items-center justify-between gap-4">
+            <p class="text-sm" style="color: #64748b;">
+              Pilihan lain yang sering dibeli bersama
+            </p>
+            <RouterLink
+              to="/katalog"
+              class="text-sm font-semibold whitespace-nowrap"
+              style="color: #4f46e5;"
+            >
+              Lihat Produk Lain
+            </RouterLink>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          <ProductCard
+            v-for="product in suggestedProducts"
+            :key="product.id"
+            :product="product"
+            @add-to-cart="addSuggestedProduct"
+          />
+        </div>
+      </section>
     </div>
+
+    <Teleport to="body">
+      <Transition name="confirm-modal">
+        <div
+          v-if="pendingDeleteItem"
+          class="fixed inset-0 z-[9999] flex items-center justify-center px-4"
+          style="background: rgba(15, 23, 42, 0.55);"
+        >
+          <div
+            class="w-full max-w-md rounded-2xl p-6 shadow-2xl"
+            style="background: #ffffff; border: 1px solid #e5e7eb;"
+          >
+            <div class="flex items-start gap-4">
+              <div
+                class="w-11 h-11 rounded-full flex items-center justify-center font-bold text-xl flex-shrink-0"
+                style="background: #fef2f2; color: #ef4444;"
+              >
+                !
+              </div>
+              <div>
+                <h3 class="text-lg font-bold mb-1" style="color: #0f172a;">
+                  Hapus produk?
+                </h3>
+                <p class="text-sm leading-relaxed" style="color: #64748b;">
+                  Anda yakin mau menghapus {{ pendingDeleteItem.name }} dari keranjang?
+                </p>
+              </div>
+            </div>
+
+            <div class="flex justify-end gap-3 mt-6">
+              <button
+                @click="cancelDeleteItem"
+                class="px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors cursor-pointer"
+                style="background: #f1f5f9; color: #475569;"
+              >
+                Batal
+              </button>
+              <button
+                @click="confirmDeleteItem"
+                class="px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition-all cursor-pointer hover:opacity-90"
+                style="background: #ef4444;"
+              >
+                Hapus
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </main>
 </template>
 
 <script setup>
-import { cartStore, formatPrice } from '../store.js'
+import { cartStore, formatPrice, products } from '../store.js'
+import ProductCard from '../components/ProductCard.vue'
+import { computed, ref } from 'vue'
+
+const emit = defineEmits(['add-to-cart', 'show-toast'])
+const pendingDeleteItem = ref(null)
+
+const suggestedProducts = computed(() => {
+  const cartIds = cartStore.items.map(item => item.id)
+  return products
+    .filter(product => !cartIds.includes(product.id))
+    .slice(0, 4)
+})
 
 function handleCheckout() {
   alert('🎉 Terima kasih! Fitur checkout akan segera hadir. Silakan hubungi kami via WhatsApp untuk pemesanan.')
+}
+function decreaseQuantity(item) {
+  if (item.quantity === 1) {
+    pendingDeleteItem.value = item
+    return
+  }
+
+  cartStore.updateQuantity(item.id, item.quantity - 1)
+}
+
+function cancelDeleteItem() {
+  pendingDeleteItem.value = null
+}
+
+function confirmDeleteItem() {
+  if (!pendingDeleteItem.value) return
+
+  const itemName = pendingDeleteItem.value.name
+  cartStore.removeItem(pendingDeleteItem.value.id)
+  pendingDeleteItem.value = null
+  emit('show-toast', `${itemName} dihapus dari keranjang`, 'success')
+}
+
+function addSuggestedProduct(product){
+  emit('add-to-cart', product)
 }
 </script>
 
@@ -185,21 +292,6 @@ function handleCheckout() {
 }
 .qty-btn:active {
   transform: scale(0.9);
-}
-
-/* Tombol hapus (silang) */
-.remove-btn {
-  background: #fef2f2;
-  color: #ef4444;
-  border: 1px solid #fecaca;
-}
-.remove-btn:hover {
-  background: #ef4444;
-  color: #fff;
-  transform: rotate(90deg);
-}
-.remove-btn:active {
-  transform: rotate(90deg) scale(0.9);
 }
 
 /* Kartu ringkasan — shadow tipis elegan */
@@ -231,5 +323,14 @@ function handleCheckout() {
 .cart-item-leave-to {
   opacity: 0;
   transform: translateX(20px);
+}
+
+.confirm-modal-enter-active,
+.confirm-modal-leave-active {
+  transition: opacity 0.2s ease;
+}
+.confirm-modal-enter-from,
+.confirm-modal-leave-to {
+  opacity: 0;
 }
 </style>
