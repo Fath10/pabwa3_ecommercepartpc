@@ -14,29 +14,38 @@
 
         <!-- Featured Article -->
         <div
-          class="relative rounded-3xl overflow-hidden mb-12 group cursor-pointer"
+          class="rounded-3xl overflow-hidden mb-12 group cursor-pointer bg-gradient-to-b from-white/5 to-white/[0.02] border border-white/10 hover:border-indigo-500/40 transition-all duration-300 hover:-translate-y-1"
           @click="openArticle(featuredArticle)"
         >
-          <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent z-10"></div>
-          <img :src="featuredArticle.image" alt="Featured" class="w-full h-72 object-cover group-hover:scale-105 transition-transform duration-700" />
-          <div class="absolute bottom-0 left-0 right-0 p-8 z-20">
-            <span class="inline-block px-3 py-1 bg-indigo-600 rounded-full text-xs font-bold text-white mb-3">🔥 Artikel Utama</span>
-            <h2 class="text-2xl font-black text-white mb-2">{{ featuredArticle.title }}</h2>
-            <p class="text-gray-300 text-sm mb-4 line-clamp-2">{{ featuredArticle.excerpt }}</p>
-            <button
-              type="button"
-              id="featured-read-more"
-              class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white text-gray-900 font-bold text-sm transition-all duration-200 hover:gap-3 hover:shadow-lg hover:shadow-white/10"
-              @click.stop="openArticle(featuredArticle)"
-            >
-              Baca Selengkapnya
-              <span class="transition-transform">→</span>
-            </button>
+          <!-- Gambar -->
+          <div class="relative overflow-hidden h-64">
+            <img :src="featuredArticle.image" alt="Featured" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+            <span class="absolute top-4 left-4 inline-block px-3 py-1 bg-indigo-600 rounded-full text-xs font-bold text-white">🔥 Artikel Utama</span>
+          </div>
+          <!-- Teks -->
+          <div class="p-7">
+            <span class="inline-block px-2 py-0.5 rounded-full text-xs font-semibold mb-3 bg-indigo-600/20 text-indigo-400 border border-indigo-500/30">{{ featuredArticle.category }}</span>
+            <h2 class="text-2xl font-black text-white mb-2 group-hover:text-indigo-300 transition-colors">{{ featuredArticle.title }}</h2>
+            <p class="text-gray-400 text-sm mb-5 line-clamp-3 leading-relaxed">{{ featuredArticle.excerpt }}</p>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-4 text-xs text-gray-500">
+                <span>{{ featuredArticle.date }}</span>
+                <span>{{ featuredArticle.readTime }}</span>
+              </div>
+              <button
+                type="button"
+                id="featured-read-more"
+                class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 text-white font-bold text-sm transition-all duration-200 hover:bg-indigo-500 hover:gap-3"
+                @click.stop="openArticle(featuredArticle)"
+              >
+                Baca Selengkapnya <span>→</span>
+              </button>
+            </div>
           </div>
         </div>
 
         <!-- Article Grid -->
-        <div class="grid md:grid-cols-2 gap-6">
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           <article
             v-for="article in articles"
             :key="article.id"
@@ -169,7 +178,7 @@ const featuredArticle = {
   id: 0,
   category: '🔥 Artikel Utama',
   emoji: '🖥️',
-  image: '/hero_banner.png',
+  image: '/artikel_hero.png',
   title: 'Panduan Lengkap Merakit PC Gaming 2026',
   excerpt:
     'Dari memilih komponen yang seimbang, memahami bottleneck, hingga proses instalasi dan manajemen kabel yang rapi — panduan menyeluruh untuk merakit PC gaming impian Anda dengan budget yang optimal.',
@@ -233,7 +242,7 @@ const articles = [
     title: 'Cara Merakit PC Gaming untuk Pemula',
     excerpt:
       'Panduan step-by-step merakit PC gaming dari awal hingga selesai. Cocok untuk pemula yang belum pernah merakit PC sebelumnya.',
-    date: '15 November 2024',
+    date: '15 November 2025',
     readTime: '8 menit baca',
     content: [
       {
@@ -259,7 +268,7 @@ const articles = [
     title: 'AMD Ryzen 9 7950X vs Intel Core i9-14900K',
     excerpt:
       'Perbandingan mendalam antara dua prosesor flagship terbaik. Mana yang lebih worth it untuk kebutuhan Anda?',
-    date: '10 November 2024',
+    date: '10 November 2025',
     readTime: '12 menit baca',
     content: [
       {
@@ -283,7 +292,7 @@ const articles = [
     title: '5 Tips Memilih GPU Terbaik dengan Budget Terbatas',
     excerpt:
       'Tidak perlu budget besar untuk performa gaming yang baik. Temukan tips cerdas memilih GPU yang sesuai kantong.',
-    date: '5 November 2024',
+    date: '5 November 2025',
     readTime: '6 menit baca',
     content: [
       {
@@ -307,7 +316,7 @@ const articles = [
     title: 'Panduan Sistem Pendingin PC yang Optimal',
     excerpt:
       'Panas berlebih bisa merusak komponen PC Anda. Pelajari cara memilih dan mengkonfigurasi sistem pendingin yang tepat.',
-    date: '1 November 2024',
+    date: '1 November 2025',
     readTime: '10 menit baca',
     content: [
       {
@@ -320,6 +329,128 @@ const articles = [
         heading: 'Konfigurasi Airflow',
         paragraphs: [
           'Atur kipas intake di depan dan exhaust di belakang serta atas untuk menciptakan aliran udara terarah. Tekanan udara positif membantu mengurangi penumpukan debu di dalam casing.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 5,
+    emoji: '💾',
+    category: 'Tips',
+    title: 'SSD vs HDD: Mana yang Tepat untuk Anda?',
+    excerpt:
+      'Perbedaan kecepatan, harga, dan ketahanan antara SSD dan HDD — panduan memilih penyimpanan terbaik sesuai kebutuhan.',
+    date: '20 Oktober 2025',
+    readTime: '7 menit baca',
+    content: [
+      {
+        heading: 'Kecepatan dan Performa',
+        paragraphs: [
+          'SSD NVMe modern mampu mencapai kecepatan baca hingga 7.000 MB/s, berbanding jauh dengan HDD yang rata-rata hanya 100–200 MB/s. Perbedaan ini terasa nyata saat booting OS, membuka aplikasi besar, dan loading game.',
+          'Untuk drive utama sistem operasi dan game aktif, SSD bukan lagi kemewahan — melainkan keharusan di tahun 2025.',
+        ],
+      },
+      {
+        heading: 'Kapasitas dan Harga',
+        paragraphs: [
+          'HDD masih unggul soal biaya per gigabyte, menjadikannya pilihan ideal untuk penyimpanan arsip, backup, dan file berukuran besar yang tidak perlu diakses cepat. Kombinasi SSD sebagai drive utama dan HDD sebagai penyimpanan sekunder adalah solusi paling cost-effective.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 6,
+    emoji: '🔋',
+    category: 'Guide',
+    title: 'Cara Memilih Power Supply yang Tepat',
+    excerpt:
+      'PSU adalah jantung PC Anda. Kesalahan memilih watt dan sertifikasi bisa berujung pada kerusakan seluruh sistem.',
+    date: '12 Oktober 2025',
+    readTime: '9 menit baca',
+    content: [
+      {
+        heading: 'Menghitung Kebutuhan Daya',
+        paragraphs: [
+          'Gunakan kalkulator PSU online untuk menjumlahkan konsumsi daya semua komponen, lalu tambahkan headroom 20–30%. Jika total sistem Anda 400W, PSU 550W sudah cukup nyaman dan memberi ruang untuk upgrade.',
+          'Hindari membeli PSU jauh melebihi kebutuhan — PSU 1000W pada sistem 300W justru bekerja kurang efisien di beban rendah.',
+        ],
+      },
+      {
+        heading: 'Sertifikasi 80 Plus',
+        paragraphs: [
+          'Sertifikasi 80 Plus menjamin PSU mengonversi minimal 80% daya AC menjadi DC yang digunakan komponen. Pilih minimal 80 Plus Bronze untuk PC gaming; Gold atau Platinum jika ingin efisiensi terbaik dan tagihan listrik lebih hemat jangka panjang.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 7,
+    emoji: '🖱️',
+    category: 'Review',
+    title: 'Motherboard B650 vs X670: Mana yang Lebih Worth It?',
+    excerpt:
+      'Panduan memilih motherboard AMD platform AM5 — perbedaan fitur, harga, dan target pengguna B650 versus X670.',
+    date: '5 Oktober 2025',
+    readTime: '11 menit baca',
+    content: [
+      {
+        heading: 'Perbedaan Fitur Utama',
+        paragraphs: [
+          'B650 dirancang untuk pengguna mainstream dengan dukungan PCIe 5.0 pada slot M.2, sementara X670 menambahkan PCIe 5.0 pada slot GPU dan lebih banyak lane untuk konektivitas. Untuk mayoritas pengguna, B650 sudah lebih dari cukup.',
+        ],
+      },
+      {
+        heading: 'Nilai Uang',
+        paragraphs: [
+          'Selisih harga B650 dan X670 cukup signifikan. Jika tidak berencana menggunakan GPU PCIe 5.0 atau membutuhkan banyak perangkat NVMe berkecepatan tinggi secara bersamaan, anggaran lebih baik dialihkan ke CPU atau RAM yang lebih kencang.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 8,
+    emoji: '🧠',
+    category: 'Tutorial',
+    title: 'Cara Overclock RAM dengan Aman Menggunakan XMP/EXPO',
+    excerpt:
+      'Aktifkan profil XMP atau EXPO di BIOS untuk mendapatkan kecepatan RAM penuh tanpa risiko — panduan lengkap untuk pemula.',
+    date: '28 September 2025',
+    readTime: '5 menit baca',
+    content: [
+      {
+        heading: 'Apa Itu XMP dan EXPO?',
+        paragraphs: [
+          'XMP (Intel Extreme Memory Profile) dan EXPO (AMD Extended Profiles for Overclocking) adalah profil preset yang disimpan di chip RAM Anda. Mengaktifkannya di BIOS memungkinkan RAM berjalan pada kecepatan yang tertera di kotak — misalnya DDR5-6000 — bukan hanya kecepatan standar JEDEC yang lebih lambat.',
+        ],
+      },
+      {
+        heading: 'Cara Mengaktifkan',
+        paragraphs: [
+          'Masuk BIOS saat booting (biasanya tekan Del atau F2), cari menu AI Tweaker, Extreme Tweaker, atau OC. Temukan opsi XMP/EXPO, pilih profil yang tersedia, simpan dan restart. Sistem akan otomatis berjalan pada kecepatan RAM yang seharusnya — tanpa risiko sama sekali selama RAM kompatibel dengan motherboard.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 9,
+    emoji: '🌐',
+    category: 'Tips',
+    title: 'Monitor Gaming: Refresh Rate, Panel, dan Resolusi',
+    excerpt:
+      'Panduan lengkap memilih monitor gaming — perbedaan 60Hz vs 144Hz vs 240Hz, IPS vs VA vs TN, dan 1080p vs 1440p vs 4K.',
+    date: '20 September 2025',
+    readTime: '8 menit baca',
+    content: [
+      {
+        heading: 'Refresh Rate: Semakin Tinggi Semakin Mulus',
+        paragraphs: [
+          '144Hz adalah titik masuk yang sangat direkomendasikan untuk gaming kompetitif. Perpindahan dari 60Hz ke 144Hz jauh lebih terasa dibandingkan dari 144Hz ke 240Hz. Pastikan GPU Anda mampu menghasilkan frame rate yang cukup sebelum berinvestasi pada monitor refresh rate sangat tinggi.',
+        ],
+      },
+      {
+        heading: 'Jenis Panel',
+        paragraphs: [
+          'IPS menawarkan warna akurat dan sudut pandang lebar — terbaik untuk konten kreator dan gaming kasual. VA memberikan kontras jauh lebih tinggi, ideal untuk ruangan gelap. TN tercepat dalam respons namun warna kurang akurat. Panel OLED dan QD-OLED kini hadir sebagai opsi premium dengan kualitas gambar terbaik di kelasnya.',
         ],
       },
     ],
