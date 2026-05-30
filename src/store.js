@@ -133,6 +133,30 @@ export const cartStore = reactive({
   }
 })
 
+// User session store reaktif
+export const userStore = reactive({
+  user: JSON.parse(localStorage.getItem('user') || 'null'),
+  token: localStorage.getItem('token') || null,
+  
+  get isLoggedIn() {
+    return !!this.user
+  },
+  
+  login(userData, tokenData) {
+    this.user = userData
+    this.token = tokenData
+    localStorage.setItem('user', JSON.stringify(userData))
+    localStorage.setItem('token', tokenData)
+  },
+  
+  logout() {
+    this.user = null
+    this.token = null
+    localStorage.removeItem('user')
+    localStorage.removeItem('token')
+  }
+})
+
 export function formatPrice(price) {
   return new Intl.NumberFormat('id-ID', {
     style: 'currency',
@@ -141,3 +165,4 @@ export function formatPrice(price) {
     maximumFractionDigits: 0,
   }).format(price)
 }
+
