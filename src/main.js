@@ -9,6 +9,7 @@ import TentangPage from './views/TentangPage.vue'
 import CartPage from './views/CartPage.vue'
 import LoginPage from './views/LoginPage.vue'
 import RegisterPage from './views/RegisterPage.vue'
+import InfoPage from './views/InfoPage.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -20,6 +21,9 @@ const router = createRouter({
     { path: '/cart', component: CartPage, meta: { title: 'e-BuildPC | Keranjang' } },
     { path: '/login', component: LoginPage, meta: { title: 'e-BuildPC | Login' } },
     { path: '/register', component: RegisterPage, meta: { title: 'e-BuildPC | Buat Akun' } },
+
+    // Halaman legal footer
+    { path: '/info/:slug', component: InfoPage, meta: { title: 'e-BuildPC | Informasi' } },
   ],
   scrollBehavior() {
     return { top: 0 }
