@@ -257,15 +257,10 @@ export const deleteCategory = async (
     res.status(200).json({
       message: "Kategori berhasil dihapus"
     });
-
   } catch (error) {
-
     console.error(error);
-
     res.status(500).json({
       message: "Server Error",
     });
-
   }
-
 };
