@@ -72,12 +72,16 @@
           <!-- Clear Cart -->
           <button
             @click="cartStore.clearCart()"
-            class="w-11 h-11 text-xl font-medium flex items-center gap-2 transition-all cursor-pointer hover:scale-105 active:scale-95"
-            style="color: #ef4444;"
-            @mouseenter="e => e.currentTarget.style.color = '#b91c1c'"
-            @mouseleave="e => e.currentTarget.style.color = '#ef4444'"
+            id="clear-cart-btn"
+            class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:scale-105 active:scale-95"
+            style="color: #ef4444; border: 1px solid #fecaca; background: #fef2f2;"
+            @mouseenter="e => { e.currentTarget.style.background='#fee2e2'; e.currentTarget.style.borderColor='#ef4444'; }"
+            @mouseleave="e => { e.currentTarget.style.background='#fef2f2'; e.currentTarget.style.borderColor='#fecaca'; }"
           >
-            🗑️
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            Kosongkan Keranjang
           </button>
         </div>
 
@@ -133,7 +137,7 @@
               style="background: linear-gradient(135deg, #4f46e5, #7c3aed);"
               @click="handleCheckout"
             >
-              💳 Checkout Sekarang
+              Checkout
             </button>
 
             <RouterLink to="/katalog"

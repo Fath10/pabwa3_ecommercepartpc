@@ -81,9 +81,8 @@
         <div v-if="totalPages > 1" class="mt-12 flex flex-col items-center gap-4">
           <!-- Info -->
           <p class="text-gray-500 text-sm">
-            Halaman <span class="text-white font-semibold">{{ currentPage }}</span> dari
-            <span class="text-white font-semibold">{{ totalPages }}</span>
-            &nbsp;·&nbsp; {{ articles.length }} artikel tersedia
+            Halaman <span class="text-white font-semibold">{{ currentPage }}</span>
+            / <span class="text-white font-semibold">{{ totalPages }}</span>
           </p>
           <!-- Controls -->
           <div class="flex items-center gap-2">
@@ -93,13 +92,11 @@
               type="button"
               :disabled="currentPage === 1"
               @click="goToPage(currentPage - 1)"
-              class="px-4 py-2 rounded-xl border text-sm font-medium transition-all duration-200"
+              class="w-9 h-9 rounded-xl border flex items-center justify-center text-sm font-medium transition-all duration-200"
               :class="currentPage === 1
                 ? 'border-white/5 text-gray-600 cursor-not-allowed'
                 : 'border-white/10 bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white hover:-translate-x-0.5'"
-            >
-              ← Sebelumnya
-            </button>
+            >←</button>
 
             <!-- Page numbers -->
             <template v-for="page in totalPages" :key="page">
@@ -120,13 +117,11 @@
               type="button"
               :disabled="currentPage === totalPages"
               @click="goToPage(currentPage + 1)"
-              class="px-4 py-2 rounded-xl border text-sm font-medium transition-all duration-200"
+              class="w-9 h-9 rounded-xl border flex items-center justify-center text-sm font-medium transition-all duration-200"
               :class="currentPage === totalPages
                 ? 'border-white/5 text-gray-600 cursor-not-allowed'
                 : 'border-white/10 bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white hover:translate-x-0.5'"
-            >
-              Berikutnya →
-            </button>
+            >→</button>
           </div>
         </div>
       </template>
