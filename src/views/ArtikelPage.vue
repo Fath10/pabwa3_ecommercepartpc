@@ -47,7 +47,7 @@
         <!-- Article Grid -->
         <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           <article
-            v-for="article in articles"
+            v-for="article in paginatedArticles"
             :key="article.id"
             class="group bg-gradient-to-b from-white/5 to-white/[0.02] rounded-2xl border border-white/10 hover:border-indigo-500/40 overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-2"
             @click="openArticle(article)"
@@ -75,6 +75,54 @@
               </button>
             </div>
           </article>
+        </div>
+
+        <!-- Pagination -->
+        <div v-if="totalPages > 1" class="mt-12 flex flex-col items-center gap-4">
+          <!-- Info -->
+          <p class="text-gray-500 text-sm">
+            Halaman <span class="text-white font-semibold">{{ currentPage }}</span>
+            / <span class="text-white font-semibold">{{ totalPages }}</span>
+          </p>
+          <!-- Controls -->
+          <div class="flex items-center gap-2">
+            <!-- Prev -->
+            <button
+              id="pagination-prev"
+              type="button"
+              :disabled="currentPage === 1"
+              @click="goToPage(currentPage - 1)"
+              class="w-9 h-9 rounded-xl border flex items-center justify-center text-sm font-medium transition-all duration-200"
+              :class="currentPage === 1
+                ? 'border-white/5 text-gray-600 cursor-not-allowed'
+                : 'border-white/10 bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white hover:-translate-x-0.5'"
+            >←</button>
+
+            <!-- Page numbers -->
+            <template v-for="page in totalPages" :key="page">
+              <button
+                :id="`pagination-page-${page}`"
+                type="button"
+                @click="goToPage(page)"
+                class="w-9 h-9 rounded-xl text-sm font-semibold transition-all duration-200"
+                :class="page === currentPage
+                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30'
+                  : 'border border-white/10 bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'"
+              >{{ page }}</button>
+            </template>
+
+            <!-- Next -->
+            <button
+              id="pagination-next"
+              type="button"
+              :disabled="currentPage === totalPages"
+              @click="goToPage(currentPage + 1)"
+              class="w-9 h-9 rounded-xl border flex items-center justify-center text-sm font-medium transition-all duration-200"
+              :class="currentPage === totalPages
+                ? 'border-white/5 text-gray-600 cursor-not-allowed'
+                : 'border-white/10 bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white hover:translate-x-0.5'"
+            >→</button>
+          </div>
         </div>
       </template>
 
@@ -155,14 +203,17 @@
 </template>
 
 <script setup>
-import { ref, nextTick } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 
 // State sederhana di dalam komponen: null = mode daftar, objek = mode detail.
 const activeArticle = ref(null)
 
+// ── Pagination state ──────────────────────────────
+const currentPage = ref(1)
+const ARTICLES_PER_PAGE = 9
+
 function openArticle(article) {
   activeArticle.value = article
-  // Scroll ke atas saat membuka detail.
   nextTick(() => window.scrollTo({ top: 0, behavior: 'smooth' }))
 }
 
@@ -455,5 +506,237 @@ const articles = [
       },
     ],
   },
+  {
+    id: 10,
+    emoji: '🔌',
+    category: 'Guide',
+    title: 'Cara Memilih Motherboard yang Tepat untuk Build Anda',
+    excerpt:
+      'Motherboard adalah tulang punggung PC Anda. Panduan ini membantu Anda memilih chipset, form factor, dan fitur yang sesuai dengan kebutuhan dan budget.',
+    date: '15 September 2025',
+    readTime: '9 menit baca',
+    content: [
+      {
+        heading: 'Memahami Chipset dan Form Factor',
+        paragraphs: [
+          'Chipset menentukan fitur yang tersedia: jumlah lane PCIe, port USB, dan kemampuan overclocking. Untuk platform AMD AM5, pilih B650 untuk mainstream atau X670E untuk enthusiast. Platform Intel LGA1700 menawarkan B760 hingga Z790.',
+          'Form factor ATX adalah standar umum dengan slot terbanyak. Micro-ATX cocok untuk build kompak, sementara Mini-ITX ideal untuk sistem ultra-kecil meski dengan kompromi slot ekspansi.',
+        ],
+      },
+      {
+        heading: 'Fitur yang Wajib Diperhatikan',
+        paragraphs: [
+          'Periksa jumlah slot RAM (minimal 4 untuk upgrade masa depan), slot M.2 untuk SSD NVMe, kualitas VRM untuk kestabilan daya CPU, serta konektivitas I/O seperti USB-C, audio, dan jaringan.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 11,
+    emoji: '⚡',
+    category: 'Tips',
+    title: 'Mengoptimalkan Performa PC dengan Setting BIOS',
+    excerpt:
+      'BIOS menyimpan banyak pengaturan tersembunyi yang bisa meningkatkan performa PC Anda secara signifikan tanpa biaya tambahan.',
+    date: '10 September 2025',
+    readTime: '7 menit baca',
+    content: [
+      {
+        heading: 'Pengaturan Penting di BIOS',
+        paragraphs: [
+          'Aktifkan XMP/EXPO untuk RAM berjalan pada kecepatan penuh. Pastikan Secure Boot aktif untuk keamanan sistem. Atur urutan boot drive dengan benar agar sistem booting dari SSD, bukan HDD.',
+        ],
+      },
+      {
+        heading: 'Overclock CPU dengan Aman',
+        paragraphs: [
+          'Gunakan fitur Precision Boost Overdrive (PBO) untuk AMD atau Intel Turbo Boost Max untuk meningkatkan frekuensi secara otomatis dalam batas aman. Pantau suhu menggunakan software monitoring setelah perubahan dilakukan.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 12,
+    emoji: '🎯',
+    category: 'Review',
+    title: 'RTX 4070 vs RX 7800 XT: Duel GPU Kelas Menengah 2025',
+    excerpt:
+      'Perbandingan mendalam dua GPU kelas menengah terpopuler — performa gaming, efisiensi daya, fitur eksklusif, dan nilai uang terbaik.',
+    date: '3 September 2025',
+    readTime: '13 menit baca',
+    content: [
+      {
+        heading: 'Performa Gaming 1080p dan 1440p',
+        paragraphs: [
+          'Pada resolusi 1080p, keduanya mampu menghasilkan frame rate sangat tinggi di game modern. RTX 4070 unggul tipis berkat DLSS 3 dengan Frame Generation yang secara efektif melipatgandakan frame rate di game yang mendukungnya.',
+          'Di 1440p, RX 7800 XT sering mengejar bahkan menyamai RTX 4070 dalam rasterization murni, menjadikannya pilihan menarik bagi yang tidak terlalu membutuhkan fitur NVIDIA.',
+        ],
+      },
+      {
+        heading: 'Nilai Uang dan Ekosistem',
+        paragraphs: [
+          'RX 7800 XT umumnya ditawarkan dengan harga lebih rendah untuk performa setara, tetapi RTX 4070 menawarkan DLSS 3, NVIDIA Broadcast, dan dukungan ray tracing yang lebih matang. Pilihan akhir bergantung pada game yang Anda mainkan dan fitur apa yang paling Anda hargai.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 13,
+    emoji: '🏗️',
+    category: 'Tutorial',
+    title: 'Cara Instalasi Windows 11 dari USB Bootable',
+    excerpt:
+      'Panduan lengkap membuat USB bootable dan menginstal Windows 11 yang bersih pada PC rakitan baru Anda — dari awal hingga desktop siap digunakan.',
+    date: '28 Agustus 2025',
+    readTime: '6 menit baca',
+    content: [
+      {
+        heading: 'Membuat USB Bootable',
+        paragraphs: [
+          'Unduh Windows 11 ISO dari situs resmi Microsoft, lalu gunakan Rufus (gratis) untuk membuat USB bootable. Pilih skema partisi GPT dan target sistem UEFI agar kompatibel dengan hardware modern.',
+        ],
+      },
+      {
+        heading: 'Proses Instalasi',
+        paragraphs: [
+          'Boot dari USB, pilih "Custom Install", format partisi target, dan biarkan proses instalasi berjalan. Setelah selesai, instal driver chipset motherboard terlebih dahulu sebelum driver komponen lain untuk memastikan stabilitas sistem.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 14,
+    emoji: '🌡️',
+    category: 'Tips',
+    title: 'Cara Mengatasi PC yang Overheat dan Throttling',
+    excerpt:
+      'PC yang terlalu panas akan menurunkan performa sendiri demi keselamatan komponen. Pelajari penyebab dan cara mengatasinya secara efektif.',
+    date: '20 Agustus 2025',
+    readTime: '8 menit baca',
+    content: [
+      {
+        heading: 'Penyebab Umum Overheating',
+        paragraphs: [
+          'Thermal paste yang kering atau tidak merata, kipas yang kotor berdebu, airflow casing yang buruk, dan cooler yang tidak cukup kuat untuk TDP prosesor adalah penyebab paling sering dijumpai.',
+        ],
+      },
+      {
+        heading: 'Langkah Penanganan',
+        paragraphs: [
+          'Bersihkan debu di semua kipas dan heatsink menggunakan udara bertekanan. Ganti thermal paste setiap 2–3 tahun atau jika suhu idle CPU melebihi 50°C. Tambahkan kipas casing jika perlu dan pastikan kabel tidak menghalangi aliran udara.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 15,
+    emoji: '🖨️',
+    category: 'Guide',
+    title: 'Panduan Memilih Monitor untuk Desainer dan Kreator Konten',
+    excerpt:
+      'Kreator konten membutuhkan monitor dengan akurasi warna tinggi. Pelajari parameter penting seperti color gamut, Delta E, dan bit depth sebelum membeli.',
+    date: '12 Agustus 2025',
+    readTime: '10 menit baca',
+    content: [
+      {
+        heading: 'Akurasi Warna dan Color Gamut',
+        paragraphs: [
+          'Untuk desain grafis dan video editing profesional, cari monitor dengan cakupan sRGB ≥ 99% dan Delta E < 2 (semakin kecil semakin akurat). Panel IPS atau OLED adalah pilihan terbaik karena warna konsisten dari berbagai sudut pandang.',
+        ],
+      },
+      {
+        heading: 'Resolusi dan Ukuran',
+        paragraphs: [
+          'Resolusi 2560×1440 (QHD) pada layar 27 inci memberikan ketajaman sangat baik untuk editing detail. Resolusi 4K ideal untuk grading video resolusi tinggi, tetapi membutuhkan GPU yang lebih kuat.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 16,
+    emoji: '🔧',
+    category: 'Tutorial',
+    title: 'Cara Membersihkan dan Merawat PC Agar Awet',
+    excerpt:
+      'PC yang terawat bersih bekerja lebih dingin, lebih tenang, dan lebih panjang umurnya. Panduan perawatan rutin yang mudah dilakukan sendiri di rumah.',
+    date: '5 Agustus 2025',
+    readTime: '5 menit baca',
+    content: [
+      {
+        heading: 'Jadwal Perawatan yang Dianjurkan',
+        paragraphs: [
+          'Bersihkan filter debu casing setiap bulan dan lakukan pembersihan menyeluruh bagian dalam (kipas, heatsink, slot RAM, dan PCIe) setiap 6–12 bulan tergantung lingkungan ruangan.',
+        ],
+      },
+      {
+        heading: 'Tips Merawat Komponen',
+        paragraphs: [
+          'Gunakan udara bertekanan untuk membersihkan debu; hindari penyedot debu yang menghasilkan listrik statis. Pastikan PC berdiri di permukaan yang memiliki sirkulasi udara baik, jauh dari permukaan karpet yang menahan debu.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 17,
+    emoji: '📡',
+    category: 'Tips',
+    title: 'WiFi vs Ethernet: Pilihan Koneksi Terbaik untuk Gaming',
+    excerpt:
+      'Stabilitas koneksi jaringan sangat berpengaruh pada pengalaman gaming online. Ketahui kapan Ethernet wajib digunakan dan kapan WiFi sudah cukup.',
+    date: '28 Juli 2025',
+    readTime: '6 menit baca',
+    content: [
+      {
+        heading: 'Keunggulan Ethernet',
+        paragraphs: [
+          'Ethernet menawarkan latensi lebih rendah dan koneksi yang jauh lebih stabil dibanding WiFi, terutama saat banyak perangkat menggunakan jaringan yang sama. Untuk gaming kompetitif, Ethernet adalah pilihan mutlak.',
+        ],
+      },
+      {
+        heading: 'Kapan WiFi Sudah Cukup?',
+        paragraphs: [
+          'WiFi 6 (802.11ax) modern sudah sangat cepat dan stabil untuk gaming kasual jika router ditempatkan dekat PC dan tidak terlalu banyak gangguan sinyal. Namun untuk turnamen atau sesi ranked yang serius, tetap utamakan Ethernet.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 18,
+    emoji: '🎵',
+    category: 'Guide',
+    title: 'Panduan Memilih Headset dan Speaker untuk PC Gaming',
+    excerpt:
+      'Audio berkualitas meningkatkan imersi gaming dan membantu mendeteksi arah suara musuh. Panduan memilih headset dan speaker gaming yang tepat sesuai budget.',
+    date: '20 Juli 2025',
+    readTime: '7 menit baca',
+    content: [
+      {
+        heading: 'Headset vs Speaker: Situasi Penggunaan',
+        paragraphs: [
+          'Headset dengan surround sound virtual (misalnya DTS Headphone:X atau Dolby Atmos) sangat efektif untuk game kompetitif di mana posisi suara musuh kritis. Speaker lebih cocok untuk pengalaman sinematik dan gaming santai.',
+        ],
+      },
+      {
+        heading: 'Fitur yang Perlu Dipertimbangkan',
+        paragraphs: [
+          'Untuk headset: driver berukuran besar (50mm ke atas) biasanya menghasilkan bass lebih baik; mikrofon dengan noise cancellation penting untuk komunikasi tim. Untuk speaker: sepasang speaker 2.0 stereo berkualitas sering mengalahkan sistem 5.1 murah dalam kejernihan suara.',
+        ],
+      },
+    ],
+  },
 ]
+
+// ── Computed pagination ───────────────────────────
+const totalPages = computed(() => Math.ceil(articles.length / ARTICLES_PER_PAGE))
+
+const paginatedArticles = computed(() => {
+  const start = (currentPage.value - 1) * ARTICLES_PER_PAGE
+  return articles.slice(start, start + ARTICLES_PER_PAGE)
+})
+
+function goToPage(page) {
+  if (page < 1 || page > totalPages.value) return
+  currentPage.value = page
+  nextTick(() => window.scrollTo({ top: 0, behavior: 'smooth' }))
+}
 </script>

@@ -81,6 +81,7 @@
 
           <!-- Account / Login Link -->
           <RouterLink
+            v-if="!userStore.isLoggedIn"
             id="account-btn"
             to="/login"
             title="Login / Akun Saya"
@@ -91,6 +92,19 @@
             </svg>
             <span class="hidden sm:inline">Login</span>
           </RouterLink>
+
+          <!-- User Profile / Logout Button -->
+          <div v-else class="flex items-center gap-2">
+            <span class="text-xs text-gray-300 hidden lg:inline">Halo, <strong class="text-white">{{ userStore.user.name }}</strong></span>
+            <button
+              @click="handleLogout"
+              id="logout-btn"
+              title="Logout"
+              class="flex items-center gap-1.5 px-3 h-9 rounded-lg text-rose-400 hover:text-rose-300 hover:bg-rose-950/20 border border-rose-500/20 transition-all duration-150 text-xs font-semibold"
+            >
+              🚪 <span class="hidden sm:inline">Keluar</span>
+            </button>
+          </div>
 
           <!-- Cart Icon -->
           <RouterLink
@@ -149,10 +163,10 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { userStore } from '../store.js'
 
 const props = defineProps({ cartCount: { type: Number, default: 0 } })
 const router = useRouter()
-
 const mobileMenuOpen = ref(false)
 const isScrolled = ref(false)
 const searchQuery = ref('')
@@ -210,6 +224,7 @@ function handleClickOutside(e) {
 }
 
 function handleScroll() { isScrolled.value = window.scrollY > 40 }
+
 onMounted(() => {
   window.addEventListener('scroll', handleScroll)
   document.addEventListener('click', handleClickOutside)
@@ -218,6 +233,11 @@ onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll)
   document.removeEventListener('click', handleClickOutside)
 })
+
+function handleLogout() {
+  userStore.logout()
+  router.push('/login')
+}
 </script>
 
 <style scoped>

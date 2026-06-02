@@ -161,6 +161,9 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 const form = ref({ fullname: '', email: '', password: '' })
 const showPassword = ref(false)
@@ -172,23 +175,45 @@ async function handleRegister() {
   message.value = ''
   isLoading.value = true
 
-  // Simulasi delay (ganti dengan pemanggilan API registrasi nyata)
-  await new Promise(r => setTimeout(r, 1000))
+  try {
+    const res = await fetch('http://localhost:3000/api/auth/register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        fullname: form.value.fullname,
+        email: form.value.email,
+        password: form.value.password
+      })
+    })
 
-  // TODO: Hubungkan dengan backend registrasi
-  // Contoh:
-  // const res = await fetch('/api/register', {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify(form.value),
-  // })
-  // if (!res.ok) { isSuccess.value = false; message.value = 'Registrasi gagal.'; return }
-  // isSuccess.value = true; message.value = 'Akun berhasil dibuat!'
+    const data = await res.json()
 
-  // Placeholder sementara:
-  isSuccess.value = false
-  message.value = 'Fitur registrasi sedang dalam pengembangan. Backend belum terhubung.'
-  isLoading.value = false
+    if (!res.ok) {
+      isSuccess.value = false
+      message.value = data.message || 'Registrasi gagal.'
+      return
+    }
+
+    isSuccess.value = true
+    message.value = 'Akun berhasil dibuat! Mengalihkan ke halaman login...'
+    
+    // Reset form
+    form.value = { fullname: '', email: '', password: '' }
+    
+    // Alihkan ke halaman login setelah 2 detik
+    setTimeout(() => {
+      router.push('/login')
+    }, 2000)
+
+  } catch (error) {
+    console.error('Error saat register:', error)
+    isSuccess.value = false
+    message.value = 'Tidak dapat terhubung ke server backend. Pastikan server backend Anda menyala.'
+  } finally {
+    isLoading.value = false
+  }
 }
 </script>
 
