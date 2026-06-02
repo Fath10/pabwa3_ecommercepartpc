@@ -11,9 +11,8 @@ import {
 
 import { authMiddleware } from "../middleware/auth.js";
 import { adminMiddleware } from "../middleware/admin.js";
-import router from './products.js';
-
 const router = express.Router();
+
 router.post(
   "/checkout",
   authMiddleware,
@@ -23,7 +22,6 @@ router.post(
 router.get(
   "/",
   authMiddleware,
-  adminMiddleware,
   getOrders
 );
 
@@ -34,22 +32,23 @@ router.get(
 );
 
 router.patch(
-  "/admin/orders/:id/process",
+  "/:id/process",
   authMiddleware,
   adminMiddleware,
   processOrder
 );
 
 router.patch(
-  "/admin/orders/:id/ship",
+  "/:id/ship",
   authMiddleware,
   adminMiddleware,
   shipOrder
 );
 
 router.patch(
-  "/orders/:id/deliver",
+  "/:id/deliver",
   authMiddleware,
+  adminMiddleware,
   deliverOrder
 );
 

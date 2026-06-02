@@ -7,6 +7,7 @@ import categoryRoutes from "./routes/categories.js";
 import cartRoutes from "./routes/carts.js";
 import badgeRoutes from "./routes/badge.js";
 import reviewRoutes from "./routes/reviews.js";
+import orderRoutes from "./routes/orders.js";
 
 
 dotenv.config();
@@ -66,6 +67,11 @@ app.use(
 app.use(
   "/api/reviews",
   reviewRoutes
+);
+
+app.use(
+  "/api/orders",
+  orderRoutes
 );
 
 const PORT =

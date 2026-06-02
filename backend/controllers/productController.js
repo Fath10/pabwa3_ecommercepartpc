@@ -55,7 +55,7 @@ export const getProducts = async (req, res) => {
     LEFT JOIN product_badges pb
     ON pbd.badge_id = pb.badge_id
 
-    LEFT JOIN product_reviews pr
+    LEFT JOIN products_reviews pr
     ON p.product_id = pr.product_id
 
     WHERE p.is_active = TRUE
@@ -64,7 +64,7 @@ export const getProducts = async (req, res) => {
       p.product_id,
       c.category_name
 
-    ORDER BY p.product_id DESC;
+    ORDER BY p.product_id DESC
     `);
 
     const products = result.rows.map((product) => ({
@@ -100,82 +100,55 @@ export const getProductById = async (req, res) => {
     const result = await pool.query(
       `
       SELECT
-        p.*,
-        c.category_name,
+      p.*,
+      c.category_name,
 
-        COALESCE(
-          json_agg(
-            DISTINCT pi.image_url
+      COALESCE(
+        ROUND(AVG(pr.rating), 1),
+        0
+      ) AS rating,
+
+      COUNT(DISTINCT pr.review_id)
+        AS review_count,
+
+      COALESCE(
+        json_agg(DISTINCT pi.image_url)
+        FILTER (
+          WHERE pi.image_id IS NOT NULL
+        ),
+        '[]'
+      ) AS images,
+
+      COALESCE(
+        json_agg(
+          DISTINCT jsonb_build_object(
+            'id', pb.badge_id,
+            'name', pb.badge_name,
+            'color', pb.badge_color
           )
-          FILTER (
-            WHERE pi.image_id IS NOT NULL
-          ),
-          '[]'
-        ) AS images,
+        )
+        FILTER (
+          WHERE pb.badge_id IS NOT NULL
+        ),
+        '[]'
+      ) AS badges
 
-        COALESCE(
-          json_agg(
-            DISTINCT jsonb_build_object(
-              'id', pb.badge_id,
-              'name', pb.badge_name,
-              'color', pb.badge_color
-            )
-          )
-          FILTER (
-            WHERE pb.badge_id IS NOT NULL
-          ),
-          '[]'
-        ) AS badges,
+    FROM products p
 
-        (
-          SELECT
-            ROUND(
-              AVG(pr.rating),
-              1
-            )
-          FROM product_reviews pr
-          WHERE pr.product_id = p.product_id
-        ) AS average_rating,
+    JOIN categories c
+    ON p.category_id = c.category_id
 
-        (
-          SELECT
-            COUNT(*)
-          FROM product_reviews pr
-          WHERE pr.product_id = p.product_id
-        ) AS review_count,
+    LEFT JOIN product_images pi
+    ON p.product_id = pi.product_id
 
-        (
-          SELECT
-            COALESCE(
-              json_agg(
-                jsonb_build_object(
-                  'review_id', pr.review_id,
-                  'user_id', pr.user_id,
-                  'rating', pr.rating,
-                  'comment', pr.comment,
-                  'created_at', pr.created_at
-                )
-                ORDER BY pr.created_at DESC
-              ),
-              '[]'
-            )
-          FROM product_reviews pr
-          WHERE pr.product_id = p.product_id
-        ) AS reviews
+    LEFT JOIN product_badge_details pbd
+    ON p.product_id = pbd.product_id
 
-      FROM products p
+    LEFT JOIN product_badges pb
+    ON pbd.badge_id = pb.badge_id
 
-      JOIN categories c
-      ON p.category_id = c.category_id
-
-      LEFT JOIN product_images pi
-      ON p.product_id = pi.product_id
-
-      LEFT JOIN product_badge_details pbd
-      ON p.product_id = pbd.product_id
-
-      LEFT JOIN product_badges pb
-      ON pbd.badge_id = pb.badge_id
+    LEFT JOIN products_reviews pr
+    ON p.product_id = pr.product_id
 
       WHERE p.product_id = $1
 
@@ -240,8 +213,7 @@ export const createProduct = async (req, res) => {
   }
 };
   await pool.query("BEGIN");    
-  try {
-
+  try { 
     const {
       category_id,
       badge_ids,
@@ -454,6 +426,7 @@ export const createProduct = async (req, res) => {
 };
 
 export const updateProduct = async (req, res) => {
+  await pool.query("BEGIN");
   try {
 
     const {
@@ -479,6 +452,7 @@ export const updateProduct = async (req, res) => {
     );
 
     if (existingProduct.rows.length === 0) {
+      await pool.query("ROLLBACK");
       return res.status(404).json({
         message: "Produk tidak ditemukan"
       });
@@ -520,13 +494,10 @@ export const updateProduct = async (req, res) => {
           );
 
       } catch {
-
         return res.status(400).json({
           message: "Format specs tidak valid"
         });
-
       }
-
     }
 
     const duplicate =
@@ -544,6 +515,7 @@ export const updateProduct = async (req, res) => {
       );
 
     if (duplicate.rows.length > 0) {
+      await pool.query("ROLLBACK");
       return res.status(409).json({
         message:
           "Nama produk sudah digunakan"
@@ -553,6 +525,7 @@ export const updateProduct = async (req, res) => {
     if (
       Number(updatedPrice) <= 0
     ) {
+      await pool.query("ROLLBACK");
       return res.status(400).json({
         message:
           "Harga harus lebih dari 0"
@@ -562,6 +535,7 @@ export const updateProduct = async (req, res) => {
     if (
       Number(updatedOriginalPrice) <= 0
     ) {
+      await pool.query("ROLLBACK");
       return res.status(400).json({
         message:
           "Harga asli harus lebih dari 0"
@@ -571,6 +545,7 @@ export const updateProduct = async (req, res) => {
     if (
       Number(updatedStock) < 0
     ) {
+      await pool.query("ROLLBACK");
       return res.status(400).json({
         message:
           "Stock tidak boleh negatif"
@@ -715,7 +690,7 @@ export const updateProduct = async (req, res) => {
       }
 
     }
-
+    await pool.query("COMMIT");
     res.json({
       message:
         "Produk berhasil diupdate",
@@ -726,11 +701,10 @@ export const updateProduct = async (req, res) => {
   } catch (error) {
 
     console.error(error);
-
+    await pool.query("ROLLBACK");
     res.status(500).json({
       message: "Server Error"
     });
-
   }
 };
 

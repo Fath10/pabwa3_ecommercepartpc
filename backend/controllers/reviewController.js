@@ -12,22 +12,21 @@ export const getProductReviews = async (
     const result = await pool.query(
       `
       SELECT
-        r.review_id,
-        r.rating,
-        r.comment,
-        r.created_at,
-
+        pr.review_id,
+        pr.rating,
+        pr.comment,
+        pr.created_at,
         u.user_id,
         u.name
 
-      FROM reviews r
+      FROM products_reviews pr
 
       JOIN users u
-      ON r.user_id = u.user_id
+      ON pr.user_id = u.user_id
 
-      WHERE r.product_id = $1
+      WHERE pr.product_id = $1
 
-      ORDER BY r.created_at DESC
+      ORDER BY pr.created_at DESC
       `,
       [productId]
     );
@@ -75,7 +74,7 @@ export const createReview = async (
       await pool.query(
         `
         SELECT *
-        FROM reviews
+        FROM products_reviews
         WHERE product_id = $1
         AND user_id = $2
         `,
@@ -97,7 +96,7 @@ export const createReview = async (
     const result =
       await pool.query(
         `
-        INSERT INTO reviews
+        INSERT INTO products_reviews
         (
           product_id,
           user_id,
@@ -137,24 +136,45 @@ export const updateReview = async (
       rating,
       comment
     } = req.body;
+      const user_id =
+      req.user.user_id;
 
     const result =
       await pool.query(
         `
-        UPDATE reviews
+        UPDATE products_reviews
         SET
           rating = $1,
           comment = $2
         WHERE review_id = $3
+        AND user_id = $4
         RETURNING *
         `,
         [
           rating,
           comment,
-          id
+          id,
+          user_id 
         ]
       );
-
+    if (
+      result.rows.length === 0
+    ) {
+      return res.status(404).json({
+        message:
+          "Review tidak ditemukan"
+      });
+    }
+    res.json(result.rows[0]);
+    
+    if(
+      result.rating < 0||result.rating > 5
+    ) {
+      return res.status(400).json({
+        message: "Rating tidak boleh kurang dari 0 dan lebih dari 5"
+      });
+    }
+    
     if (
       result.rows.length === 0
     ) {
@@ -180,14 +200,16 @@ export const deleteReview = async (
 
   try {
     const { id } = req.params;
+    const user_id =req.user.user_id;
     const result =
       await pool.query(
         `
-        DELETE FROM reviews
+        DELETE FROM products_reviews
         WHERE review_id = $1
+        AND user_id = $2
         RETURNING *
         `,
-        [id]
+        [id, user_id]
       );
 
     if (

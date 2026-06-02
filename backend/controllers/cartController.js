@@ -359,7 +359,6 @@ export const decreaseQuantity = async (req, res) => {
   res.json(result.rows[0]);
 };
 
-
 export const removeFromCart =
 async (req,res) => {
 
@@ -406,4 +405,49 @@ async (req,res) => {
 
   }
 
+};
+
+export const clearCart = async (
+  req,
+  res
+) => {
+
+  try {
+
+    const user_id =
+      req.user.user_id;
+
+    const result =
+      await pool.query(
+        `
+        DELETE FROM carts
+        WHERE user_id = $1
+        RETURNING *
+        `,
+        [user_id]
+      );
+
+    if (
+      result.rows.length === 0
+    ) {
+      return res.status(404).json({
+        message:
+          "Keranjang sudah kosong"
+      });
+    }
+
+    return res.json({
+      message:
+        "Keranjang berhasil dikosongkan",
+      deleted_items:
+        result.rows.length
+    });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      message:
+        "Server Error"
+    });
+  }
 };

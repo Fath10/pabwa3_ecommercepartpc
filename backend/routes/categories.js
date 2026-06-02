@@ -2,8 +2,8 @@ import express from "express";
 
 import {
   getCategories,
-  createCategory,
   getCategoryById,
+  createCategory,
   updateCategory,
   deleteCategory
 } from "../controllers/categoryController.js";
