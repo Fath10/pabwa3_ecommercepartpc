@@ -139,6 +139,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { userStore } from '../store.js'
 
 const router = useRouter()
 
@@ -151,22 +152,37 @@ async function handleLogin() {
   errorMsg.value = ''
   isLoading.value = true
 
-  // Simulasi delay (ganti dengan pemanggilan API autentikasi nyata)
-  await new Promise(r => setTimeout(r, 1000))
+  try {
+    const res = await fetch('http://localhost:3000/api/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        email: form.value.email,
+        password: form.value.password
+      })
+    })
 
-  // TODO: Hubungkan dengan backend autentikasi
-  // Contoh:
-  // const res = await fetch('/api/login', {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify(form.value),
-  // })
-  // if (!res.ok) { errorMsg.value = 'Email atau password salah.'; return }
-  // router.push('/')
+    const data = await res.json()
 
-  // Placeholder: tampilkan pesan error sementara
-  errorMsg.value = 'Fitur login sedang dalam pengembangan. Backend belum terhubung.'
-  isLoading.value = false
+    if (!res.ok) {
+      errorMsg.value = data.message || 'Email atau password salah.'
+      return
+    }
+
+    // Simpan token JWT dan info user ke store reaktif & localStorage
+    userStore.login(data.user, data.token)
+
+    // Alihkan ke beranda (Home)
+    router.push('/')
+
+  } catch (error) {
+    console.error('Error saat login:', error)
+    errorMsg.value = 'Tidak dapat terhubung ke server backend. Pastikan server backend Anda menyala.'
+  } finally {
+    isLoading.value = false
+  }
 }
 </script>
 
