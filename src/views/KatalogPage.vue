@@ -19,34 +19,47 @@
             type="text"
             placeholder="Cari produk..."
             id="search-input"
-            class="w-full pl-10 pr-4 py-3 rounded-xl outline-none transition-all"
+            class="w-full min-w-[320px] pl-10 pr-4 py-3 rounded-xl outline-none transition-all"
             style="background: #fff; border: 1px solid #d1d5db; color: #111827;"
           />
         </div>
 
-        <!-- Category Filter -->
-        <select
-          v-model="selectedCategory"
-          id="category-filter"
-          class="px-4 py-3 rounded-xl outline-none transition-all cursor-pointer"
+        <!-- Category Filter Button -->
+        <button
+          @click="showCategoryDropdown = !showCategoryDropdown"
+          class="relative px-4 py-3 rounded-xl outline-none transition-all cursor-pointer flex items-center gap-2"
           style="background: #fff; border: 1px solid #d1d5db; color: #111827;"
+          title="Filter Kategori"
         >
-          <option value="">Semua Kategori</option>
-          <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
-        </select>
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+          </svg>
+          <span v-if="selectedCategory" class="px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700">{{ selectedCategory }}</span>
+          <!-- Dropdown -->
+          <div v-if="showCategoryDropdown" v-click-outside="() => showCategoryDropdown = false" class="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-lg z-20 min-w-48 py-2">
+            <button @click="selectedCategory = ''; showCategoryDropdown = false" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50" :class="selectedCategory === '' ? 'text-indigo-600 font-semibold' : 'text-gray-700'">Semua Kategori</button>
+            <button v-for="cat in categories" :key="cat" @click="selectedCategory = cat; showCategoryDropdown = false" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50" :class="selectedCategory === cat ? 'text-indigo-600 font-semibold' : 'text-gray-700'">{{ cat }}</button>
+          </div>
+        </button>
 
-        <!-- Sort -->
-        <select
-          v-model="sortBy"
-          id="sort-filter"
-          class="px-4 py-3 rounded-xl outline-none transition-all cursor-pointer"
+        <!-- Sort Button -->
+        <button
+          @click="showSortDropdown = !showSortDropdown"
+          class="relative px-4 py-3 rounded-xl outline-none transition-all cursor-pointer flex items-center gap-2"
           style="background: #fff; border: 1px solid #d1d5db; color: #111827;"
+          title="Urutkan"
         >
-          <option value="default">Urutan Default</option>
-          <option value="price-asc">Harga Terendah</option>
-          <option value="price-desc">Harga Tertinggi</option>
-          <option value="rating">Rating Tertinggi</option>
-        </select>
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+          </svg>
+          <!-- Dropdown -->
+          <div v-if="showSortDropdown" v-click-outside="() => showSortDropdown = false" class="absolute top-full right-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-lg z-20 min-w-44 py-2">
+            <button @click="sortBy = 'default'; showSortDropdown = false" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50" :class="sortBy === 'default' ? 'text-indigo-600 font-semibold' : 'text-gray-700'">Default</button>
+            <button @click="sortBy = 'price-asc'; showSortDropdown = false" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50" :class="sortBy === 'price-asc' ? 'text-indigo-600 font-semibold' : 'text-gray-700'">Harga Terendah</button>
+            <button @click="sortBy = 'price-desc'; showSortDropdown = false" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50" :class="sortBy === 'price-desc' ? 'text-indigo-600 font-semibold' : 'text-gray-700'">Harga Tertinggi</button>
+            <button @click="sortBy = 'rating'; showSortDropdown = false" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50" :class="sortBy === 'rating' ? 'text-indigo-600 font-semibold' : 'text-gray-700'">Rating Tertinggi</button>
+          </div>
+        </button>
       </div>
 
       <!-- Results count -->
@@ -159,6 +172,8 @@ const search = ref('')
 const selectedCategory = ref('')
 const sortBy = ref('default')
 const currentPage = ref(1)
+const showCategoryDropdown = ref(false)
+const showSortDropdown = ref(false)
 const PRODUCTS_PER_PAGE = 12
 
 const categories = [...new Set(products.map(p => p.category))]
