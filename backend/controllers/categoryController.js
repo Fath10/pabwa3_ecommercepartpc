@@ -73,8 +73,6 @@ export const getCategoryById = async (
 
 };
 
-
-
 export const createCategory = async (
   req,
   res

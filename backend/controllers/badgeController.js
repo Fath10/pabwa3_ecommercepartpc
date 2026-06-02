@@ -1,7 +1,5 @@
 import pool from "../config/db.js";
 
-
-
 export const getBadges = async (req, res) => {
   try {
 

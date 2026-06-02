@@ -340,3 +340,201 @@ async (req,res) => {
   }
 
 };
+
+export const processOrder = async (
+  req,
+  res
+) => {
+
+  try {
+
+    const { id } = req.params;
+
+    const result =
+      await pool.query(
+        `
+        UPDATE orders
+        SET status = 'processing'
+        WHERE order_id = $1
+        AND status = 'pending'
+        RETURNING *
+        `,
+        [id]
+      );
+
+    if (
+      result.rows.length === 0
+    ) {
+      return res.status(404).json({
+        message:
+          "Order tidak ditemukan atau status tidak valid"
+      });
+    }
+
+    res.json({
+      message:
+        "Order berhasil diproses",
+      order:
+        result.rows[0]
+    });
+
+  } catch (error) {
+
+    console.error(error);
+
+    res.status(500).json({
+      message:
+        "Server Error"
+    });
+  }
+};
+
+export const shipOrder = async (
+  req,
+  res
+) => {
+
+  try {
+
+    const { id } =
+      req.params;
+
+    const {
+      shipping_receipt
+    } = req.body;
+
+    if (
+      !shipping_receipt
+    ) {
+      return res.status(400).json({
+        message:
+          "Nomor resi wajib diisi"
+      });
+    }
+
+    const result =
+      await pool.query(
+        `
+        UPDATE orders
+        SET
+          status = 'shipped',
+          shipping_receipt = $1,
+          shipped_at = NOW()
+        WHERE order_id = $2
+        AND status = 'processing'
+        RETURNING *
+        `,
+        [
+          shipping_receipt,
+          id
+        ]
+      );
+
+    if (
+      result.rows.length === 0
+    ) {
+      return res.status(404).json({
+        message:
+          "Order tidak ditemukan atau status tidak valid"
+      });
+    }
+
+    res.json({
+      message:
+        "Pesanan berhasil dikirim",
+      order:
+        result.rows[0]
+    });
+
+  } catch (error) {
+
+    console.error(error);
+
+    res.status(500).json({
+      message:
+        "Server Error"
+    });
+  }
+};
+
+export const deliverOrder = async (
+  req,
+  res
+) => {
+
+  try {
+
+    const { id } =
+      req.params;
+
+    const user_id =
+      req.user.user_id;
+
+    const order =
+      await pool.query(
+        `
+        SELECT *
+        FROM orders
+        WHERE order_id = $1
+        `,
+        [id]
+      );
+
+    if (
+      order.rows.length === 0
+    ) {
+      return res.status(404).json({
+        message:
+          "Order tidak ditemukan"
+      });
+    }
+
+    const currentOrder =
+      order.rows[0];
+
+    if (
+      req.user.role !== "admin" &&
+      currentOrder.user_id !== user_id
+    ) {
+      return res.status(403).json({
+        message:
+          "Akses ditolak"
+      });
+    }
+
+    if (
+      currentOrder.status !==
+      "shipped"
+    ) {
+      return res.status(400).json({
+        message:
+          "Order belum dikirim"
+      });
+    }
+    const result =
+      await pool.query(
+        `
+        UPDATE orders
+        SET
+          status = 'delivered',
+          delivered_at = NOW()
+        WHERE order_id = $1
+        RETURNING *
+        `,
+        [id]
+      );
+
+    res.json({
+      message:
+        "Order berhasil diselesaikan",
+      order:
+        result.rows[0]
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message:
+        "Server Error"
+    });
+  }
+};
