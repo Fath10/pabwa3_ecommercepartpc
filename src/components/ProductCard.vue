@@ -1,7 +1,8 @@
 <template>
-  <div
+  <RouterLink
+    :to="`/produk/${product.id}`"
     class="group relative overflow-hidden flex flex-col transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
-    style="background: #ffffff; border: 1px solid #e5e7eb; border-radius: 10px; cursor: pointer;"
+    style="background: #ffffff; border: 1px solid #e5e7eb; border-radius: 10px; text-decoration: none;"
   >
     <!-- Badge -->
     <div class="absolute top-2 left-2 z-10">
@@ -53,7 +54,7 @@
 
       <!-- "Tambah" button — disabled when out of stock -->
       <button
-        @click.stop="product.stock > 0 && $emit('add-to-cart', product)"
+        @click.prevent.stop="product.stock > 0 && $emit('add-to-cart', product)"
         :id="`add-to-cart-${product.id}`"
         :disabled="product.stock === 0"
         class="w-full py-2 rounded-lg text-white font-semibold flex items-center justify-center gap-1.5 transition-all duration-150"
@@ -69,7 +70,7 @@
         <span v-else>+ Tambah</span>
       </button>
     </div>
-  </div>
+  </RouterLink>
 </template>
 
 <script setup>
