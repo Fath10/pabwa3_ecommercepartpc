@@ -34,25 +34,39 @@
       >{{ product.name }}</h3>
 
       <!-- Price -->
-      <p class="font-bold mb-3" style="color: #111827; font-size: 0.85rem;">
+      <p class="font-bold mb-2" style="color: #111827; font-size: 0.85rem;">
         {{ formatPrice(product.price) }}
       </p>
 
+      <!-- Stock indicator -->
+      <div class="flex items-center gap-1.5 mb-3">
+        <span
+          class="inline-block w-2 h-2 rounded-full flex-shrink-0"
+          :class="stockDotClass"
+        ></span>
+        <span class="text-xs font-medium" :class="stockTextClass">
+          {{ stockLabel }}
+        </span>
+      </div>
+
       <div class="flex-1"></div>
 
-      <!-- "Tambah" button — dark charcoal to match reference -->
+      <!-- "Tambah" button — disabled when out of stock -->
       <button
-        @click.stop="$emit('add-to-cart', product)"
+        @click.stop="product.stock > 0 && $emit('add-to-cart', product)"
         :id="`add-to-cart-${product.id}`"
-        class="w-full py-2 rounded-lg text-white font-semibold flex items-center justify-center gap-1.5 transition-all duration-150 active:scale-95"
-        style="background: #1e293b; font-size: 0.78rem;"
-        @mouseenter="e => e.currentTarget.style.background='#334155'"
-        @mouseleave="e => e.currentTarget.style.background='#1e293b'"
+        :disabled="product.stock === 0"
+        class="w-full py-2 rounded-lg text-white font-semibold flex items-center justify-center gap-1.5 transition-all duration-150"
+        :class="product.stock > 0 ? 'active:scale-95' : 'opacity-50 cursor-not-allowed'"
+        :style="product.stock > 0 ? 'background: #1e293b; font-size: 0.78rem;' : 'background: #6b7280; font-size: 0.78rem;'"
+        @mouseenter="e => { if (product.stock > 0) e.currentTarget.style.background='#334155' }"
+        @mouseleave="e => { if (product.stock > 0) e.currentTarget.style.background='#1e293b' }"
       >
-        <svg class="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+        <svg v-if="product.stock > 0" class="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
           <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
         </svg>
-        + Tambah
+        <span v-if="product.stock === 0">Stok Habis</span>
+        <span v-else>+ Tambah</span>
       </button>
     </div>
   </div>
@@ -74,4 +88,26 @@ const badgeMap = {
   cyan: 'bg-teal-600',
 }
 const badgeClass = computed(() => badgeMap[props.product.badgeColor] || 'bg-indigo-600')
+
+// Stock computed helpers
+const stockLabel = computed(() => {
+  const s = props.product.stock ?? 0
+  if (s === 0) return 'Stok habis'
+  if (s <= 10) return `Sisa ${s} unit`
+  return `Stok tersedia (${s})`
+})
+
+const stockDotClass = computed(() => {
+  const s = props.product.stock ?? 0
+  if (s === 0) return 'bg-red-500'
+  if (s <= 10) return 'bg-yellow-400'
+  return 'bg-green-500'
+})
+
+const stockTextClass = computed(() => {
+  const s = props.product.stock ?? 0
+  if (s === 0) return 'text-red-500'
+  if (s <= 10) return 'text-yellow-500'
+  return 'text-green-600'
+})
 </script>
