@@ -1,0 +1,20 @@
+[
+  {
+    "user_id": 1,
+    "name": "edis35",
+    "username": "edis35",
+    "email": "edis35@gmail.com",
+    "password": "$2a$10$OG/jKYBlQ73gqis8uj02Y.CsqlZL6XkcNmuRSeQ/tG5uZtGZpoiu6",
+    "role": "user",
+    "created_at": "2026-06-02T20:33:20.919Z"
+  },
+  {
+    "user_id": 2,
+    "name": "admin 1 cihuy",
+    "username": "admin1",
+    "email": "admin1@gmail.com",
+    "password": "$2a$10$3S/tARaRaxJJBJISQU1rKeFK5wZAzv3mFkvWsvtzAnZ/86E.PLSKC",
+    "role": "user",
+    "created_at": "2026-06-02T21:18:15.492Z"
+  }
+]
