@@ -47,3 +47,5 @@ npm start
 ```
 
 Server berjalan pada `http://localhost:<PORT>` (default 3000). Endpoint utama: `/api/*`.
+
+JANGAN LUPA untuk Membaca Dokumentasi API di folder DOKUMENTATATION_API

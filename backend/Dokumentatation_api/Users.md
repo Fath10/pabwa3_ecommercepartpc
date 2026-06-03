@@ -141,7 +141,3 @@ curl -X POST http://localhost:3000/api/auth/login \
 curl -X GET http://localhost:3000/api/auth/me \
     -H "Authorization: Bearer <JWT_TOKEN>"
 ```
-
----
-
-Jika ingin, saya bisa menambahkan contoh response lengkap untuk error-case, atau membuat versi Postman collection / OpenAPI untuk file ini.
