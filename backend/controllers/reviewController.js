@@ -137,7 +137,6 @@ export const updateReview = async (
     } = req.body;
       const user_id =
       req.user.user_id;
-
     const result =
       await pool.query(
         `

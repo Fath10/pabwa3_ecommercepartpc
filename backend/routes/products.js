@@ -5,7 +5,8 @@ import {
   getProductById,
   createProduct,
   updateProduct,
-  deleteProduct
+  deleteProduct,
+  deleteProductPermanent
 } from "../controllers/productController.js";
 
 import { authMiddleware } from "../middleware/auth.js";
@@ -22,7 +23,7 @@ router.post(
   "/",
   authMiddleware,
   adminMiddleware,
-  upload.single("image"),
+  upload.array("images", 5),
   createProduct
 );
 
@@ -30,6 +31,7 @@ router.put(
   "/:id",
   authMiddleware,
   adminMiddleware,
+  upload.array("images", 5),
   updateProduct
 );
 
@@ -38,6 +40,13 @@ router.delete(
   authMiddleware,
   adminMiddleware,
   deleteProduct
+);
+
+router.delete(
+  "/:id/permanent",
+  authMiddleware,
+  adminMiddleware,
+  deleteProductPermanent
 );
 
 export default router;

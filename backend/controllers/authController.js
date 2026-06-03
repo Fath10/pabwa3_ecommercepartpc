@@ -98,7 +98,7 @@ try {
     if (
       !email ||
       !password
-    ) {
+    ) {``
       return res.status(400).json({
         message:
           "Email dan password wajib diisi",
