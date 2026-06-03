@@ -1,321 +1,191 @@
 <template>
-  <main class="pt-24 pb-20" style="background: #f8fafc; min-height: 100vh;">
+  <main class="pt-20 pb-20 min-h-screen" style="background: #0d1117;">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-      <!-- Heading -->
-      <div class="mb-8">
-        <h1 class="text-3xl font-extrabold tracking-tight" style="color: #0f172a;">Keranjang Belanja</h1>
-        <p class="mt-1 text-sm" style="color: #64748b;">{{ cartStore.totalItems }} item dalam keranjang Anda</p>
+
+      <!-- Page Header -->
+      <div class="mb-10">
+        <RouterLink to="/katalog" class="inline-flex items-center gap-2 text-sm mb-6 transition-all duration-200 hover:-translate-x-1" style="color: #64748b;">
+          ← Lanjut Belanja
+        </RouterLink>
+        <div class="flex items-end justify-between flex-wrap gap-4">
+          <div>
+            <h1 class="text-3xl font-black text-white mb-1">Keranjang <span style="background: linear-gradient(135deg, #818cf8, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Belanja</span></h1>
+            <p class="text-sm" style="color: #64748b;">{{ cartStore.totalItems }} item dalam keranjang Anda</p>
+          </div>
+          <button v-if="cartStore.items.length > 0" @click="cartStore.clearCart()" class="inline-flex items-center gap-2 text-sm font-medium transition-all duration-200 hover:opacity-70" style="color: #ef4444;">
+            🗑️ Kosongkan
+          </button>
+        </div>
       </div>
 
-      <!-- ════════ Empty Cart ════════ -->
-      <div v-if="cartStore.items.length === 0" class="text-center py-24 rounded-2xl"
-        style="background: #fff; border: 1px solid #e5e7eb;">
-        <div class="text-7xl mb-6">🛒</div>
-        <h2 class="text-2xl font-bold mb-2" style="color: #0f172a;">Keranjang Masih Kosong</h2>
-        <p class="mb-8 text-sm" style="color: #64748b;">Yuk tambahkan produk favorit Anda ke keranjang!</p>
+      <!-- ─── EMPTY CART ─── -->
+      <div v-if="cartStore.items.length === 0" class="text-center py-24">
+        <div class="relative inline-block mb-8">
+          <div class="w-28 h-28 rounded-3xl flex items-center justify-center mx-auto text-5xl" style="background: rgba(79,70,229,0.1); border: 1px solid rgba(79,70,229,0.2);">🛒</div>
+          <div class="absolute -bottom-2 -right-2 w-8 h-8 rounded-full flex items-center justify-center text-lg" style="background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3);">0</div>
+        </div>
+        <h2 class="text-2xl font-black text-white mb-3">Keranjang Masih Kosong</h2>
+        <p class="text-sm mb-8" style="color: #64748b;">Yuk tambahkan produk favorit Anda ke keranjang!</p>
         <RouterLink to="/katalog" id="browse-products-btn"
-          class="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl text-white font-bold text-sm transition-all duration-300 shadow-lg hover:shadow-indigo-500/30 hover:-translate-y-0.5"
-          style="background: linear-gradient(135deg, #4f46e5, #7c3aed);"
+          class="inline-flex items-center gap-2 px-8 py-4 rounded-2xl text-white font-bold transition-all duration-300 hover:-translate-y-1"
+          style="background: linear-gradient(135deg, #4f46e5, #7c3aed); box-shadow: 0 8px 32px rgba(79,70,229,0.3);"
         >
           🛍️ Mulai Belanja
         </RouterLink>
       </div>
 
-      <!-- ════════ Cart Items + Summary ════════ -->
-      <div v-else class="grid lg:grid-cols-3 gap-8 items-start">
-        <!-- Cart Items -->
+      <!-- ─── CART CONTENT ─── -->
+      <div v-else class="grid lg:grid-cols-3 gap-8">
+
+        <!-- Cart Items List -->
         <div class="lg:col-span-2 space-y-4">
           <TransitionGroup name="cart-item">
             <div
               v-for="item in cartStore.items"
               :key="item.id"
-              class="cart-row group flex gap-4 p-4 rounded-2xl transition-all duration-200"
-              style="background: #fff; border: 1px solid #e5e7eb;"
+              class="group flex gap-4 p-5 rounded-2xl transition-all duration-300 hover:border-indigo-500/30"
+              style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);"
             >
-              <!-- Image -->
-              <div class="w-24 h-24 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center"
-                style="background: #f1f5f9;">
-                <img :src="item.image" :alt="item.name"
-                  class="w-full h-full object-contain p-2 transition-transform duration-300 group-hover:scale-105" />
+              <!-- Product Image -->
+              <div class="w-24 h-24 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center" style="background: rgba(255,255,255,0.05);">
+                <img :src="item.image" :alt="item.name" class="w-full h-full object-contain p-2" />
               </div>
 
-              <!-- Details -->
-              <div class="flex-1 min-w-0 flex flex-col">
-                <p class="text-xs font-medium mb-0.5" style="color: #6366f1;">{{ item.category }}</p>
-                <h3 class="font-semibold text-sm leading-snug mb-1 line-clamp-2" style="color: #0f172a;">{{ item.name }}</h3>
-                <p class="text-xs" style="color: #94a3b8;">{{ formatPrice(item.price) }} / unit</p>
-                <div class="flex-1"></div>
-                <p class="font-bold text-base mt-2" style="color: #0f172a;">
-                  {{ formatPrice(item.price * item.quantity) }}
-                </p>
+              <!-- Product Details -->
+              <div class="flex-1 min-w-0">
+                <p class="text-xs font-semibold mb-1" style="color: #6366f1;">{{ item.category }}</p>
+                <h3 class="font-bold text-sm text-white mb-1 line-clamp-2 leading-snug">{{ item.name }}</h3>
+                <div class="flex items-center gap-2 flex-wrap">
+                  <p class="font-black text-base" style="color: #818cf8;">{{ formatPrice(item.price) }}</p>
+                  <p v-if="item.originalPrice" class="text-xs line-through" style="color: #475569;">{{ formatPrice(item.originalPrice) }}</p>
+                </div>
+                <p class="text-xs mt-1" style="color: #64748b;">Subtotal: <span class="font-bold text-white">{{ formatPrice(item.price * item.quantity) }}</span></p>
               </div>
 
-              <!-- Controls -->
-              <div class="flex flex-col items-end justify-between">
-                <!-- Quantity stepper -->
-                <div class="qty-stepper flex items-center rounded-full overflow-hidden"
-                  style="border: 1px solid #e2e8f0; background: #f8fafc;">
+              <!-- Qty & Remove -->
+              <div class="flex flex-col items-end justify-between gap-3 flex-shrink-0">
+                <!-- Remove -->
+                <button
+                  @click="cartStore.removeItem(item.id)"
+                  class="w-8 h-8 rounded-lg flex items-center justify-center text-lg transition-all duration-200 hover:scale-110 opacity-60 hover:opacity-100"
+                  style="background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.2);"
+                  title="Hapus item"
+                >×</button>
+
+                <!-- Quantity -->
+                <div class="flex items-center rounded-xl overflow-hidden" style="border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03);">
                   <button
-                    @click="decreaseQuantity(item)"
-                    class="qty-btn w-8 h-8 flex items-center justify-center text-base font-semibold transition-colors"
+                    @click="cartStore.updateQuantity(item.id, item.quantity - 1)"
+                    class="w-8 h-8 flex items-center justify-center text-sm font-bold transition-all duration-150 hover:bg-white/10 text-white"
                   >−</button>
-                  <span class="w-9 text-center text-sm font-bold select-none" style="color: #0f172a;">{{ item.quantity }}</span>
+                  <span class="w-9 text-center text-sm font-black text-white">{{ item.quantity }}</span>
                   <button
                     @click="cartStore.updateQuantity(item.id, item.quantity + 1)"
-                    class="qty-btn w-8 h-8 flex items-center justify-center text-base font-semibold transition-colors"
+                    class="w-8 h-8 flex items-center justify-center text-sm font-bold transition-all duration-150 hover:bg-white/10 text-white"
                   >+</button>
                 </div>
               </div>
             </div>
           </TransitionGroup>
 
-          <!-- Clear Cart -->
-          <button
-            @click="cartStore.clearCart()"
-            id="clear-cart-btn"
-            class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:scale-105 active:scale-95"
-            style="color: #ef4444; border: 1px solid #fecaca; background: #fef2f2;"
-            @mouseenter="e => { e.currentTarget.style.background='#fee2e2'; e.currentTarget.style.borderColor='#ef4444'; }"
-            @mouseleave="e => { e.currentTarget.style.background='#fef2f2'; e.currentTarget.style.borderColor='#fecaca'; }"
-          >
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-            Kosongkan Keranjang
-          </button>
+          <!-- Recommended badge -->
+          <div class="flex items-center gap-3 p-4 rounded-xl" style="background: rgba(16,185,129,0.05); border: 1px solid rgba(16,185,129,0.15);">
+            <span class="text-xl">🚚</span>
+            <p class="text-sm" style="color: #34d399;">Selamat! Pesanan Anda mendapatkan <strong>gratis ongkir</strong></p>
+          </div>
         </div>
 
-        <!-- Order Summary -->
+        <!-- ─── ORDER SUMMARY ─── -->
         <div class="lg:col-span-1">
-          <div class="summary-card sticky top-24 p-6 rounded-2xl"
-            style="background: #ffffff; border: 1px solid #e5e7eb;">
-            <h2 class="font-bold text-lg mb-5 tracking-tight" style="color: #0f172a;">Ringkasan Pesanan</h2>
+          <div class="sticky top-24 rounded-2xl overflow-hidden" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);">
 
-            <div class="space-y-3.5 mb-5">
-              <div class="flex justify-between items-center">
-                <span class="text-sm" style="color: #64748b;">Subtotal ({{ cartStore.totalItems }} item)</span>
-                <span class="text-sm font-semibold" style="color: #0f172a;">{{ formatPrice(cartStore.totalPrice) }}</span>
+            <!-- Summary Header -->
+            <div class="px-6 py-5" style="border-bottom: 1px solid rgba(255,255,255,0.07);">
+              <h2 class="font-black text-white text-lg">Ringkasan Pesanan</h2>
+            </div>
+
+            <!-- Summary Body -->
+            <div class="px-6 py-5 space-y-4">
+              <div class="flex justify-between text-sm">
+                <span style="color: #64748b;">Subtotal ({{ cartStore.totalItems }} item)</span>
+                <span class="font-semibold text-white">{{ formatPrice(cartStore.totalPrice) }}</span>
               </div>
-              <div class="flex justify-between items-center">
-                <span class="text-sm" style="color: #64748b;">Ongkos Kirim</span>
-                <span class="text-sm font-semibold" style="color: #16a34a;">Gratis</span>
+              <div class="flex justify-between text-sm">
+                <span style="color: #64748b;">Ongkos Kirim</span>
+                <span class="font-bold" style="color: #10b981;">Gratis</span>
               </div>
-              <div class="flex justify-between items-center">
-                <span class="text-sm" style="color: #64748b;">Pajak (11%)</span>
-                <span class="text-sm font-semibold" style="color: #0f172a;">{{ formatPrice(cartStore.totalPrice * 0.11) }}</span>
+              <div class="flex justify-between text-sm">
+                <span style="color: #64748b;">Pajak (11%)</span>
+                <span class="font-semibold text-white">{{ formatPrice(cartStore.totalPrice * 0.11) }}</span>
+              </div>
+
+              <div class="pt-4" style="border-top: 1px solid rgba(255,255,255,0.08);">
+                <div class="flex justify-between items-center">
+                  <span class="font-bold text-white">Total</span>
+                  <span class="font-black text-xl" style="color: #818cf8;">{{ formatPrice(cartStore.totalPrice * 1.11) }}</span>
+                </div>
+              </div>
+
+              <!-- Promo Code -->
+              <div class="pt-2">
+                <label class="block text-xs font-semibold mb-2" style="color: #64748b;">Kode Promo</label>
+                <div class="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Masukkan kode..."
+                    id="promo-input"
+                    class="flex-1 px-3 py-2.5 rounded-xl outline-none text-sm transition-all"
+                    style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff;"
+                    @focus="e => e.target.style.borderColor = '#4f46e5'"
+                    @blur="e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'"
+                  />
+                  <button class="px-4 py-2.5 rounded-xl text-white text-sm font-bold transition-all duration-200 hover:opacity-85"
+                    style="background: linear-gradient(135deg, #4f46e5, #7c3aed);"
+                  >Pakai</button>
+                </div>
               </div>
             </div>
 
-            <div class="pt-4 mb-5" style="border-top: 1px dashed #e2e8f0;">
-              <div class="flex justify-between items-baseline">
-                <span class="font-bold text-base" style="color: #0f172a;">Total</span>
-                <span class="font-extrabold text-2xl tracking-tight" style="color: #4f46e5;">
-                  {{ formatPrice(cartStore.totalPrice * 1.11) }}
-                </span>
-              </div>
-              <p class="text-[11px] mt-1 text-right" style="color: #94a3b8;">Sudah termasuk pajak 11%</p>
-            </div>
-
-            <!-- Promo Code -->
-            <div class="flex gap-2 mb-5">
-              <input
-                type="text"
-                placeholder="Kode Promo"
-                id="promo-input"
-                class="flex-1 px-3.5 py-2.5 rounded-xl outline-none text-sm transition-all focus:ring-2 focus:ring-indigo-500/30"
-                style="background: #f8fafc; border: 1px solid #e2e8f0; color: #0f172a;"
-              />
-              <button class="px-4 py-2.5 rounded-xl text-white text-sm font-semibold transition-all hover:opacity-90"
-                style="background: #0f172a;">
-                Pakai
+            <!-- Checkout CTA -->
+            <div class="px-6 pb-6">
+              <button
+                id="checkout-btn"
+                class="w-full py-4 rounded-2xl text-white font-black text-base transition-all duration-300 hover:-translate-y-1 flex items-center justify-center gap-2"
+                style="background: linear-gradient(135deg, #4f46e5, #7c3aed); box-shadow: 0 8px 32px rgba(79,70,229,0.4);"
+                @click="handleCheckout"
+              >
+                💳 Checkout Sekarang
               </button>
+
+              <!-- Trust Badges -->
+              <div class="flex justify-center gap-4 mt-4">
+                <div class="flex items-center gap-1 text-xs" style="color: #475569;">
+                  <span>🔒</span> Aman
+                </div>
+                <div class="flex items-center gap-1 text-xs" style="color: #475569;">
+                  <span>✅</span> Original
+                </div>
+                <div class="flex items-center gap-1 text-xs" style="color: #475569;">
+                  <span>🔄</span> Garansi
+                </div>
+              </div>
             </div>
-
-            <!-- Checkout -->
-            <button id="checkout-btn"
-              class="checkout-btn w-full py-4 rounded-xl text-white font-bold text-base flex items-center justify-center gap-2.5 transition-all duration-300"
-              style="background: linear-gradient(135deg, #4f46e5, #7c3aed);"
-              @click="handleCheckout"
-            >
-              Checkout
-            </button>
-
-            <RouterLink to="/katalog"
-              class="block text-center text-sm mt-4 transition-colors"
-              style="color: #64748b;"
-              @mouseenter="e => e.currentTarget.style.color = '#4f46e5'"
-              @mouseleave="e => e.currentTarget.style.color = '#64748b'"
-            >
-              ← Lanjut Belanja
-            </RouterLink>
           </div>
         </div>
       </div>
-
-      <!-- Product Suggestions -->
-      <section class="mt-12">
-        <div class="mb-5">
-          <h2 class="text-xl font-bold mb-1" style="color: #0f172a;">
-            Saran Produk
-          </h2>
-          <div class="flex items-center justify-between gap-4">
-            <p class="text-sm" style="color: #64748b;">
-              Pilihan lain yang sering dibeli bersama
-            </p>
-            <RouterLink
-              to="/katalog"
-              class="text-sm font-semibold whitespace-nowrap"
-              style="color: #4f46e5;"
-            >
-              Lihat Produk Lain
-            </RouterLink>
-          </div>
-        </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          <ProductCard
-            v-for="product in suggestedProducts"
-            :key="product.id"
-            :product="product"
-            @add-to-cart="addSuggestedProduct"
-          />
-        </div>
-      </section>
     </div>
-
-    <Teleport to="body">
-      <Transition name="confirm-modal">
-        <div
-          v-if="pendingDeleteItem"
-          class="fixed inset-0 z-[9999] flex items-center justify-center px-4"
-          style="background: rgba(15, 23, 42, 0.55);"
-        >
-          <div
-            class="w-full max-w-md rounded-2xl p-6 shadow-2xl"
-            style="background: #ffffff; border: 1px solid #e5e7eb;"
-          >
-            <div class="flex items-start gap-4">
-              <div
-                class="w-11 h-11 rounded-full flex items-center justify-center font-bold text-xl flex-shrink-0"
-                style="background: #fef2f2; color: #ef4444;"
-              >
-                !
-              </div>
-              <div>
-                <h3 class="text-lg font-bold mb-1" style="color: #0f172a;">
-                  Hapus produk?
-                </h3>
-                <p class="text-sm leading-relaxed" style="color: #64748b;">
-                  Anda yakin mau menghapus {{ pendingDeleteItem.name }} dari keranjang?
-                </p>
-              </div>
-            </div>
-
-            <div class="flex justify-end gap-3 mt-6">
-              <button
-                @click="cancelDeleteItem"
-                class="px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors cursor-pointer"
-                style="background: #f1f5f9; color: #475569;"
-              >
-                Batal
-              </button>
-              <button
-                @click="confirmDeleteItem"
-                class="px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition-all cursor-pointer hover:opacity-90"
-                style="background: #ef4444;"
-              >
-                Hapus
-              </button>
-            </div>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
   </main>
 </template>
 
 <script setup>
-import { cartStore, formatPrice, products } from '../store.js'
-import ProductCard from '../components/ProductCard.vue'
-import { computed, ref } from 'vue'
-
-const emit = defineEmits(['add-to-cart', 'show-toast'])
-const pendingDeleteItem = ref(null)
-
-const suggestedProducts = computed(() => {
-  const cartIds = cartStore.items.map(item => item.id)
-  return products
-    .filter(product => !cartIds.includes(product.id))
-    .slice(0, 4)
-})
+import { cartStore, formatPrice } from '../store.js'
 
 function handleCheckout() {
   alert('🎉 Terima kasih! Fitur checkout akan segera hadir. Silakan hubungi kami via WhatsApp untuk pemesanan.')
 }
-function decreaseQuantity(item) {
-  if (item.quantity === 1) {
-    pendingDeleteItem.value = item
-    return
-  }
-
-  cartStore.updateQuantity(item.id, item.quantity - 1)
-}
-
-function cancelDeleteItem() {
-  pendingDeleteItem.value = null
-}
-
-function confirmDeleteItem() {
-  if (!pendingDeleteItem.value) return
-
-  const itemName = pendingDeleteItem.value.name
-  cartStore.removeItem(pendingDeleteItem.value.id)
-  pendingDeleteItem.value = null
-  emit('show-toast', `${itemName} dihapus dari keranjang`, 'success')
-}
-
-function addSuggestedProduct(product){
-  emit('add-to-cart', product)
-}
 </script>
 
 <style scoped>
-/* Hover halus pada baris produk */
-.cart-row:hover {
-  border-color: #c7d2fe;
-  box-shadow: 0 8px 24px -8px rgba(79, 70, 229, 0.18);
-  transform: translateY(-2px);
-}
-
-/* Tombol kuantitas */
-.qty-btn {
-  color: #475569;
-}
-.qty-btn:hover {
-  background: #4f46e5;
-  color: #fff;
-}
-.qty-btn:active {
-  transform: scale(0.9);
-}
-
-/* Kartu ringkasan — shadow tipis elegan */
-.summary-card {
-  box-shadow: 0 10px 30px -12px rgba(15, 23, 42, 0.12);
-}
-
-/* Tombol checkout */
-.checkout-btn {
-  box-shadow: 0 10px 24px -8px rgba(79, 70, 229, 0.5);
-}
-.checkout-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 14px 30px -8px rgba(79, 70, 229, 0.6);
-}
-.checkout-btn:active {
-  transform: translateY(0);
-}
-
-/* Animasi item keranjang */
 .cart-item-enter-active,
 .cart-item-leave-active {
   transition: all 0.4s ease;
@@ -327,14 +197,6 @@ function addSuggestedProduct(product){
 .cart-item-leave-to {
   opacity: 0;
   transform: translateX(20px);
-}
-
-.confirm-modal-enter-active,
-.confirm-modal-leave-active {
-  transition: opacity 0.2s ease;
-}
-.confirm-modal-enter-from,
-.confirm-modal-leave-to {
-  opacity: 0;
+  max-height: 0;
 }
 </style>

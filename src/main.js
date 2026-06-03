@@ -5,6 +5,7 @@ import App from './App.vue'
 import HomePage from './views/HomePage.vue'
 import KatalogPage from './views/KatalogPage.vue'
 import ArtikelPage from './views/ArtikelPage.vue'
+import ArtikelDetailPage from './views/ArtikelDetailPage.vue'
 import TentangPage from './views/TentangPage.vue'
 import CartPage from './views/CartPage.vue'
 import LoginPage from './views/LoginPage.vue'
@@ -18,6 +19,7 @@ const router = createRouter({
     { path: '/', component: HomePage, meta: { title: 'e-BuildPC | Beranda' } },
     { path: '/katalog', component: KatalogPage, meta: { title: 'e-BuildPC | Katalog Produk' } },
     { path: '/artikel', component: ArtikelPage, meta: { title: 'e-BuildPC | Artikel' } },
+    { path: '/artikel/:id', component: ArtikelDetailPage, meta: { title: 'e-BuildPC | Detail Artikel' } },
     { path: '/tentang', component: TentangPage, meta: { title: 'e-BuildPC | Tentang Kami' } },
     { path: '/bantuan', component: BantuanPage, meta: { title: 'e-BuildPC | Bantuan' } },
     { path: '/cart', component: CartPage, meta: { title: 'e-BuildPC | Keranjang' } },
