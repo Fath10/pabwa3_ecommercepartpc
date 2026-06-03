@@ -92,7 +92,14 @@
           <!-- Rating row -->
           <div class="flex items-center gap-3 mb-5">
             <div class="flex items-center gap-1">
-              <span v-for="i in 5" :key="i" class="text-base" :class="i <= Math.round(product.rating) ? 'text-amber-400' : 'text-gray-200'">★</span>
+              <span
+                v-for="i in 5"
+                :key="i"
+                class="text-base"
+                :class="i <= Math.round(product.rating) ? 'text-amber-400' : 'text-gray-200'"
+              >
+                ★
+              </span>
             </div>
             <span class="text-sm font-semibold" style="color: #0f172a;">{{ product.rating }}</span>
             <span class="text-sm" style="color: #94a3b8;">({{ product.reviews }} ulasan)</span>
@@ -169,6 +176,9 @@
         </div>
       </div>
 
+      <!-- ── Reviews & Rating ──────────────────────────── -->
+      <ReviewSection :product="product" />
+
       <!-- ── Suggested Products ──────────────────────────── -->
       <section class="border-t pt-12" style="border-color: #e2e8f0;">
         <div class="flex items-center justify-between mb-6">
@@ -203,6 +213,7 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import ProductCard from '../components/ProductCard.vue'
+import ReviewSection from '../components/ReviewSection.vue'
 import { products, formatPrice } from '../store.js'
 
 const emit = defineEmits(['add-to-cart'])
@@ -261,6 +272,7 @@ const badgeMap = {
   blue: 'bg-blue-500',
   cyan: 'bg-teal-600',
 }
+
 const badgeClass = computed(() => badgeMap[product.value?.badgeColor] || 'bg-indigo-600')
 
 // ── Add to cart ────────────────────────────────────────

@@ -49,7 +49,7 @@
 
               <!-- "Bantuan" — ghost/outline button -->
               <RouterLink
-                to="/tentang"
+                to="/bantuan"
                 id="hero-bantuan-btn"
                 class="px-6 py-2.5 rounded-md font-semibold text-white text-sm transition-all duration-200 hover:bg-white/8"
                 style="border: 1px solid rgba(255,255,255,0.25);"

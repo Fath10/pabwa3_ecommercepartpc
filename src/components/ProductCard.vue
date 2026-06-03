@@ -101,9 +101,8 @@ const badgeClass = computed(() => badgeMap[props.product.badgeColor] || 'bg-indi
 // Stock computed helpers
 const stockLabel = computed(() => {
   const s = props.product.stock ?? 0
-  if (s === 0) return 'Stok habis'
-  if (s <= 10) return `Sisa ${s} unit`
-  return `Stok tersedia (${s})`
+  if (s === 0) return 'Stok: 0'
+  return `Stok: ${s}`
 })
 
 const stockDotClass = computed(() => {

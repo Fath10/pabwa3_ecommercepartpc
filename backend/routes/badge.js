@@ -1,42 +1,47 @@
 import express from "express";
 
 import {
-  getCategories,
-  getCategoryById,
-  createCategory,
-  updateCategory,
-  deleteCategory
-} from "../controllers/categoryController.js";
+  getBadges,
+  getBadgeById,
+  createBadge,
+  updateBadge,
+  deleteBadge
+} from "../controllers/badgeController.js";
 
 import { authMiddleware } from "../middleware/auth.js";
 import { adminMiddleware } from "../middleware/admin.js";
 
 const router = express.Router();
 
+router.get(
+  "/",
+  getBadges
+);
+
+router.get(
+  "/:id",
+  getBadgeById
+);
+
 router.post(
   "/",
   authMiddleware,
   adminMiddleware,
-  createCategory
+  createBadge
 );
-
-router.get("/", getCategories);
-
-router.get("/:id", getCategoryById);
-
 
 router.put(
   "/:id",
   authMiddleware,
   adminMiddleware,
-  updateCategory
+  updateBadge
 );
 
 router.delete(
   "/:id",
   authMiddleware,
   adminMiddleware,
-  deleteCategory
+  deleteBadge
 );
 
 export default router;
