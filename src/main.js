@@ -10,6 +10,7 @@ import CartPage from './views/CartPage.vue'
 import LoginPage from './views/LoginPage.vue'
 import RegisterPage from './views/RegisterPage.vue'
 import ProductDetailPage from './views/ProductDetailPage.vue'
+import BantuanPage from './views/BantuanPage.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -18,6 +19,7 @@ const router = createRouter({
     { path: '/katalog', component: KatalogPage, meta: { title: 'e-BuildPC | Katalog Produk' } },
     { path: '/artikel', component: ArtikelPage, meta: { title: 'e-BuildPC | Artikel' } },
     { path: '/tentang', component: TentangPage, meta: { title: 'e-BuildPC | Tentang Kami' } },
+    { path: '/bantuan', component: BantuanPage, meta: { title: 'e-BuildPC | Bantuan' } },
     { path: '/cart', component: CartPage, meta: { title: 'e-BuildPC | Keranjang' } },
     { path: '/login', component: LoginPage, meta: { title: 'e-BuildPC | Login' } },
     { path: '/register', component: RegisterPage, meta: { title: 'e-BuildPC | Buat Akun' } },
