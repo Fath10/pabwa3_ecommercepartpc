@@ -9,12 +9,12 @@ export const getProducts = async (req, res) => {
     const result = await pool.query(`
       SELECT
       p.*,
-      c.product_name
+      c.category_name
       FROM products p
       JOIN categories c
       ON p.category_id = c.category_id
-      ORDER BY p.product_id DESC
       WHERE p.is_active = TRUE
+      ORDER BY p.product_id DESC
     `);
 
     res.json(result.rows);

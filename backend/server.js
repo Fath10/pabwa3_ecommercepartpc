@@ -5,6 +5,7 @@ import authRoutes from "./routes/auth.js";
 import productRoutes from "./routes/products.js";
 import categoryRoutes from "./routes/categories.js";
 import cartRoutes from "./routes/carts.js";
+import chatRoutes from "./routes/chat.js";
 
 dotenv.config();
 
@@ -53,6 +54,11 @@ app.use(
 app.use(
   "/api/cart",
   cartRoutes
+);
+
+app.use(
+  "/api/chat-ai",
+  chatRoutes
 );
 
 

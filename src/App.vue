@@ -72,14 +72,24 @@
 
           <!-- Area pesan -->
           <div ref="chatBody" class="flex-1 overflow-y-auto p-4 space-y-3">
-            <div v-for="(msg, i) in chatMessages" :key="i" class="flex" :class="msg.role === 'user' ? 'justify-end' : 'justify-start'">
-              <div
-                class="px-4 py-2.5 rounded-2xl text-sm max-w-[80%] leading-relaxed"
-                :class="msg.role === 'user'
-                  ? 'bg-indigo-600 text-white rounded-br-sm'
-                  : 'text-gray-200 rounded-bl-sm'"
-                :style="msg.role === 'user' ? '' : 'background: rgba(255,255,255,0.06);'"
-              >{{ msg.text }}</div>
+            <div v-for="(msg, i) in chatMessages" :key="i" class="flex flex-col gap-2">
+              <!-- Chat Bubble -->
+              <div class="flex" :class="msg.role === 'user' ? 'justify-end' : 'justify-start'">
+                <div
+                  class="px-4 py-2.5 rounded-2xl text-sm max-w-[90%] leading-relaxed"
+                  :class="msg.role === 'user'
+                    ? 'bg-indigo-600 text-white rounded-br-sm'
+                    : 'text-gray-200 rounded-bl-sm'"
+                  :style="msg.role === 'user' ? '' : 'background: rgba(255,255,255,0.06);'"
+                >{{ msg.text }}</div>
+              </div>
+
+              <!-- Product Cards (if any) -->
+              <div v-if="msg.products && msg.products.length > 0" class="flex gap-2 overflow-x-auto py-2 px-1 w-full snap-x snap-mandatory scrollbar-hide" style="max-width: 100%;">
+                <div v-for="prod in msg.products" :key="prod.id" class="flex-shrink-0 w-36 snap-center">
+                  <ProductCard :product="prod" mini @add-to-cart="handleAddToCart" />
+                </div>
+              </div>
             </div>
             <div v-if="chatLoading" class="flex items-center gap-2 text-xs text-gray-500 italic">
               <span class="animate-pulse">●</span>
@@ -130,6 +140,7 @@ import { ref, nextTick, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import NavBar from './components/NavBar.vue'
 import FooterSection from './components/FooterSection.vue'
+import ProductCard from './components/ProductCard.vue'
 import { cartStore } from './store.js'
 
 const router = useRouter()
@@ -203,33 +214,31 @@ async function sendChatMessage() {
   await scrollChatToBottom()
 
   try {
-    // ──────────────────────────────────────────────
-    // TODO (Integrasi Backend Ollama + Express.js):
-    // Ganti blok di bawah ini dengan pemanggilan API Anda.
-    // Contoh:
-    //
-    // const res = await fetch('http://localhost:3000/api/chat', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({
-    //     model: 'llama3',
-    //     messages: chatMessages.value.map(m => ({ role: m.role, content: m.text })),
-    //   }),
-    // })
-    // const data = await res.json()
-    // chatMessages.value.push({ role: 'assistant', text: data.reply })
-    // ──────────────────────────────────────────────
+    // Kirim riwayat chat (max 10 pesan terakhir, tanpa pesan greeting awal)
+    const historyToSend = chatMessages.value
+      .slice(-10)
+      .filter((_, i) => i < chatMessages.value.length - 1) // exclude the msg we just pushed
 
-    // Placeholder respons sementara (hapus saat backend siap):
-    await new Promise(r => setTimeout(r, 700))
+    const res = await fetch('http://localhost:3000/api/chat-ai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: text,
+        history: historyToSend,
+      }),
+    })
+
+    const data = await res.json()
+
     chatMessages.value.push({
       role: 'assistant',
-      text: 'Fitur AI sedang dalam pengembangan. Backend Ollama + Express.js akan segera terhubung di sini. 🚧',
+      text: data.reply || '⚠️ Tidak ada respons dari server.',
+      products: data.products || [],
     })
   } catch (err) {
     chatMessages.value.push({
       role: 'assistant',
-      text: '⚠️ Maaf, terjadi kesalahan saat menghubungi server. Coba lagi nanti ya.',
+      text: '⚠️ Maaf, terjadi kesalahan saat menghubungi server. Pastikan backend sudah berjalan dan Ollama sudah aktif.',
     })
   } finally {
     chatLoading.value = false
@@ -262,6 +271,16 @@ async function sendChatMessage() {
 .toast-leave-to {
   opacity: 0;
   transform: translateX(100px);
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+/* Hide scrollbar for IE, Edge and Firefox */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
 }
 
 /* Animasi panel chat */
