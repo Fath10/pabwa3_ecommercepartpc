@@ -91,7 +91,7 @@ Website sudah bisa digunakan! 🎉
 | `frontend-feature.v.2` | Nurfauzan Gymnastiar |
 | `fe-edis` | Edis Nabila Ramadhani |
 | `fe-1137` | Muhammad Akmal Al Fathan |
-| `backend` | Andi Cole |
+| `backend` | Andy Cole |
 | `backend-auth` | Imam Dzulvan Muffid |
 
 ---
