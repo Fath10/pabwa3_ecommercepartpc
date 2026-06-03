@@ -14,31 +14,40 @@
 
         <!-- Featured Article -->
         <div
-          class="relative rounded-3xl overflow-hidden mb-12 group cursor-pointer"
+          class="rounded-3xl overflow-hidden mb-12 group cursor-pointer bg-gradient-to-b from-white/5 to-white/[0.02] border border-white/10 hover:border-indigo-500/40 transition-all duration-300 hover:-translate-y-1"
           @click="openArticle(featuredArticle)"
         >
-          <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent z-10"></div>
-          <img :src="featuredArticle.image" alt="Featured" class="w-full h-72 object-cover group-hover:scale-105 transition-transform duration-700" />
-          <div class="absolute bottom-0 left-0 right-0 p-8 z-20">
-            <span class="inline-block px-3 py-1 bg-indigo-600 rounded-full text-xs font-bold text-white mb-3">🔥 Artikel Utama</span>
-            <h2 class="text-2xl font-black text-white mb-2">{{ featuredArticle.title }}</h2>
-            <p class="text-gray-300 text-sm mb-4 line-clamp-2">{{ featuredArticle.excerpt }}</p>
-            <button
-              type="button"
-              id="featured-read-more"
-              class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white text-gray-900 font-bold text-sm transition-all duration-200 hover:gap-3 hover:shadow-lg hover:shadow-white/10"
-              @click.stop="openArticle(featuredArticle)"
-            >
-              Baca Selengkapnya
-              <span class="transition-transform">→</span>
-            </button>
+          <!-- Gambar -->
+          <div class="relative overflow-hidden h-64">
+            <img :src="featuredArticle.image" alt="Featured" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+            <span class="absolute top-4 left-4 inline-block px-3 py-1 bg-indigo-600 rounded-full text-xs font-bold text-white">🔥 Artikel Utama</span>
+          </div>
+          <!-- Teks -->
+          <div class="p-7">
+            <span class="inline-block px-2 py-0.5 rounded-full text-xs font-semibold mb-3 bg-indigo-600/20 text-indigo-400 border border-indigo-500/30">{{ featuredArticle.category }}</span>
+            <h2 class="text-2xl font-black text-white mb-2 group-hover:text-indigo-300 transition-colors">{{ featuredArticle.title }}</h2>
+            <p class="text-gray-400 text-sm mb-5 line-clamp-3 leading-relaxed">{{ featuredArticle.excerpt }}</p>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-4 text-xs text-gray-500">
+                <span>{{ featuredArticle.date }}</span>
+                <span>{{ featuredArticle.readTime }}</span>
+              </div>
+              <button
+                type="button"
+                id="featured-read-more"
+                class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 text-white font-bold text-sm transition-all duration-200 hover:bg-indigo-500 hover:gap-3"
+                @click.stop="openArticle(featuredArticle)"
+              >
+                Baca Selengkapnya <span>→</span>
+              </button>
+            </div>
           </div>
         </div>
 
         <!-- Article Grid -->
-        <div class="grid md:grid-cols-2 gap-6">
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           <article
-            v-for="article in articles"
+            v-for="article in paginatedArticles"
             :key="article.id"
             class="group bg-gradient-to-b from-white/5 to-white/[0.02] rounded-2xl border border-white/10 hover:border-indigo-500/40 overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-2"
             @click="openArticle(article)"
@@ -66,6 +75,54 @@
               </button>
             </div>
           </article>
+        </div>
+
+        <!-- Pagination -->
+        <div v-if="totalPages > 1" class="mt-12 flex flex-col items-center gap-4">
+          <!-- Info -->
+          <p class="text-gray-500 text-sm">
+            Halaman <span class="text-white font-semibold">{{ currentPage }}</span>
+            / <span class="text-white font-semibold">{{ totalPages }}</span>
+          </p>
+          <!-- Controls -->
+          <div class="flex items-center gap-2">
+            <!-- Prev -->
+            <button
+              id="pagination-prev"
+              type="button"
+              :disabled="currentPage === 1"
+              @click="goToPage(currentPage - 1)"
+              class="w-9 h-9 rounded-xl border flex items-center justify-center text-sm font-medium transition-all duration-200"
+              :class="currentPage === 1
+                ? 'border-white/5 text-gray-600 cursor-not-allowed'
+                : 'border-white/10 bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white hover:-translate-x-0.5'"
+            >←</button>
+
+            <!-- Page numbers -->
+            <template v-for="page in totalPages" :key="page">
+              <button
+                :id="`pagination-page-${page}`"
+                type="button"
+                @click="goToPage(page)"
+                class="w-9 h-9 rounded-xl text-sm font-semibold transition-all duration-200"
+                :class="page === currentPage
+                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30'
+                  : 'border border-white/10 bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'"
+              >{{ page }}</button>
+            </template>
+
+            <!-- Next -->
+            <button
+              id="pagination-next"
+              type="button"
+              :disabled="currentPage === totalPages"
+              @click="goToPage(currentPage + 1)"
+              class="w-9 h-9 rounded-xl border flex items-center justify-center text-sm font-medium transition-all duration-200"
+              :class="currentPage === totalPages
+                ? 'border-white/5 text-gray-600 cursor-not-allowed'
+                : 'border-white/10 bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white hover:translate-x-0.5'"
+            >→</button>
+          </div>
         </div>
       </template>
 
@@ -146,14 +203,17 @@
 </template>
 
 <script setup>
-import { ref, nextTick } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 
 // State sederhana di dalam komponen: null = mode daftar, objek = mode detail.
 const activeArticle = ref(null)
 
+// ── Pagination state ──────────────────────────────
+const currentPage = ref(1)
+const ARTICLES_PER_PAGE = 9
+
 function openArticle(article) {
   activeArticle.value = article
-  // Scroll ke atas saat membuka detail.
   nextTick(() => window.scrollTo({ top: 0, behavior: 'smooth' }))
 }
 
@@ -169,7 +229,7 @@ const featuredArticle = {
   id: 0,
   category: '🔥 Artikel Utama',
   emoji: '🖥️',
-  image: '/hero_banner.png',
+  image: '/artikel_hero.png',
   title: 'Panduan Lengkap Merakit PC Gaming 2026',
   excerpt:
     'Dari memilih komponen yang seimbang, memahami bottleneck, hingga proses instalasi dan manajemen kabel yang rapi — panduan menyeluruh untuk merakit PC gaming impian Anda dengan budget yang optimal.',
@@ -233,7 +293,7 @@ const articles = [
     title: 'Cara Merakit PC Gaming untuk Pemula',
     excerpt:
       'Panduan step-by-step merakit PC gaming dari awal hingga selesai. Cocok untuk pemula yang belum pernah merakit PC sebelumnya.',
-    date: '15 November 2024',
+    date: '15 November 2025',
     readTime: '8 menit baca',
     content: [
       {
@@ -259,7 +319,7 @@ const articles = [
     title: 'AMD Ryzen 9 7950X vs Intel Core i9-14900K',
     excerpt:
       'Perbandingan mendalam antara dua prosesor flagship terbaik. Mana yang lebih worth it untuk kebutuhan Anda?',
-    date: '10 November 2024',
+    date: '10 November 2025',
     readTime: '12 menit baca',
     content: [
       {
@@ -283,7 +343,7 @@ const articles = [
     title: '5 Tips Memilih GPU Terbaik dengan Budget Terbatas',
     excerpt:
       'Tidak perlu budget besar untuk performa gaming yang baik. Temukan tips cerdas memilih GPU yang sesuai kantong.',
-    date: '5 November 2024',
+    date: '5 November 2025',
     readTime: '6 menit baca',
     content: [
       {
@@ -307,7 +367,7 @@ const articles = [
     title: 'Panduan Sistem Pendingin PC yang Optimal',
     excerpt:
       'Panas berlebih bisa merusak komponen PC Anda. Pelajari cara memilih dan mengkonfigurasi sistem pendingin yang tepat.',
-    date: '1 November 2024',
+    date: '1 November 2025',
     readTime: '10 menit baca',
     content: [
       {
@@ -324,5 +384,359 @@ const articles = [
       },
     ],
   },
+  {
+    id: 5,
+    emoji: '💾',
+    category: 'Tips',
+    title: 'SSD vs HDD: Mana yang Tepat untuk Anda?',
+    excerpt:
+      'Perbedaan kecepatan, harga, dan ketahanan antara SSD dan HDD — panduan memilih penyimpanan terbaik sesuai kebutuhan.',
+    date: '20 Oktober 2025',
+    readTime: '7 menit baca',
+    content: [
+      {
+        heading: 'Kecepatan dan Performa',
+        paragraphs: [
+          'SSD NVMe modern mampu mencapai kecepatan baca hingga 7.000 MB/s, berbanding jauh dengan HDD yang rata-rata hanya 100–200 MB/s. Perbedaan ini terasa nyata saat booting OS, membuka aplikasi besar, dan loading game.',
+          'Untuk drive utama sistem operasi dan game aktif, SSD bukan lagi kemewahan — melainkan keharusan di tahun 2025.',
+        ],
+      },
+      {
+        heading: 'Kapasitas dan Harga',
+        paragraphs: [
+          'HDD masih unggul soal biaya per gigabyte, menjadikannya pilihan ideal untuk penyimpanan arsip, backup, dan file berukuran besar yang tidak perlu diakses cepat. Kombinasi SSD sebagai drive utama dan HDD sebagai penyimpanan sekunder adalah solusi paling cost-effective.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 6,
+    emoji: '🔋',
+    category: 'Guide',
+    title: 'Cara Memilih Power Supply yang Tepat',
+    excerpt:
+      'PSU adalah jantung PC Anda. Kesalahan memilih watt dan sertifikasi bisa berujung pada kerusakan seluruh sistem.',
+    date: '12 Oktober 2025',
+    readTime: '9 menit baca',
+    content: [
+      {
+        heading: 'Menghitung Kebutuhan Daya',
+        paragraphs: [
+          'Gunakan kalkulator PSU online untuk menjumlahkan konsumsi daya semua komponen, lalu tambahkan headroom 20–30%. Jika total sistem Anda 400W, PSU 550W sudah cukup nyaman dan memberi ruang untuk upgrade.',
+          'Hindari membeli PSU jauh melebihi kebutuhan — PSU 1000W pada sistem 300W justru bekerja kurang efisien di beban rendah.',
+        ],
+      },
+      {
+        heading: 'Sertifikasi 80 Plus',
+        paragraphs: [
+          'Sertifikasi 80 Plus menjamin PSU mengonversi minimal 80% daya AC menjadi DC yang digunakan komponen. Pilih minimal 80 Plus Bronze untuk PC gaming; Gold atau Platinum jika ingin efisiensi terbaik dan tagihan listrik lebih hemat jangka panjang.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 7,
+    emoji: '🖱️',
+    category: 'Review',
+    title: 'Motherboard B650 vs X670: Mana yang Lebih Worth It?',
+    excerpt:
+      'Panduan memilih motherboard AMD platform AM5 — perbedaan fitur, harga, dan target pengguna B650 versus X670.',
+    date: '5 Oktober 2025',
+    readTime: '11 menit baca',
+    content: [
+      {
+        heading: 'Perbedaan Fitur Utama',
+        paragraphs: [
+          'B650 dirancang untuk pengguna mainstream dengan dukungan PCIe 5.0 pada slot M.2, sementara X670 menambahkan PCIe 5.0 pada slot GPU dan lebih banyak lane untuk konektivitas. Untuk mayoritas pengguna, B650 sudah lebih dari cukup.',
+        ],
+      },
+      {
+        heading: 'Nilai Uang',
+        paragraphs: [
+          'Selisih harga B650 dan X670 cukup signifikan. Jika tidak berencana menggunakan GPU PCIe 5.0 atau membutuhkan banyak perangkat NVMe berkecepatan tinggi secara bersamaan, anggaran lebih baik dialihkan ke CPU atau RAM yang lebih kencang.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 8,
+    emoji: '🧠',
+    category: 'Tutorial',
+    title: 'Cara Overclock RAM dengan Aman Menggunakan XMP/EXPO',
+    excerpt:
+      'Aktifkan profil XMP atau EXPO di BIOS untuk mendapatkan kecepatan RAM penuh tanpa risiko — panduan lengkap untuk pemula.',
+    date: '28 September 2025',
+    readTime: '5 menit baca',
+    content: [
+      {
+        heading: 'Apa Itu XMP dan EXPO?',
+        paragraphs: [
+          'XMP (Intel Extreme Memory Profile) dan EXPO (AMD Extended Profiles for Overclocking) adalah profil preset yang disimpan di chip RAM Anda. Mengaktifkannya di BIOS memungkinkan RAM berjalan pada kecepatan yang tertera di kotak — misalnya DDR5-6000 — bukan hanya kecepatan standar JEDEC yang lebih lambat.',
+        ],
+      },
+      {
+        heading: 'Cara Mengaktifkan',
+        paragraphs: [
+          'Masuk BIOS saat booting (biasanya tekan Del atau F2), cari menu AI Tweaker, Extreme Tweaker, atau OC. Temukan opsi XMP/EXPO, pilih profil yang tersedia, simpan dan restart. Sistem akan otomatis berjalan pada kecepatan RAM yang seharusnya — tanpa risiko sama sekali selama RAM kompatibel dengan motherboard.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 9,
+    emoji: '🌐',
+    category: 'Tips',
+    title: 'Monitor Gaming: Refresh Rate, Panel, dan Resolusi',
+    excerpt:
+      'Panduan lengkap memilih monitor gaming — perbedaan 60Hz vs 144Hz vs 240Hz, IPS vs VA vs TN, dan 1080p vs 1440p vs 4K.',
+    date: '20 September 2025',
+    readTime: '8 menit baca',
+    content: [
+      {
+        heading: 'Refresh Rate: Semakin Tinggi Semakin Mulus',
+        paragraphs: [
+          '144Hz adalah titik masuk yang sangat direkomendasikan untuk gaming kompetitif. Perpindahan dari 60Hz ke 144Hz jauh lebih terasa dibandingkan dari 144Hz ke 240Hz. Pastikan GPU Anda mampu menghasilkan frame rate yang cukup sebelum berinvestasi pada monitor refresh rate sangat tinggi.',
+        ],
+      },
+      {
+        heading: 'Jenis Panel',
+        paragraphs: [
+          'IPS menawarkan warna akurat dan sudut pandang lebar — terbaik untuk konten kreator dan gaming kasual. VA memberikan kontras jauh lebih tinggi, ideal untuk ruangan gelap. TN tercepat dalam respons namun warna kurang akurat. Panel OLED dan QD-OLED kini hadir sebagai opsi premium dengan kualitas gambar terbaik di kelasnya.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 10,
+    emoji: '🔌',
+    category: 'Guide',
+    title: 'Cara Memilih Motherboard yang Tepat untuk Build Anda',
+    excerpt:
+      'Motherboard adalah tulang punggung PC Anda. Panduan ini membantu Anda memilih chipset, form factor, dan fitur yang sesuai dengan kebutuhan dan budget.',
+    date: '15 September 2025',
+    readTime: '9 menit baca',
+    content: [
+      {
+        heading: 'Memahami Chipset dan Form Factor',
+        paragraphs: [
+          'Chipset menentukan fitur yang tersedia: jumlah lane PCIe, port USB, dan kemampuan overclocking. Untuk platform AMD AM5, pilih B650 untuk mainstream atau X670E untuk enthusiast. Platform Intel LGA1700 menawarkan B760 hingga Z790.',
+          'Form factor ATX adalah standar umum dengan slot terbanyak. Micro-ATX cocok untuk build kompak, sementara Mini-ITX ideal untuk sistem ultra-kecil meski dengan kompromi slot ekspansi.',
+        ],
+      },
+      {
+        heading: 'Fitur yang Wajib Diperhatikan',
+        paragraphs: [
+          'Periksa jumlah slot RAM (minimal 4 untuk upgrade masa depan), slot M.2 untuk SSD NVMe, kualitas VRM untuk kestabilan daya CPU, serta konektivitas I/O seperti USB-C, audio, dan jaringan.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 11,
+    emoji: '⚡',
+    category: 'Tips',
+    title: 'Mengoptimalkan Performa PC dengan Setting BIOS',
+    excerpt:
+      'BIOS menyimpan banyak pengaturan tersembunyi yang bisa meningkatkan performa PC Anda secara signifikan tanpa biaya tambahan.',
+    date: '10 September 2025',
+    readTime: '7 menit baca',
+    content: [
+      {
+        heading: 'Pengaturan Penting di BIOS',
+        paragraphs: [
+          'Aktifkan XMP/EXPO untuk RAM berjalan pada kecepatan penuh. Pastikan Secure Boot aktif untuk keamanan sistem. Atur urutan boot drive dengan benar agar sistem booting dari SSD, bukan HDD.',
+        ],
+      },
+      {
+        heading: 'Overclock CPU dengan Aman',
+        paragraphs: [
+          'Gunakan fitur Precision Boost Overdrive (PBO) untuk AMD atau Intel Turbo Boost Max untuk meningkatkan frekuensi secara otomatis dalam batas aman. Pantau suhu menggunakan software monitoring setelah perubahan dilakukan.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 12,
+    emoji: '🎯',
+    category: 'Review',
+    title: 'RTX 4070 vs RX 7800 XT: Duel GPU Kelas Menengah 2025',
+    excerpt:
+      'Perbandingan mendalam dua GPU kelas menengah terpopuler — performa gaming, efisiensi daya, fitur eksklusif, dan nilai uang terbaik.',
+    date: '3 September 2025',
+    readTime: '13 menit baca',
+    content: [
+      {
+        heading: 'Performa Gaming 1080p dan 1440p',
+        paragraphs: [
+          'Pada resolusi 1080p, keduanya mampu menghasilkan frame rate sangat tinggi di game modern. RTX 4070 unggul tipis berkat DLSS 3 dengan Frame Generation yang secara efektif melipatgandakan frame rate di game yang mendukungnya.',
+          'Di 1440p, RX 7800 XT sering mengejar bahkan menyamai RTX 4070 dalam rasterization murni, menjadikannya pilihan menarik bagi yang tidak terlalu membutuhkan fitur NVIDIA.',
+        ],
+      },
+      {
+        heading: 'Nilai Uang dan Ekosistem',
+        paragraphs: [
+          'RX 7800 XT umumnya ditawarkan dengan harga lebih rendah untuk performa setara, tetapi RTX 4070 menawarkan DLSS 3, NVIDIA Broadcast, dan dukungan ray tracing yang lebih matang. Pilihan akhir bergantung pada game yang Anda mainkan dan fitur apa yang paling Anda hargai.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 13,
+    emoji: '🏗️',
+    category: 'Tutorial',
+    title: 'Cara Instalasi Windows 11 dari USB Bootable',
+    excerpt:
+      'Panduan lengkap membuat USB bootable dan menginstal Windows 11 yang bersih pada PC rakitan baru Anda — dari awal hingga desktop siap digunakan.',
+    date: '28 Agustus 2025',
+    readTime: '6 menit baca',
+    content: [
+      {
+        heading: 'Membuat USB Bootable',
+        paragraphs: [
+          'Unduh Windows 11 ISO dari situs resmi Microsoft, lalu gunakan Rufus (gratis) untuk membuat USB bootable. Pilih skema partisi GPT dan target sistem UEFI agar kompatibel dengan hardware modern.',
+        ],
+      },
+      {
+        heading: 'Proses Instalasi',
+        paragraphs: [
+          'Boot dari USB, pilih "Custom Install", format partisi target, dan biarkan proses instalasi berjalan. Setelah selesai, instal driver chipset motherboard terlebih dahulu sebelum driver komponen lain untuk memastikan stabilitas sistem.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 14,
+    emoji: '🌡️',
+    category: 'Tips',
+    title: 'Cara Mengatasi PC yang Overheat dan Throttling',
+    excerpt:
+      'PC yang terlalu panas akan menurunkan performa sendiri demi keselamatan komponen. Pelajari penyebab dan cara mengatasinya secara efektif.',
+    date: '20 Agustus 2025',
+    readTime: '8 menit baca',
+    content: [
+      {
+        heading: 'Penyebab Umum Overheating',
+        paragraphs: [
+          'Thermal paste yang kering atau tidak merata, kipas yang kotor berdebu, airflow casing yang buruk, dan cooler yang tidak cukup kuat untuk TDP prosesor adalah penyebab paling sering dijumpai.',
+        ],
+      },
+      {
+        heading: 'Langkah Penanganan',
+        paragraphs: [
+          'Bersihkan debu di semua kipas dan heatsink menggunakan udara bertekanan. Ganti thermal paste setiap 2–3 tahun atau jika suhu idle CPU melebihi 50°C. Tambahkan kipas casing jika perlu dan pastikan kabel tidak menghalangi aliran udara.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 15,
+    emoji: '🖨️',
+    category: 'Guide',
+    title: 'Panduan Memilih Monitor untuk Desainer dan Kreator Konten',
+    excerpt:
+      'Kreator konten membutuhkan monitor dengan akurasi warna tinggi. Pelajari parameter penting seperti color gamut, Delta E, dan bit depth sebelum membeli.',
+    date: '12 Agustus 2025',
+    readTime: '10 menit baca',
+    content: [
+      {
+        heading: 'Akurasi Warna dan Color Gamut',
+        paragraphs: [
+          'Untuk desain grafis dan video editing profesional, cari monitor dengan cakupan sRGB ≥ 99% dan Delta E < 2 (semakin kecil semakin akurat). Panel IPS atau OLED adalah pilihan terbaik karena warna konsisten dari berbagai sudut pandang.',
+        ],
+      },
+      {
+        heading: 'Resolusi dan Ukuran',
+        paragraphs: [
+          'Resolusi 2560×1440 (QHD) pada layar 27 inci memberikan ketajaman sangat baik untuk editing detail. Resolusi 4K ideal untuk grading video resolusi tinggi, tetapi membutuhkan GPU yang lebih kuat.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 16,
+    emoji: '🔧',
+    category: 'Tutorial',
+    title: 'Cara Membersihkan dan Merawat PC Agar Awet',
+    excerpt:
+      'PC yang terawat bersih bekerja lebih dingin, lebih tenang, dan lebih panjang umurnya. Panduan perawatan rutin yang mudah dilakukan sendiri di rumah.',
+    date: '5 Agustus 2025',
+    readTime: '5 menit baca',
+    content: [
+      {
+        heading: 'Jadwal Perawatan yang Dianjurkan',
+        paragraphs: [
+          'Bersihkan filter debu casing setiap bulan dan lakukan pembersihan menyeluruh bagian dalam (kipas, heatsink, slot RAM, dan PCIe) setiap 6–12 bulan tergantung lingkungan ruangan.',
+        ],
+      },
+      {
+        heading: 'Tips Merawat Komponen',
+        paragraphs: [
+          'Gunakan udara bertekanan untuk membersihkan debu; hindari penyedot debu yang menghasilkan listrik statis. Pastikan PC berdiri di permukaan yang memiliki sirkulasi udara baik, jauh dari permukaan karpet yang menahan debu.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 17,
+    emoji: '📡',
+    category: 'Tips',
+    title: 'WiFi vs Ethernet: Pilihan Koneksi Terbaik untuk Gaming',
+    excerpt:
+      'Stabilitas koneksi jaringan sangat berpengaruh pada pengalaman gaming online. Ketahui kapan Ethernet wajib digunakan dan kapan WiFi sudah cukup.',
+    date: '28 Juli 2025',
+    readTime: '6 menit baca',
+    content: [
+      {
+        heading: 'Keunggulan Ethernet',
+        paragraphs: [
+          'Ethernet menawarkan latensi lebih rendah dan koneksi yang jauh lebih stabil dibanding WiFi, terutama saat banyak perangkat menggunakan jaringan yang sama. Untuk gaming kompetitif, Ethernet adalah pilihan mutlak.',
+        ],
+      },
+      {
+        heading: 'Kapan WiFi Sudah Cukup?',
+        paragraphs: [
+          'WiFi 6 (802.11ax) modern sudah sangat cepat dan stabil untuk gaming kasual jika router ditempatkan dekat PC dan tidak terlalu banyak gangguan sinyal. Namun untuk turnamen atau sesi ranked yang serius, tetap utamakan Ethernet.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 18,
+    emoji: '🎵',
+    category: 'Guide',
+    title: 'Panduan Memilih Headset dan Speaker untuk PC Gaming',
+    excerpt:
+      'Audio berkualitas meningkatkan imersi gaming dan membantu mendeteksi arah suara musuh. Panduan memilih headset dan speaker gaming yang tepat sesuai budget.',
+    date: '20 Juli 2025',
+    readTime: '7 menit baca',
+    content: [
+      {
+        heading: 'Headset vs Speaker: Situasi Penggunaan',
+        paragraphs: [
+          'Headset dengan surround sound virtual (misalnya DTS Headphone:X atau Dolby Atmos) sangat efektif untuk game kompetitif di mana posisi suara musuh kritis. Speaker lebih cocok untuk pengalaman sinematik dan gaming santai.',
+        ],
+      },
+      {
+        heading: 'Fitur yang Perlu Dipertimbangkan',
+        paragraphs: [
+          'Untuk headset: driver berukuran besar (50mm ke atas) biasanya menghasilkan bass lebih baik; mikrofon dengan noise cancellation penting untuk komunikasi tim. Untuk speaker: sepasang speaker 2.0 stereo berkualitas sering mengalahkan sistem 5.1 murah dalam kejernihan suara.',
+        ],
+      },
+    ],
+  },
 ]
+
+// ── Computed pagination ───────────────────────────
+const totalPages = computed(() => Math.ceil(articles.length / ARTICLES_PER_PAGE))
+
+const paginatedArticles = computed(() => {
+  const start = (currentPage.value - 1) * ARTICLES_PER_PAGE
+  return articles.slice(start, start + ARTICLES_PER_PAGE)
+})
+
+function goToPage(page) {
+  if (page < 1 || page > totalPages.value) return
+  currentPage.value = page
+  nextTick(() => window.scrollTo({ top: 0, behavior: 'smooth' }))
+}
 </script>

@@ -76,11 +76,63 @@
       <!-- Product Grid -->
       <div v-if="filteredProducts.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         <ProductCard
-          v-for="product in filteredProducts"
+          v-for="product in paginatedProducts"
           :key="product.id"
           :product="product"
           @add-to-cart="$emit('add-to-cart', $event)"
         />
+      </div>
+
+      <!-- Pagination -->
+      <div v-if="totalPages > 1" class="mt-10 flex flex-col items-center gap-3">
+        <p class="text-sm" style="color: #6b7280;">
+          Halaman <span class="font-semibold" style="color: #111827;">{{ currentPage }}</span>
+          / <span class="font-semibold" style="color: #111827;">{{ totalPages }}</span>
+        </p>
+        <div class="flex items-center gap-2">
+          <!-- Prev -->
+          <button
+            id="katalog-pagination-prev"
+            type="button"
+            :disabled="currentPage === 1"
+            @click="goToPage(currentPage - 1)"
+            class="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-semibold transition-all duration-200"
+            :style="currentPage === 1
+              ? 'border:1px solid #e5e7eb; color:#d1d5db; cursor:not-allowed; background:#fff;'
+              : 'border:1px solid #d1d5db; color:#374151; background:#fff; cursor:pointer;'"
+            @mouseenter="e => { if (currentPage > 1) e.currentTarget.style.borderColor='#6366f1'; }"
+            @mouseleave="e => { if (currentPage > 1) e.currentTarget.style.borderColor='#d1d5db'; }"
+          >←</button>
+
+          <!-- Page numbers -->
+          <button
+            v-for="page in totalPages"
+            :key="page"
+            :id="`katalog-page-${page}`"
+            type="button"
+            @click="goToPage(page)"
+            class="w-9 h-9 rounded-xl text-sm font-semibold transition-all duration-200"
+            :style="page === currentPage
+              ? 'background:#4f46e5; color:#fff; border:1px solid #4f46e5;'
+              : 'background:#fff; color:#374151; border:1px solid #d1d5db; cursor:pointer;'"
+            @mouseenter="e => { if (page !== currentPage) e.currentTarget.style.borderColor='#6366f1'; }"
+            @mouseleave="e => { if (page !== currentPage) e.currentTarget.style.borderColor='#d1d5db'; }"
+          >{{ page }}</button>
+
+          <!-- Next -->
+          <button
+            id="katalog-pagination-next"
+            type="button"
+            :disabled="currentPage === totalPages"
+            @click="goToPage(currentPage + 1)"
+            class="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-semibold transition-all duration-200"
+            :style="currentPage === totalPages
+              ? 'border:1px solid #e5e7eb; color:#d1d5db; cursor:not-allowed; background:#fff;'
+              : 'border:1px solid #d1d5db; color:#374151; background:#fff; cursor:pointer;'"
+            @mouseenter="e => { if (currentPage < totalPages) e.currentTarget.style.borderColor='#6366f1'; }"
+            @mouseleave="e => { if (currentPage < totalPages) e.currentTarget.style.borderColor='#d1d5db'; }"
+          >→</button>
+        </div>
       </div>
 
       <!-- Empty state -->
@@ -97,7 +149,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import ProductCard from '../components/ProductCard.vue'
 import { products } from '../store.js'
 
@@ -106,6 +158,8 @@ defineEmits(['add-to-cart'])
 const search = ref('')
 const selectedCategory = ref('')
 const sortBy = ref('default')
+const currentPage = ref(1)
+const PRODUCTS_PER_PAGE = 12
 
 const categories = [...new Set(products.map(p => p.category))]
 
@@ -123,9 +177,26 @@ const filteredProducts = computed(() => {
   return result
 })
 
+// Reset to page 1 whenever filters change
+watch([search, selectedCategory, sortBy], () => { currentPage.value = 1 })
+
+const totalPages = computed(() => Math.max(1, Math.ceil(filteredProducts.value.length / PRODUCTS_PER_PAGE)))
+
+const paginatedProducts = computed(() => {
+  const start = (currentPage.value - 1) * PRODUCTS_PER_PAGE
+  return filteredProducts.value.slice(start, start + PRODUCTS_PER_PAGE)
+})
+
+function goToPage(page) {
+  if (page < 1 || page > totalPages.value) return
+  currentPage.value = page
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
 function resetFilters() {
   search.value = ''
   selectedCategory.value = ''
   sortBy.value = 'default'
+  currentPage.value = 1
 }
 </script>

@@ -11,12 +11,6 @@
           <p class="text-xs leading-relaxed mb-5" style="color: #6b7280;">
             Platform terpercaya untuk membangun PC berkualitas tinggi. Rakit PC impian Anda dengan komponen terbaik.
           </p>
-          <div class="flex gap-2">
-            <a v-for="s in socials" :key="s.name" href="#" :title="s.name"
-              class="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-150 hover:bg-white/10"
-              style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); color: #9ca3af; font-size: 14px;"
-            >{{ s.icon }}</a>
-          </div>
         </div>
         <!-- Navigasi -->
         <div>
@@ -75,12 +69,6 @@
 <script setup>
 // Tahun otomatis mengikuti tahun berjalan (saat ini 2026) — tidak perlu update manual tiap tahun.
 const currentYear = new Date().getFullYear()
-const socials = [
-  { name: 'Instagram', icon: '📸' },
-  { name: 'Twitter', icon: '🐦' },
-  { name: 'YouTube', icon: '▶️' },
-  { name: 'WhatsApp', icon: '💬' },
-]
 const quickLinks = [
   { label: 'Beranda', path: '/' },
   { label: 'Katalog Produk', path: '/katalog' },
