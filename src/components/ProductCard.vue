@@ -16,31 +16,33 @@
     <!-- Product Image — light gray bg -->
     <div
       class="flex items-center justify-center overflow-hidden"
-      style="background: #f1f5f9; height: 170px; padding: 12px;"
+      :style="`background: #f1f5f9; height: ${mini ? '100px' : '170px'}; padding: ${mini ? '8px' : '12px'};`"
     >
       <img
         :src="product.image"
         :alt="product.name"
-        class="h-36 w-full object-contain group-hover:scale-105 transition-transform duration-400"
+        class="w-full object-contain group-hover:scale-105 transition-transform duration-400"
+        :class="mini ? 'h-20' : 'h-36'"
         loading="lazy"
       />
     </div>
 
     <!-- Content -->
-    <div class="p-3 flex flex-col flex-1">
+    <div class="flex flex-col flex-1" :class="mini ? 'p-2' : 'p-3'">
       <!-- Product name -->
       <h3
         class="font-semibold mb-1.5 line-clamp-2 leading-snug"
-        style="color: #111827; font-size: 0.78rem;"
+        style="color: #111827;"
+        :style="`font-size: ${mini ? '0.7rem' : '0.78rem'};`"
       >{{ product.name }}</h3>
 
       <!-- Price -->
-      <p class="font-bold mb-2" style="color: #111827; font-size: 0.85rem;">
+      <p class="font-bold" :class="mini ? 'mb-1' : 'mb-2'" style="color: #111827;" :style="`font-size: ${mini ? '0.75rem' : '0.85rem'};`">
         {{ formatPrice(product.price) }}
       </p>
 
       <!-- Stock indicator -->
-      <div class="flex items-center gap-1.5 mb-3">
+      <div class="flex items-center gap-1.5" :class="mini ? 'mb-2' : 'mb-3'">
         <span
           class="inline-block w-2 h-2 rounded-full flex-shrink-0"
           :class="stockDotClass"
@@ -57,16 +59,19 @@
         @click.prevent.stop="product.stock > 0 && $emit('add-to-cart', product)"
         :id="`add-to-cart-${product.id}`"
         :disabled="product.stock === 0"
-        class="w-full py-2 rounded-lg text-white font-semibold flex items-center justify-center gap-1.5 transition-all duration-150"
-        :class="product.stock > 0 ? 'active:scale-95' : 'opacity-50 cursor-not-allowed'"
-        :style="product.stock > 0 ? 'background: #1e293b; font-size: 0.78rem;' : 'background: #6b7280; font-size: 0.78rem;'"
+        class="w-full rounded-lg text-white font-semibold flex items-center justify-center gap-1.5 transition-all duration-150"
+        :class="[
+          product.stock > 0 ? 'active:scale-95' : 'opacity-50 cursor-not-allowed',
+          mini ? 'py-1.5' : 'py-2'
+        ]"
+        :style="product.stock > 0 ? `background: #1e293b; font-size: ${mini ? '0.7rem' : '0.78rem'};` : `background: #6b7280; font-size: ${mini ? '0.7rem' : '0.78rem'};`"
         @mouseenter="e => { if (product.stock > 0) e.currentTarget.style.background='#334155' }"
         @mouseleave="e => { if (product.stock > 0) e.currentTarget.style.background='#1e293b' }"
       >
-        <svg v-if="product.stock > 0" class="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+        <svg v-if="product.stock > 0" class="flex-shrink-0" :class="mini ? 'w-2.5 h-2.5' : 'w-3 h-3'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
           <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
         </svg>
-        <span v-if="product.stock === 0">Stok Habis</span>
+        <span v-if="product.stock === 0">Habis</span>
         <span v-else>+ Tambah</span>
       </button>
     </div>
@@ -77,7 +82,10 @@
 import { computed } from 'vue'
 import { formatPrice } from '../store.js'
 
-const props = defineProps({ product: { type: Object, required: true } })
+const props = defineProps({
+  product: { type: Object, required: true },
+  mini: { type: Boolean, default: false }
+})
 defineEmits(['add-to-cart'])
 
 const badgeMap = {
