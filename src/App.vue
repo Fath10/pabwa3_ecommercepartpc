@@ -68,8 +68,8 @@
                 </div>
 
                 <!-- Product Cards (if any) -->
-                <div v-if="msg.products && msg.products.length > 0" class="flex gap-2 overflow-x-auto py-2 px-1 w-full snap-x snap-mandatory scrollbar-hide" style="max-width: 100%;">
-                  <div v-for="prod in msg.products" :key="prod.id" class="flex-shrink-0 w-36 snap-center">
+                <div v-if="msg.products && msg.products.length > 0" class="flex gap-2 overflow-x-auto py-2 px-1 w-full snap-x snap-mandatory scrollbar-hide flex-shrink-0" style="max-width: 100%;">
+                  <div v-for="prod in msg.products" :key="prod.id" class="flex-shrink-0 w-44 snap-center">
                     <ProductCard :product="prod" mini @add-to-cart="handleAddToCart" />
                   </div>
                 </div>
