@@ -367,15 +367,15 @@ export const products = [
 // Cart store
 export const cartStore = reactive({
   items: [],
-  
+
   get totalItems() {
     return this.items.reduce((sum, item) => sum + item.quantity, 0)
   },
-  
+
   get totalPrice() {
     return this.items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
   },
-  
+
   addItem(product) {
     const existing = this.items.find(i => i.id === product.id)
     if (existing) {
@@ -384,12 +384,12 @@ export const cartStore = reactive({
       this.items.push({ ...product, quantity: 1 })
     }
   },
-  
+
   removeItem(productId) {
     const index = this.items.findIndex(i => i.id === productId)
     if (index !== -1) this.items.splice(index, 1)
   },
-  
+
   updateQuantity(productId, quantity) {
     const item = this.items.find(i => i.id === productId)
     if (item) {
@@ -397,7 +397,7 @@ export const cartStore = reactive({
       else item.quantity = quantity
     }
   },
-  
+
   clearCart() {
     this.items = []
   }
@@ -407,18 +407,18 @@ export const cartStore = reactive({
 export const userStore = reactive({
   user: JSON.parse(localStorage.getItem('user') || 'null'),
   token: localStorage.getItem('token') || null,
-  
+
   get isLoggedIn() {
     return !!this.user
   },
-  
+
   login(userData, tokenData) {
     this.user = userData
     this.token = tokenData
     localStorage.setItem('user', JSON.stringify(userData))
     localStorage.setItem('token', tokenData)
   },
-  
+
   logout() {
     this.user = null
     this.token = null

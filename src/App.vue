@@ -70,17 +70,24 @@
 
             <!-- Chat Messages -->
             <div class="ai-messages" ref="messagesContainer">
-              <div
-                v-for="(msg, i) in messages"
-                :key="i"
-                class="ai-message"
-                :class="msg.role === 'user' ? 'ai-message-user' : 'ai-message-bot'"
-              >
-                <div v-if="msg.role === 'bot'" class="ai-bot-avatar">🤖</div>
-                <div class="ai-bubble" :class="msg.role === 'user' ? 'ai-bubble-user' : 'ai-bubble-bot'">
-                  {{ msg.content }}
+              <template v-for="(msg, i) in messages" :key="i">
+                <div
+                  class="ai-message"
+                  :class="msg.role === 'user' ? 'ai-message-user' : 'ai-message-bot'"
+                >
+                  <div v-if="msg.role === 'bot'" class="ai-bot-avatar">🤖</div>
+                  <div class="ai-bubble" :class="msg.role === 'user' ? 'ai-bubble-user' : 'ai-bubble-bot'">
+                    {{ msg.content }}
+                  </div>
                 </div>
-              </div>
+
+                <!-- Product Cards (if any) -->
+                <div v-if="msg.products && msg.products.length > 0" class="flex gap-2 overflow-x-auto py-2 px-1 w-full snap-x snap-mandatory scrollbar-hide flex-shrink-0" style="max-width: 100%;">
+                  <div v-for="prod in msg.products" :key="prod.id" class="flex-shrink-0 w-44 snap-center">
+                    <ProductCard :product="prod" mini @add-to-cart="handleAddToCart" />
+                  </div>
+                </div>
+              </template>
 
               <!-- Typing indicator -->
               <div v-if="isTyping" class="ai-message ai-message-bot">
@@ -138,6 +145,7 @@ import { ref, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import NavBar from './components/NavBar.vue'
 import FooterSection from './components/FooterSection.vue'
+import ProductCard from './components/ProductCard.vue'
 import { cartStore } from './store.js'
 
 const router = useRouter()
@@ -169,36 +177,46 @@ const quickReplies = [
   '❓ Cara Order',
 ]
 
-const botResponses = {
-  'rekomendasi pc gaming': 'Untuk PC gaming 1080p dengan budget terjangkau, saya rekomendasikan: CPU AMD Ryzen 5 7600X + GPU RTX 4060 + RAM 16GB DDR5. Kombinasi ini sangat worth it! Cek katalog kami untuk produk tersedia. 🎮',
-  'tips merakit': 'Tips merakit PC: (1) Pasang CPU dulu sebelum masuk casing, (2) Cek kompatibilitas semua komponen, (3) Thermal paste jangan terlalu banyak, (4) Test di luar casing sebelum dipasang. Ada yang ingin ditanyakan lebih lanjut? 🔧',
-  'budget 10': 'Dengan budget 10 jutaan, bisa dapat PC gaming 1080p yang solid! Rekomendasi: Ryzen 5 7600 (2.5jt) + RTX 4060 (5jt) + 16GB RAM (700rb) + SSD 500GB (400rb) + Motherboard B650 (1.5jt). Total sekitar 10.1jt. Mantap! 💪',
-  'cara order': 'Cara order di e-BuildPC sangat mudah: (1) Pilih produk di Katalog, (2) Klik "Tambah ke Keranjang", (3) Buka halaman Keranjang, (4) Klik Checkout. Bisa juga hubungi kami via WhatsApp untuk pemesanan langsung! 😊',
-  default: 'Terima kasih atas pertanyaan Anda! Tim kami akan segera membantu. Sementara itu, Anda bisa cek katalog produk kami atau baca artikel tips di halaman Artikel. Ada pertanyaan lain? 😊'
-}
-
-function getBotReply(input) {
-  const lower = input.toLowerCase()
-  if (lower.includes('gaming') || lower.includes('rekomendasi')) return botResponses['rekomendasi pc gaming']
-  if (lower.includes('rakit') || lower.includes('tips')) return botResponses['tips merakit']
-  if (lower.includes('budget') || lower.includes('10 juta') || lower.includes('harga')) return botResponses['budget 10']
-  if (lower.includes('order') || lower.includes('beli') || lower.includes('cara')) return botResponses['cara order']
-  return botResponses.default
-}
-
 async function sendMessage() {
-  if (!userInput.value.trim()) return
+  if (!userInput.value.trim() || isTyping.value) return
   const text = userInput.value.trim()
   userInput.value = ''
+  
   messages.value.push({ role: 'user', content: text })
-  await scrollToBottom()
   isTyping.value = true
   await scrollToBottom()
-  setTimeout(async () => {
+
+  try {
+    const historyToSend = messages.value
+      .slice(-10)
+      .filter((_, i) => i < messages.value.length - 1)
+      .map(m => ({ role: m.role, text: m.content }))
+
+    const res = await fetch('http://localhost:3000/api/chat-ai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: text,
+        history: historyToSend,
+      }),
+    })
+
+    const data = await res.json()
+
+    messages.value.push({
+      role: 'bot',
+      content: data.reply || '⚠️ Tidak ada respons dari server.',
+      products: data.products || [],
+    })
+  } catch (err) {
+    messages.value.push({
+      role: 'bot',
+      content: '⚠️ Maaf, terjadi kesalahan saat menghubungi server. Pastikan backend sudah berjalan dan Ollama sudah aktif.',
+    })
+  } finally {
     isTyping.value = false
-    messages.value.push({ role: 'bot', content: getBotReply(text) })
     await scrollToBottom()
-  }, 1200)
+  }
 }
 
 async function sendQuickReply(text) {
@@ -331,6 +349,16 @@ function handleAddToCart(product, event) {
 .toast-leave-to {
   opacity: 0;
   transform: translateX(100px);
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+/* Hide scrollbar for IE, Edge and Firefox */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
 }
 
 /* ─── AI FAB Wrapper ─── */
