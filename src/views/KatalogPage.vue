@@ -163,7 +163,7 @@
           v-for="product in paginatedProducts"
           :key="product.id"
           :product="product"
-          @add-to-cart="$emit('add-to-cart', $event)"
+          @add-to-cart="(product, event) => $emit('add-to-cart', product, event)"
         />
       </div>
 
@@ -244,7 +244,7 @@ import { useRoute, useRouter } from 'vue-router'
 import ProductCard from '../components/ProductCard.vue'
 import { products } from '../store.js'
 
-defineEmits(['add-to-cart'])
+const emit = defineEmits(['add-to-cart'])
 
 const route = useRoute()
 const router = useRouter()

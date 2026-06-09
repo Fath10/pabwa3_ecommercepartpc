@@ -33,10 +33,24 @@
     <!-- Footer -->
     <FooterSection />
 
+    <!-- Fly-to-cart particle -->
+    <Teleport to="body">
+      <div
+        v-for="p in flyParticles"
+        :key="p.id"
+        class="fly-particle"
+        :style="p.style"
+      >
+        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+        </svg>
+      </div>
+    </Teleport>
+
     <!-- ─── FLOATING AI CHAT BUTTON ─── -->
     <Teleport to="body">
       <div class="ai-fab-wrapper">
-        <!-- Chat Panel -->
+        <!-- Chat Panel: diposisikan absolute menutupi FAB -->
         <Transition name="chat-panel">
           <div v-if="chatOpen" class="ai-chat-panel">
             <!-- Panel Header -->
@@ -100,21 +114,20 @@
           </div>
         </Transition>
 
-        <!-- FAB Button -->
-        <button
-          id="ai-chat-fab"
-          @click="toggleChat"
-          class="ai-fab"
-          :class="{ 'ai-fab-active': chatOpen }"
-          :title="chatOpen ? 'Tutup chat' : 'Chat dengan AI'"
-        >
-          <Transition name="fab-icon" mode="out-in">
-            <span v-if="!chatOpen" key="open" class="fab-icon">🤖</span>
-            <span v-else key="close" class="fab-icon">✕</span>
-          </Transition>
-          <!-- Notification dot -->
-          <span v-if="!chatOpen && hasNotification" class="ai-notif-dot"></span>
-        </button>
+        <!-- FAB Button: dihapus dari DOM saat panel terbuka (v-if, bukan v-show) -->
+        <Transition name="fab-toggle">
+          <button
+            v-if="!chatOpen"
+            id="ai-chat-fab"
+            @click="toggleChat"
+            class="ai-fab"
+            title="Chat dengan AI"
+          >
+            <span class="fab-icon">🤖</span>
+            <!-- Notification dot -->
+            <span v-if="hasNotification" class="ai-notif-dot"></span>
+          </button>
+        </Transition>
       </div>
     </Teleport>
   </div>
@@ -130,6 +143,10 @@ import { cartStore } from './store.js'
 const router = useRouter()
 const toasts = ref([])
 let toastId = 0
+
+// Fly-to-cart animation
+const flyParticles = ref([])
+let particleId = 0
 
 // ─── AI Chat State ───
 const chatOpen = ref(false)
@@ -217,13 +234,78 @@ function showToast(message, type = 'success') {
   }, 3000)
 }
 
-function handleAddToCart(product) {
+function handleAddToCart(product, event) {
   cartStore.addItem(product)
-  showToast(`${product.name} ditambahkan ke keranjang!`)
+
+  // Cari posisi ikon keranjang
+  const cartBtn = document.getElementById('cart-btn')
+  if (!cartBtn || !event) return
+
+  const cartRect = cartBtn.getBoundingClientRect()
+  const sourceRect = event.currentTarget
+    ? event.currentTarget.getBoundingClientRect()
+    : { left: window.innerWidth / 2, top: window.innerHeight / 2, width: 0, height: 0 }
+
+  const startX = sourceRect.left + sourceRect.width / 2
+  const startY = sourceRect.top + sourceRect.height / 2
+  const endX = cartRect.left + cartRect.width / 2
+  const endY = cartRect.top + cartRect.height / 2
+
+  const id = ++particleId
+  flyParticles.value.push({
+    id,
+    style: {
+      '--start-x': `${startX}px`,
+      '--start-y': `${startY}px`,
+      '--end-x': `${endX}px`,
+      '--end-y': `${endY}px`,
+    }
+  })
+
+  // Hapus partikel setelah animasi selesai
+  setTimeout(() => {
+    flyParticles.value = flyParticles.value.filter(p => p.id !== id)
+  }, 700)
 }
 </script>
 
 <style scoped>
+/* ─── Fly-to-cart particle ─── */
+.fly-particle {
+  position: fixed;
+  left: var(--start-x);
+  top: var(--start-y);
+  z-index: 99999;
+  pointer-events: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translate(-50%, -50%);
+  animation: fly-to-cart 0.65s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+@keyframes fly-to-cart {
+  0% {
+    left: var(--start-x);
+    top: var(--start-y);
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  60% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.85);
+  }
+  100% {
+    left: var(--end-x);
+    top: var(--end-y);
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.3);
+  }
+}
+
 /* ─── Page Transitions ─── */
 .page-enter-active,
 .page-leave-active {
@@ -257,10 +339,7 @@ function handleAddToCart(product) {
   bottom: 28px;
   right: 28px;
   z-index: 9000;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 16px;
+  /* Positioning context untuk panel absolute */
 }
 
 /* ─── FAB Button ─── */
@@ -284,11 +363,10 @@ function handleAddToCart(product) {
   transform: scale(1.12);
   box-shadow: 0 12px 40px rgba(79, 70, 229, 0.7);
 }
-.ai-fab-active {
-  animation: none;
-  transform: rotate(0deg);
-  background: linear-gradient(135deg, #374151, #1f2937);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+.ai-fab-close {
+  animation: none !important;
+  background: linear-gradient(135deg, #374151, #1f2937) !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4) !important;
 }
 @keyframes fab-pulse {
   0%, 100% { box-shadow: 0 8px 32px rgba(79,70,229,0.5), 0 0 0 0 rgba(79,70,229,0.4); }
@@ -299,11 +377,25 @@ function handleAddToCart(product) {
   display: block;
   line-height: 1;
 }
-.fab-icon-enter-active, .fab-icon-leave-active {
-  transition: all 0.2s ease;
+
+/* FAB toggle transition */
+.fab-toggle-enter-active {
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-.fab-icon-enter-from { opacity: 0; transform: scale(0.5) rotate(-90deg); }
-.fab-icon-leave-to { opacity: 0; transform: scale(0.5) rotate(90deg); }
+.fab-toggle-leave-active {
+  transition: all 0.2s ease;
+  position: absolute;
+  bottom: 0;
+  right: 0;
+}
+.fab-toggle-enter-from {
+  opacity: 0;
+  transform: scale(0.5) rotate(-45deg);
+}
+.fab-toggle-leave-to {
+  opacity: 0;
+  transform: scale(0.5) rotate(45deg);
+}
 
 /* Notification dot */
 .ai-notif-dot {
@@ -324,26 +416,36 @@ function handleAddToCart(product) {
 
 /* ─── Chat Panel ─── */
 .ai-chat-panel {
-  width: 340px;
+  position: absolute;
+  bottom: 0;       /* Rata dengan bawah wrapper = menutupi FAB */
+  right: 0;
+  width: 460px;
   border-radius: 20px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   box-shadow: 0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.07);
   background: #111827;
-  max-height: 520px;
+  /* Tinggi: viewport - navbar (64px) - bottom offset (28px) - sedikit margin (16px) */
+  max-height: calc(100vh - 64px - 28px - 16px);
+  height: calc(100vh - 64px - 28px - 16px);
 }
 
-.chat-panel-enter-active, .chat-panel-leave-active {
-  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+.chat-panel-enter-active {
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.chat-panel-leave-active {
+  transition: all 0.25s cubic-bezier(0.4, 0, 1, 1);
 }
 .chat-panel-enter-from {
   opacity: 0;
-  transform: translateY(20px) scale(0.92);
+  transform: translateY(24px) scale(0.9);
+  transform-origin: bottom right;
 }
 .chat-panel-leave-to {
   opacity: 0;
-  transform: translateY(20px) scale(0.92);
+  transform: translateY(16px) scale(0.92);
+  transform-origin: bottom right;
 }
 
 /* Header */
@@ -531,7 +633,7 @@ function handleAddToCart(product) {
 }
 
 /* Responsive */
-@media (max-width: 480px) {
+@media (max-width: 540px) {
   .ai-fab-wrapper {
     bottom: 18px;
     right: 16px;

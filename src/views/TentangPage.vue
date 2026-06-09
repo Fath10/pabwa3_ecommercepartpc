@@ -8,7 +8,7 @@
 
       <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
         <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold mb-6" style="background: rgba(79,70,229,0.2); border: 1px solid rgba(79,70,229,0.4); color: #a5b4fc;">
-          🎓 Kelompok PABWA — 2024/2025
+          🎓 Kelompok PABWA3 — 2025/2026
         </div>
         <h1 class="font-black mb-4 leading-tight" style="font-size: clamp(2rem, 5vw, 3.5rem);">
           Tentang <span style="background: linear-gradient(135deg, #818cf8, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">e-BuildPC</span>
@@ -85,7 +85,7 @@
       <div>
         <div class="text-center mb-10">
           <h2 class="text-3xl font-black text-white mb-2">Anggota <span style="color: #818cf8;">Kelompok</span></h2>
-          <p class="text-sm" style="color: #64748b;">PABWA — Semester Genap 2024/2025</p>
+          <p class="text-sm" style="color: #64748b;">PABWA3 — Semester Genap 2025/2026</p>
         </div>
         <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           <div
@@ -113,43 +113,20 @@
       <!-- ─── TECH STACK ─── -->
       <div class="rounded-3xl p-8" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.07);">
         <h2 class="text-xl font-black text-white mb-6 text-center">Tech Stack yang Digunakan</h2>
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-4">
           <div
             v-for="tech in techStack"
             :key="tech.name"
-            class="flex flex-col items-center gap-2 p-4 rounded-2xl transition-all duration-200 hover:-translate-y-1 cursor-default"
+            class="flex flex-col items-center gap-2 p-4 rounded-2xl transition-all duration-200 hover:-translate-y-1 hover:border-indigo-500/30 cursor-default"
             style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);"
           >
-            <span class="text-3xl">{{ tech.icon }}</span>
+            <img :src="tech.logo" :alt="tech.name" class="w-10 h-10 object-contain" />
             <span class="text-xs font-bold text-white">{{ tech.name }}</span>
             <span class="text-xs text-center" style="color: #64748b;">{{ tech.desc }}</span>
           </div>
         </div>
       </div>
 
-      <!-- ─── CONTACT CTA ─── -->
-      <div class="rounded-3xl p-10 text-center relative overflow-hidden" style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e1b4b 100%);">
-        <div class="absolute inset-0 pointer-events-none" style="background: radial-gradient(ellipse at center, rgba(99,102,241,0.3), transparent 70%);"></div>
-        <div class="relative z-10">
-          <div class="text-4xl mb-4">💬</div>
-          <h2 class="text-2xl font-black text-white mb-3">Ada Pertanyaan?</h2>
-          <p class="mb-8 text-sm" style="color: #a5b4fc;">Tim kami siap membantu Anda. Hubungi kami sekarang!</p>
-          <div class="flex flex-wrap justify-center gap-4">
-            <a href="mailto:kelompok.pabwa@gmail.com" id="email-contact-btn"
-              class="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white text-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
-              style="background: #2563eb;"
-            >
-              📧 Email Kami
-            </a>
-            <a href="https://wa.me/6281234567890" id="whatsapp-contact-btn"
-              class="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white text-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
-              style="background: #16a34a;"
-            >
-              💬 WhatsApp
-            </a>
-          </div>
-        </div>
-      </div>
 
     </div>
   </main>
@@ -157,30 +134,32 @@
 
 <script setup>
 const team = [
-  { nim: '11211035', name: 'Edis Nabila Ramadhani',    gradient: 'linear-gradient(135deg, #ec4899, #be185d)' },
-  { nim: '11221009', name: 'Farizi Fattah',             gradient: 'linear-gradient(135deg, #4f46e5, #7c3aed)' },
-  { nim: '11221071', name: 'Cinta Satila',              gradient: 'linear-gradient(135deg, #f59e0b, #d97706)' },
-  { nim: '11221079', name: 'Andi Cole',                 gradient: 'linear-gradient(135deg, #0ea5e9, #0284c7)' },
-  { nim: '11231007', name: 'Alief Rachmattul Islam',    gradient: 'linear-gradient(135deg, #10b981, #059669)' },
-  { nim: '11231031', name: 'Imam Dzulvan Muffid',       gradient: 'linear-gradient(135deg, #8b5cf6, #6d28d9)' },
-  { nim: '11231045', name: 'Muhamad Faisal',            gradient: 'linear-gradient(135deg, #ef4444, #b91c1c)' },
-  { nim: '11231055', name: 'Muhammad Fatwa Al Choiri',  gradient: 'linear-gradient(135deg, #06b6d4, #0891b2)' },
-  { nim: '11231073', name: 'Nurfauzan Gymnastiar',      gradient: 'linear-gradient(135deg, #f97316, #ea580c)' },
+  { nim: '11211035', name: 'Edis Nabila Ramadhani',        gradient: 'linear-gradient(135deg, #ec4899, #be185d)' },
+  { nim: '11221037', name: 'Muhammad Akmal Al Fathan',     gradient: 'linear-gradient(135deg, #4f46e5, #7c3aed)' },
+  { nim: '11221071', name: 'Cinta Satila',                 gradient: 'linear-gradient(135deg, #f59e0b, #d97706)' },
+  { nim: '11221079', name: 'Andy Cole',                    gradient: 'linear-gradient(135deg, #0ea5e9, #0284c7)' },
+  { nim: '11231007', name: 'Alief Rachmattul Islam',       gradient: 'linear-gradient(135deg, #10b981, #059669)' },
+  { nim: '11231031', name: 'Imam Dzulvan Muffid',          gradient: 'linear-gradient(135deg, #8b5cf6, #6d28d9)' },
+  { nim: '11231045', name: 'Muhamad Faisal',               gradient: 'linear-gradient(135deg, #ef4444, #b91c1c)' },
+  { nim: '11231055', name: 'Muhammad Fatwa Al Choiri',     gradient: 'linear-gradient(135deg, #06b6d4, #0891b2)' },
+  { nim: '11231073', name: 'Nurfauzan Gymnastiar',         gradient: 'linear-gradient(135deg, #f97316, #ea580c)' },
 ]
 
 const stats = [
-  { icon: '🎓', value: '2025',  label: 'Tahun Proyek' },
-  { icon: '👥', value: '9',     label: 'Anggota Tim' },
-  { icon: '📦', value: '6+',    label: 'Produk Demo' },
-  { icon: '⭐', value: '100%',  label: 'Semangat Tim' },
+  { icon: '🎓', value: '2026',  label: 'Tahun Pengerjaan' },
+  { icon: '👥', value: '5',     label: 'Tim Frontend' },
+  { icon: '📦', value: '4',     label: 'Tim Backend + LLM' },
+  { icon: '📚', value: 'PABW',  label: 'Mata Kuliah' },
 ]
 
 const techStack = [
-  { icon: '💚', name: 'Vue.js 3',   desc: 'Framework' },
-  { icon: '⚡', name: 'Vite',       desc: 'Build Tool' },
-  { icon: '🎨', name: 'Tailwind',   desc: 'Styling' },
-  { icon: '🗂️', name: 'Vue Router', desc: 'Routing' },
-  { icon: '📦', name: 'Pinia',      desc: 'State Mgmt' },
-  { icon: '🌐', name: 'HTML5',      desc: 'Markup' },
+  { logo: 'https://upload.wikimedia.org/wikipedia/commons/9/95/Vue.js_Logo_2.svg',       name: 'Vue.js 3',    desc: 'Framework' },
+  { logo: 'https://upload.wikimedia.org/wikipedia/commons/f/f1/Vitejs-logo.svg',         name: 'Vite',        desc: 'Build Tool' },
+  { logo: 'https://upload.wikimedia.org/wikipedia/commons/d/d5/Tailwind_CSS_Logo.svg',   name: 'Tailwind',    desc: 'Styling' },
+  { logo: 'https://upload.wikimedia.org/wikipedia/commons/9/95/Vue.js_Logo_2.svg',       name: 'Vue Router',  desc: 'Routing' },
+  { logo: 'https://wiki.postgresql.org/images/a/a4/PostgreSQL_logo.3colors.svg',         name: 'PostgreSQL',  desc: 'Database' },
+  { logo: 'https://neon.tech/favicon/favicon.svg',                                        name: 'Neon',        desc: 'Host DB' },
+  { logo: 'https://upload.wikimedia.org/wikipedia/commons/d/d9/Node.js_logo.svg',        name: 'Node.js',     desc: 'Runtime' },
+  { logo: 'https://upload.wikimedia.org/wikipedia/commons/6/64/Expressjs.png',           name: 'Express',     desc: 'Backend' },
 ]
 </script>

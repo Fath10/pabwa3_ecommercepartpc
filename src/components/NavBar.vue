@@ -59,17 +59,26 @@
                 class="absolute top-full left-0 right-0 mt-1 rounded-xl overflow-hidden shadow-2xl z-50"
                 style="background: #1a1f2e; border: 1px solid rgba(255,255,255,0.1);"
               >
+                <!-- Label section -->
+                <div class="px-4 pt-2.5 pb-1">
+                  <span class="text-xs text-gray-500 font-semibold uppercase tracking-wider">
+                    {{ searchQuery.trim() ? 'Produk Ditemukan' : 'Produk Populer' }}
+                  </span>
+                </div>
+
+                <!-- Product suggestions (always show products) -->
                 <button
-                  v-for="s in filteredSuggestions"
-                  :key="s.label"
+                  v-for="p in filteredSuggestions"
+                  :key="p.id"
                   class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition-colors hover:bg-white/5"
-                  @mousedown.prevent="selectSuggestion(s)"
+                  @mousedown.prevent="selectProduct(p)"
                 >
-                  <span class="text-base">{{ s.icon }}</span>
-                  <div>
-                    <p class="text-white font-medium leading-none">{{ s.label }}</p>
-                    <p class="text-xs text-gray-500 mt-0.5">{{ s.type }}</p>
+                  <img :src="p.image" :alt="p.name" class="w-9 h-9 rounded-lg object-cover flex-shrink-0" style="background: rgba(255,255,255,0.05);" />
+                  <div class="flex-1 min-w-0">
+                    <p class="text-white font-medium leading-snug truncate">{{ p.name }}</p>
+                    <p class="text-xs text-gray-500 mt-0.5">{{ p.category }} · Stok {{ p.stock }}</p>
                   </div>
+                  <span class="text-xs font-bold text-indigo-400 flex-shrink-0">{{ formatPrice(p.price) }}</span>
                 </button>
               </div>
             </Transition>
@@ -120,7 +129,7 @@
             <Transition name="badge">
               <span
                 v-if="cartCount > 0"
-                class="absolute -top-1 -right-0.5 w-4 h-4 flex items-center justify-center rounded-full text-white font-bold"
+                class="absolute -top-1 -left-0.5 w-4 h-4 flex items-center justify-center rounded-full text-white font-bold"
                 style="font-size: 9px; background: #ef4444;"
               >{{ cartCount > 9 ? '9+' : cartCount }}</span>
             </Transition>
@@ -163,7 +172,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { userStore } from '../store.js'
+import { userStore, products, formatPrice } from '../store.js'
 
 const props = defineProps({ cartCount: { type: Number, default: 0 } })
 const router = useRouter()
@@ -180,24 +189,19 @@ const navLinks = [
   { label: 'Tentang Kami', path: '/tentang' },
 ]
 
-// Daftar saran pencarian (kategori + produk populer)
-const allSuggestions = [
-  { label: 'Processor (CPU)', icon: '🧠', type: 'Kategori', query: 'processor' },
-  { label: 'Kartu Grafis (GPU)', icon: '🎮', type: 'Kategori', query: 'gpu' },
-  { label: 'RAM Memory', icon: '💾', type: 'Kategori', query: 'ram' },
-  { label: 'Motherboard', icon: '🖱️', type: 'Kategori', query: 'motherboard' },
-  { label: 'Storage SSD', icon: '📲', type: 'Kategori', query: 'ssd' },
-  { label: 'Power Supply', icon: '🔋', type: 'Kategori', query: 'psu' },
-  { label: 'Casing PC', icon: '🖥️', type: 'Kategori', query: 'casing' },
-  { label: 'Pendingin (Cooler)', icon: '❄️', type: 'Kategori', query: 'cooler' },
-]
-
+// Computed: tampilkan produk stok terbanyak saat kosong, atau filter nama saat ada query
 const filteredSuggestions = computed(() => {
-  if (!searchQuery.value.trim()) return allSuggestions.slice(0, 5)
-  const q = searchQuery.value.toLowerCase()
-  return allSuggestions.filter(s =>
-    s.label.toLowerCase().includes(q) || s.query.toLowerCase().includes(q)
-  ).slice(0, 6)
+  const q = searchQuery.value.trim().toLowerCase()
+  if (!q) {
+    // Urutkan berdasarkan stok terbanyak, ambil 5 teratas
+    return [...products]
+      .sort((a, b) => b.stock - a.stock)
+      .slice(0, 5)
+  }
+  // Filter berdasarkan nama produk atau kategori
+  return products
+    .filter(p => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q))
+    .slice(0, 6)
 })
 
 function onSearchInput() {
@@ -208,6 +212,12 @@ function selectSuggestion(s) {
   searchQuery.value = s.label
   showSuggestions.value = false
   router.push({ path: '/katalog', query: { q: s.query } })
+}
+
+function selectProduct(p) {
+  searchQuery.value = ''
+  showSuggestions.value = false
+  router.push(`/produk/${p.id}`)
 }
 
 function doSearch() {

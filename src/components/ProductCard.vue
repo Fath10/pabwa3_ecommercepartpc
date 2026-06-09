@@ -54,7 +54,7 @@
 
       <!-- "Tambah" button — disabled when out of stock -->
       <button
-        @click.prevent.stop="product.stock > 0 && $emit('add-to-cart', product)"
+        @click.prevent.stop="product.stock > 0 && handleAddToCart($event)"
         :id="`add-to-cart-${product.id}`"
         :disabled="product.stock === 0"
         class="w-full py-2 rounded-lg text-white font-semibold flex items-center justify-center gap-1.5 transition-all duration-150"
@@ -78,7 +78,11 @@ import { computed } from 'vue'
 import { formatPrice } from '../store.js'
 
 const props = defineProps({ product: { type: Object, required: true } })
-defineEmits(['add-to-cart'])
+const emit = defineEmits(['add-to-cart'])
+
+function handleAddToCart(event) {
+  emit('add-to-cart', props.product, event)
+}
 
 const badgeMap = {
   red: 'bg-red-500',
