@@ -2,7 +2,11 @@ import express from "express";
 
 import {
   getCart,
-  addToCart
+  addToCart,
+  increaseQuantity,
+  decreaseQuantity,
+  removeFromCart,
+  clearCart
 } from "../controllers/cartController.js";
 
 import { authMiddleware } from "../middleware/auth.js";
@@ -19,6 +23,30 @@ router.post(
   "/",
   authMiddleware,
   addToCart
+);
+
+router.put(
+  "/:id/increase",
+  authMiddleware,
+  increaseQuantity
+);
+
+router.put(
+  "/:id/decrease",
+  authMiddleware,
+  decreaseQuantity
+);
+
+router.delete(
+  "/:id",
+  authMiddleware,
+  removeFromCart
+);
+
+router.delete(
+  "/",
+  authMiddleware,
+  clearCart
 );
 
 export default router;

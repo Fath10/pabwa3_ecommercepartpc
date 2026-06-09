@@ -103,6 +103,40 @@
               </div>
             </div>
 
+            <!-- Konfirmasi Password -->
+            <div>
+              <label for="reg-confirm-password" class="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">Konfirmasi Password</label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-3 flex items-center text-gray-500">
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                  </svg>
+                </span>
+                <input
+                  id="reg-confirm-password"
+                  v-model="form.confirmPassword"
+                  :type="showConfirmPassword ? 'text' : 'password'"
+                  placeholder="Ulangi password Anda"
+                  required
+                  class="w-full pl-10 pr-10 py-2.5 rounded-xl text-sm text-white outline-none transition-all duration-200 focus:ring-2 focus:ring-purple-500/50"
+                  style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);"
+                />
+                <button
+                  type="button"
+                  @click="showConfirmPassword = !showConfirmPassword"
+                  class="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-300 transition-colors"
+                >
+                  <svg v-if="!showConfirmPassword" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                  <svg v-else class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
             <!-- Error / Info message -->
             <Transition name="fade">
               <p
@@ -165,14 +199,23 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
-const form = ref({ fullname: '', email: '', password: '' })
+const form = ref({ fullname: '', email: '', password: '', confirmPassword: '' })
 const showPassword = ref(false)
+const showConfirmPassword = ref(false)
 const isLoading = ref(false)
 const message = ref('')
 const isSuccess = ref(false)
 
 async function handleRegister() {
   message.value = ''
+
+  // Validasi kecocokan password
+  if (form.value.password !== form.value.confirmPassword) {
+    isSuccess.value = false
+    message.value = 'Password dan konfirmasi password tidak cocok.'
+    return
+  }
+
   isLoading.value = true
 
   try {
@@ -200,7 +243,7 @@ async function handleRegister() {
     message.value = 'Akun berhasil dibuat! Mengalihkan ke halaman login...'
     
     // Reset form
-    form.value = { fullname: '', email: '', password: '' }
+    form.value = { fullname: '', email: '', password: '', confirmPassword: '' }
     
     // Alihkan ke halaman login setelah 2 detik
     setTimeout(() => {

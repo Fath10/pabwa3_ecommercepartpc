@@ -8,12 +8,21 @@ export const deleteFile = async (
   if (!filepath) return;
 
   try {
-    await fs.unlink(filepath);
+
+    const actualPath =
+      filepath.startsWith("/")
+        ? filepath.substring(1)
+        : filepath;
+
+    await fs.unlink(actualPath);
+
   } catch (error) {
+
     console.error(
       "Delete file error:",
       error.message
     );
+
   }
 
 };

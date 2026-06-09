@@ -32,7 +32,7 @@
             <div class="space-y-4">
               <p class="leading-relaxed text-sm" style="color: #94a3b8;">
                 <strong style="color: #c7d2fe;">e-BuildPC</strong> adalah platform e-commerce komponen PC yang dibangun sebagai proyek tugas akhir mata kuliah
-                <strong style="color: #c7d2fe;">Pemrograman Aplikasi Berbasis Web dan Aplikasi (PABWA3)</strong>.
+                <strong style="color: #c7d2fe;">Pemrograman Aplikasi Berbasis Web dan Aplikasi (PABWA)</strong>.
                 Platform ini dirancang untuk memudahkan siapa saja dalam menemukan dan membeli komponen PC berkualitas tinggi dengan harga yang kompetitif.
               </p>
               <p class="leading-relaxed text-sm" style="color: #94a3b8;">
@@ -70,7 +70,7 @@
       </div>
 
       <!-- ─── STATS ─── -->
-      <div class="grid grid-cols-2 lg:grid-cols-2 gap-5">
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-5">
         <div v-for="stat in stats" :key="stat.label"
           class="p-6 rounded-2xl text-center transition-all duration-300 hover:-translate-y-1"
           style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);"
@@ -87,9 +87,7 @@
           <h2 class="text-3xl font-black text-white mb-2">Anggota <span style="color: #818cf8;">Kelompok</span></h2>
           <p class="text-sm" style="color: #64748b;">PABWA3 — Semester Genap 2025/2026</p>
         </div>
-
-        <!-- Grid anggota (full-width) -->
-        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-8">
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           <div
             v-for="member in team"
             :key="member.nim"
@@ -110,43 +108,19 @@
             </div>
           </div>
         </div>
-
-        <!-- Card peran tim (di bawah anggota, 3 kolom) -->
-        <div class="grid sm:grid-cols-3 gap-4">
-          <div
-            v-for="role in roles"
-            :key="role.title"
-            class="group p-5 rounded-2xl transition-all duration-300 hover:-translate-y-1"
-            :style="{ background: role.bg, border: role.border }"
-          >
-            <div class="flex items-center gap-3 mb-2">
-              <div
-                class="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
-                :style="{ background: role.iconBg }"
-              >
-                {{ role.icon }}
-              </div>
-              <div>
-                <p class="font-black text-white text-base leading-none">{{ role.title }}</p>
-                <p class="text-xs mt-1" :style="{ color: role.accent }">{{ role.count }} orang</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
       </div>
 
       <!-- ─── TECH STACK ─── -->
       <div class="rounded-3xl p-8" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.07);">
         <h2 class="text-xl font-black text-white mb-6 text-center">Tech Stack yang Digunakan</h2>
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-4">
           <div
             v-for="tech in techStack"
             :key="tech.name"
-            class="flex flex-col items-center gap-2 p-4 rounded-2xl transition-all duration-200 hover:-translate-y-1 cursor-default"
+            class="flex flex-col items-center gap-2 p-4 rounded-2xl transition-all duration-200 hover:-translate-y-1 hover:border-indigo-500/30 cursor-default"
             style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);"
           >
-            <img :src="tech.logo" :alt="tech.name + ' logo'" class="w-12 h-12 object-contain brightness-0 invert opacity-90" />
+            <img :src="tech.logo" :alt="tech.name" class="w-10 h-10 object-contain" />
             <span class="text-xs font-bold text-white">{{ tech.name }}</span>
             <span class="text-xs text-center" style="color: #64748b;">{{ tech.desc }}</span>
           </div>
@@ -160,58 +134,32 @@
 
 <script setup>
 const team = [
-  { nim: '11211035', name: 'Edis Nabila Ramadhani',    gradient: 'linear-gradient(135deg, #ec4899, #be185d)' },
-  { nim: '11221037', name: 'Muhammad Akmal Al Fathan', gradient: 'linear-gradient(135deg, #6366f1, #4f46e5)' },
-  { nim: '11221071', name: 'Cinta Satila',              gradient: 'linear-gradient(135deg, #a799b7, #9888a5)' },
-  { nim: '11221079', name: 'Andi Cole',                 gradient: 'linear-gradient(135deg, #0ea5e9, #0284c7)' },
-  { nim: '11231007', name: 'Alief Rachmattul Islam',    gradient: 'linear-gradient(135deg, #10b981, #059669)' },
-  { nim: '11231031', name: 'Imam Dzulvan Muffid',       gradient: 'linear-gradient(135deg, #8b5cf6, #6d28d9)' },
-  { nim: '11231045', name: 'Muhamad Faisal',            gradient: 'linear-gradient(135deg, #ef4444, #b91c1c)' },
-  { nim: '11231055', name: 'Muhammad Fatwa Al Choiri',  gradient: 'linear-gradient(135deg, #06b6d4, #0891b2)' },
-  { nim: '11231073', name: 'Nurfauzan Gymnastiar',      gradient: 'linear-gradient(135deg, #f97316, #ea580c)' },
+  { nim: '11211035', name: 'Edis Nabila Ramadhani',        gradient: 'linear-gradient(135deg, #ec4899, #be185d)' },
+  { nim: '11221037', name: 'Muhammad Akmal Al Fathan',     gradient: 'linear-gradient(135deg, #4f46e5, #7c3aed)' },
+  { nim: '11221071', name: 'Cinta Satila',                 gradient: 'linear-gradient(135deg, #f59e0b, #d97706)' },
+  { nim: '11221079', name: 'Andy Cole',                    gradient: 'linear-gradient(135deg, #0ea5e9, #0284c7)' },
+  { nim: '11231007', name: 'Alief Rachmattul Islam',       gradient: 'linear-gradient(135deg, #10b981, #059669)' },
+  { nim: '11231031', name: 'Imam Dzulvan Muffid',          gradient: 'linear-gradient(135deg, #8b5cf6, #6d28d9)' },
+  { nim: '11231045', name: 'Muhamad Faisal',               gradient: 'linear-gradient(135deg, #ef4444, #b91c1c)' },
+  { nim: '11231055', name: 'Muhammad Fatwa Al Choiri',     gradient: 'linear-gradient(135deg, #06b6d4, #0891b2)' },
+  { nim: '11231073', name: 'Nurfauzan Gymnastiar',         gradient: 'linear-gradient(135deg, #f97316, #ea580c)' },
 ]
 
 const stats = [
-  { icon: '🎓', value: '2026',  label: 'Tahun Proyek' },
-  { icon: '👥', value: '9',     label: 'Anggota Tim' },
-]
-
-const roles = [
-  {
-    title: 'Frontend',
-    icon: '🖥️',
-    count: 5,
-    bg: 'linear-gradient(135deg, rgba(79,70,229,0.1), rgba(124,58,237,0.05))',
-    border: '1px solid rgba(79,70,229,0.25)',
-    iconBg: 'rgba(79,70,229,0.2)',
-    accent: '#a5b4fc',
-  },
-  {
-    title: 'Backend',
-    icon: '⚙️',
-    count: 2,
-    bg: 'linear-gradient(135deg, rgba(16,185,129,0.08), rgba(5,150,105,0.04))',
-    border: '1px solid rgba(16,185,129,0.2)',
-    iconBg: 'rgba(16,185,129,0.15)',
-    accent: '#6ee7b7',
-  },
-  {
-    title: 'LLM / AI',
-    icon: '🤖',
-    count: 2,
-    bg: 'linear-gradient(135deg, rgba(245,158,11,0.08), rgba(217,119,6,0.04))',
-    border: '1px solid rgba(245,158,11,0.2)',
-    iconBg: 'rgba(245,158,11,0.15)',
-    accent: '#fcd34d',
-  },
+  { icon: '🎓', value: '2026',  label: 'Tahun Pengerjaan' },
+  { icon: '👥', value: '5',     label: 'Tim Frontend' },
+  { icon: '📦', value: '4',     label: 'Tim Backend + LLM' },
+  { icon: '📚', value: 'PABW',  label: 'Mata Kuliah' },
 ]
 
 const techStack = [
-  { logo: '/Icons/Vue.svg', name: 'Vue.js 3', desc: 'Framework' },
-  { logo: '/Icons/vite.svg', name: 'Vite', desc: 'Build Tool' },
-  { logo: '/Icons/tailwindcss.svg', name: 'Tailwind', desc: 'Styling' },
-  { logo: '/Icons/pinia.svg', name: 'Pinia', desc: 'State Mgmt' },
-  { logo: '/Icons/html5.svg', name: 'HTML5', desc: 'Markup' },
-  { logo: '/Icons/javascript.svg', name: 'JavaScript', desc: 'Language' },
+  { logo: 'https://upload.wikimedia.org/wikipedia/commons/9/95/Vue.js_Logo_2.svg',       name: 'Vue.js 3',    desc: 'Framework' },
+  { logo: 'https://upload.wikimedia.org/wikipedia/commons/f/f1/Vitejs-logo.svg',         name: 'Vite',        desc: 'Build Tool' },
+  { logo: 'https://upload.wikimedia.org/wikipedia/commons/d/d5/Tailwind_CSS_Logo.svg',   name: 'Tailwind',    desc: 'Styling' },
+  { logo: 'https://upload.wikimedia.org/wikipedia/commons/9/95/Vue.js_Logo_2.svg',       name: 'Vue Router',  desc: 'Routing' },
+  { logo: 'https://wiki.postgresql.org/images/a/a4/PostgreSQL_logo.3colors.svg',         name: 'PostgreSQL',  desc: 'Database' },
+  { logo: 'https://neon.tech/favicon/favicon.svg',                                        name: 'Neon',        desc: 'Host DB' },
+  { logo: 'https://upload.wikimedia.org/wikipedia/commons/d/d9/Node.js_logo.svg',        name: 'Node.js',     desc: 'Runtime' },
+  { logo: 'https://upload.wikimedia.org/wikipedia/commons/6/64/Expressjs.png',           name: 'Express',     desc: 'Backend' },
 ]
 </script>
