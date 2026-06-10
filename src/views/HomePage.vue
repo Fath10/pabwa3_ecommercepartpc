@@ -157,7 +157,7 @@
             v-for="product in featuredProducts"
             :key="product.id"
             :product="product"
-            @add-to-cart="$emit('add-to-cart', $event)"
+            @add-to-cart="(product, event) => $emit('add-to-cart', product, event)"
           />
         </div>
       </div>

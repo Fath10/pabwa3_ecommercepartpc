@@ -12,6 +12,7 @@ import LoginPage from './views/LoginPage.vue'
 import RegisterPage from './views/RegisterPage.vue'
 import ProductDetailPage from './views/ProductDetailPage.vue'
 import BantuanPage from './views/BantuanPage.vue'
+import CheckoutPage from './views/CheckoutPage.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -23,6 +24,7 @@ const router = createRouter({
     { path: '/tentang', component: TentangPage, meta: { title: 'e-BuildPC | Tentang Kami' } },
     { path: '/bantuan', component: BantuanPage, meta: { title: 'e-BuildPC | Bantuan' } },
     { path: '/cart', component: CartPage, meta: { title: 'e-BuildPC | Keranjang' } },
+    { path: '/checkout', component: CheckoutPage, meta: { title: 'e-BuildPC | Checkout' } },
     { path: '/login', component: LoginPage, meta: { title: 'e-BuildPC | Login' } },
     { path: '/register', component: RegisterPage, meta: { title: 'e-BuildPC | Buat Akun' } },
     { path: '/produk/:id', component: ProductDetailPage, meta: { title: 'e-BuildPC | Detail Produk' } },
