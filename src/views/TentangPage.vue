@@ -32,7 +32,11 @@
             <div class="space-y-4">
               <p class="leading-relaxed text-sm" style="color: #94a3b8;">
                 <strong style="color: #c7d2fe;">e-BuildPC</strong> adalah platform e-commerce komponen PC yang dibangun sebagai proyek tugas akhir mata kuliah
+<<<<<<< HEAD
                 <strong style="color: #c7d2fe;">Pemrograman Aplikasi Berbasis Web dan Aplikasi (PABWA)</strong>.
+=======
+                <strong style="color: #c7d2fe;">Pemrograman Aplikasi Berbasis Web dan Aplikasi (PABWA3)</strong>.
+>>>>>>> 30e37d261b6ccb96412709784af17465c862dd27
                 Platform ini dirancang untuk memudahkan siapa saja dalam menemukan dan membeli komponen PC berkualitas tinggi dengan harga yang kompetitif.
               </p>
               <p class="leading-relaxed text-sm" style="color: #94a3b8;">
@@ -70,7 +74,11 @@
       </div>
 
       <!-- ─── STATS ─── -->
+<<<<<<< HEAD
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-5">
+=======
+      <div class="grid grid-cols-2 lg:grid-cols-2 gap-5">
+>>>>>>> 30e37d261b6ccb96412709784af17465c862dd27
         <div v-for="stat in stats" :key="stat.label"
           class="p-6 rounded-2xl text-center transition-all duration-300 hover:-translate-y-1"
           style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);"
@@ -87,7 +95,13 @@
           <h2 class="text-3xl font-black text-white mb-2">Anggota <span style="color: #818cf8;">Kelompok</span></h2>
           <p class="text-sm" style="color: #64748b;">PABWA3 — Semester Genap 2025/2026</p>
         </div>
+<<<<<<< HEAD
         <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+=======
+
+        <!-- Grid anggota (full-width) -->
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-8">
+>>>>>>> 30e37d261b6ccb96412709784af17465c862dd27
           <div
             v-for="member in team"
             :key="member.nim"
@@ -108,6 +122,33 @@
             </div>
           </div>
         </div>
+<<<<<<< HEAD
+=======
+
+        <!-- Card peran tim (di bawah anggota, 3 kolom) -->
+        <div class="grid sm:grid-cols-3 gap-4">
+          <div
+            v-for="role in roles"
+            :key="role.title"
+            class="group p-5 rounded-2xl transition-all duration-300 hover:-translate-y-1"
+            :style="{ background: role.bg, border: role.border }"
+          >
+            <div class="flex items-center gap-3 mb-2">
+              <div
+                class="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
+                :style="{ background: role.iconBg }"
+              >
+                {{ role.icon }}
+              </div>
+              <div>
+                <p class="font-black text-white text-base leading-none">{{ role.title }}</p>
+                <p class="text-xs mt-1" :style="{ color: role.accent }">{{ role.count }} orang</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+>>>>>>> 30e37d261b6ccb96412709784af17465c862dd27
       </div>
 
       <!-- ─── TECH STACK ─── -->

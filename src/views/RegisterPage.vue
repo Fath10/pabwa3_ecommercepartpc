@@ -243,7 +243,11 @@ async function handleRegister() {
     message.value = 'Akun berhasil dibuat! Mengalihkan ke halaman login...'
     
     // Reset form
+<<<<<<< HEAD
     form.value = { fullname: '', email: '', password: '', confirmPassword: '' }
+=======
+    form.value = { fullname: '', email: '', password: '' }
+>>>>>>> 30e37d261b6ccb96412709784af17465c862dd27
     
     // Alihkan ke halaman login setelah 2 detik
     setTimeout(() => {

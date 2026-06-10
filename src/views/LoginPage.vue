@@ -174,6 +174,7 @@ async function handleLogin() {
     // Simpan token JWT dan info user ke store reaktif & localStorage
     userStore.login(data.user, data.token)
 
+<<<<<<< HEAD
     // // Alihkan ke beranda (Home)
     // router.push('/')
 
@@ -182,6 +183,10 @@ async function handleLogin() {
     } else {
       router.push('/')
     }
+=======
+    // Alihkan ke beranda (Home)
+    router.push('/')
+>>>>>>> 30e37d261b6ccb96412709784af17465c862dd27
 
   } catch (error) {
     console.error('Error saat login:', error)

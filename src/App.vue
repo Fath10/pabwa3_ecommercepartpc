@@ -410,27 +410,22 @@ function handleAddToCart(product, event) {
 .page-leave-active {
   transition: all 0.3s ease;
 }
-
 .page-enter-from {
   opacity: 0;
   transform: translateY(10px);
 }
-
 .page-leave-to {
   opacity: 0;
   transform: translateY(-10px);
 }
-
 .toast-enter-active,
 .toast-leave-active {
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
-
 .toast-enter-from {
   opacity: 0;
   transform: translateX(100px);
 }
-
 .toast-leave-to {
   opacity: 0;
   transform: translateX(100px);

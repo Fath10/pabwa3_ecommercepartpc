@@ -81,7 +81,6 @@
               class="w-full pl-9 pr-4 py-2 text-sm rounded-lg outline-none text-white transition-all duration-200"
               style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);"
             />
-
             <Transition name="dropdown">
               <div
                 v-if="showSuggestions && filteredSuggestions.length > 0"
@@ -384,7 +383,6 @@ onMounted(() => {
   window.addEventListener('scroll', handleScroll)
   document.addEventListener('click', handleClickOutside)
 })
-
 onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll)
   document.removeEventListener('click', handleClickOutside)

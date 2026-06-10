@@ -1,7 +1,10 @@
 import { createApp } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
 import './style.css'
+<<<<<<< HEAD
 
+=======
+>>>>>>> 30e37d261b6ccb96412709784af17465c862dd27
 import App from './App.vue'
 import HomePage from './views/HomePage.vue'
 import KatalogPage from './views/KatalogPage.vue'

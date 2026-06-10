@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import { reactive } from 'vue'
+=======
+import { reactive, computed } from 'vue'
+>>>>>>> 30e37d261b6ccb96412709784af17465c862dd27
 
 // Product data
 export const products = [
@@ -384,12 +388,10 @@ export const cartStore = reactive({
       this.items.push({ ...product, quantity: 1 })
     }
   },
-
   removeItem(productId) {
     const index = this.items.findIndex(i => i.id === productId)
     if (index !== -1) this.items.splice(index, 1)
   },
-
   updateQuantity(productId, quantity) {
     const item = this.items.find(i => i.id === productId)
     if (item) {
@@ -397,7 +399,6 @@ export const cartStore = reactive({
       else item.quantity = quantity
     }
   },
-
   clearCart() {
     this.items = []
   }
@@ -422,7 +423,6 @@ export const userStore = reactive({
     localStorage.setItem('user', JSON.stringify(userData))
     localStorage.setItem('token', tokenData)
   },
-
   logout() {
     this.user = null
     this.token = null
