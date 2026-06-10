@@ -1,9 +1,7 @@
 <template>
   <div class="min-h-screen font-sans" style="background: #0d1117;">
-    <!-- Navbar -->
     <NavBar :cartCount="cartStore.totalItems" @open-cart="goToCart" />
 
-    <!-- Toast Notifications -->
     <Teleport to="body">
       <div class="fixed top-24 right-4 z-[9999] flex flex-col gap-3">
         <TransitionGroup name="toast">
@@ -28,17 +26,14 @@
       </div>
     </Teleport>
 
-    <!-- Router View -->
     <RouterView v-slot="{ Component }">
       <Transition name="page" mode="out-in">
         <component :is="Component" @add-to-cart="handleAddToCart" />
       </Transition>
     </RouterView>
 
-    <!-- Footer user only -->
     <FooterSection v-if="!isAdminRoute" />
 
-    <!-- Fly-to-cart particle user only -->
     <Teleport v-if="!isAdminRoute" to="body">
       <div
         v-for="p in flyParticles"
@@ -63,13 +58,10 @@
       </div>
     </Teleport>
 
-    <!-- FLOATING AI CHAT BUTTON user only -->
     <Teleport v-if="!isAdminRoute" to="body">
       <div class="ai-fab-wrapper">
-        <!-- Chat Panel -->
         <Transition name="chat-panel">
           <div v-if="chatOpen" class="ai-chat-panel">
-            <!-- Panel Header -->
             <div class="ai-chat-header">
               <div class="flex items-center gap-3">
                 <div class="ai-avatar-sm">🤖</div>
@@ -93,7 +85,6 @@
               </button>
             </div>
 
-            <!-- Chat Messages -->
             <div class="ai-messages" ref="messagesContainer">
               <template v-for="(msg, i) in messages" :key="i">
                 <div
@@ -112,7 +103,6 @@
                   </div>
                 </div>
 
-                <!-- Product Cards -->
                 <div
                   v-if="msg.products && msg.products.length > 0"
                   class="flex gap-2 overflow-x-auto py-2 px-1 w-full snap-x snap-mandatory scrollbar-hide flex-shrink-0"
@@ -132,7 +122,6 @@
                 </div>
               </template>
 
-              <!-- Typing indicator -->
               <div v-if="isTyping" class="ai-message ai-message-bot">
                 <div class="ai-bot-avatar">🤖</div>
 
@@ -144,7 +133,6 @@
               </div>
             </div>
 
-            <!-- Quick Replies -->
             <div class="ai-quick-replies" v-if="messages.length <= 1">
               <button
                 v-for="q in quickReplies"
@@ -156,7 +144,6 @@
               </button>
             </div>
 
-            <!-- Input -->
             <div class="ai-input-area">
               <input
                 v-model="userInput"
@@ -177,7 +164,6 @@
           </div>
         </Transition>
 
-        <!-- FAB Button -->
         <Transition name="fab-toggle">
           <button
             v-if="!chatOpen"
@@ -202,6 +188,7 @@ import NavBar from './components/NavBar.vue'
 import FooterSection from './components/FooterSection.vue'
 import ProductCard from './components/ProductCard.vue'
 import { cartStore } from './store.js'
+import { chatApi } from './api/index.js'
 
 const router = useRouter()
 const route = useRoute()
@@ -257,18 +244,7 @@ async function sendMessage() {
         text: m.content,
       }))
 
-    const res = await fetch('http://localhost:3000/api/chat-ai', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        message: text,
-        history: historyToSend,
-      }),
-    })
-
-    const data = await res.json()
+    const data = await chatApi.send(text, historyToSend)
 
     messages.value.push({
       role: 'bot',
@@ -278,7 +254,10 @@ async function sendMessage() {
   } catch (err) {
     messages.value.push({
       role: 'bot',
-      content: '⚠️ Maaf, terjadi kesalahan saat menghubungi server. Pastikan backend sudah berjalan dan Ollama sudah aktif.',
+      content:
+        err.data?.reply ||
+        err.message ||
+        '⚠️ Maaf, terjadi kesalahan saat menghubungi server. Pastikan backend sudah berjalan.',
     })
   } finally {
     isTyping.value = false
@@ -326,9 +305,14 @@ function showToast(message, type = 'success') {
   }, 3000)
 }
 
-function handleAddToCart(product, event) {
-  cartStore.addItem(product)
-  showToast(`${product.name} ditambahkan ke keranjang`, 'success')
+async function handleAddToCart(product, event) {
+  try {
+    await cartStore.addItem(product)
+    showToast(`${product.name} ditambahkan ke keranjang`, 'success')
+  } catch (err) {
+    showToast(err.message || 'Gagal menambahkan produk ke keranjang', 'error')
+    return
+  }
 
   const cartBtn = document.getElementById('cart-btn')
 
@@ -410,22 +394,27 @@ function handleAddToCart(product, event) {
 .page-leave-active {
   transition: all 0.3s ease;
 }
+
 .page-enter-from {
   opacity: 0;
   transform: translateY(10px);
 }
+
 .page-leave-to {
   opacity: 0;
   transform: translateY(-10px);
 }
+
 .toast-enter-active,
 .toast-leave-active {
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
 .toast-enter-from {
   opacity: 0;
   transform: translateX(100px);
 }
+
 .toast-leave-to {
   opacity: 0;
   transform: translateX(100px);

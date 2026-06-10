@@ -259,6 +259,15 @@
 
             <!-- Checkout Button -->
             <div>
+              <!-- Error banner -->
+              <div
+                v-if="checkoutError"
+                class="mb-3 px-4 py-3 rounded-xl text-sm font-semibold"
+                style="background: #fef2f2; color: #dc2626; border: 1px solid #fecaca;"
+              >
+                {{ checkoutError }}
+              </div>
+
               <button
                 id="confirm-checkout-btn"
                 :disabled="!canCheckout"
@@ -269,12 +278,18 @@
                   ? 'background: linear-gradient(135deg, #4f46e5, #7c3aed); box-shadow: 0 8px 32px rgba(79,70,229,0.3); cursor: pointer;'
                   : 'background: #d1d5db; cursor: not-allowed; box-shadow: none;'"
               >
-                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <svg v-if="isProcessing" class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+                <svg v-else class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
-                {{ canCheckout ? 'Konfirmasi Pesanan' : 'Lengkapi Pilihan Terlebih Dahulu' }}
+                {{ isProcessing
+                  ? 'Memproses Pesanan…'
+                  : (selectedCourier && selectedPayment ? 'Konfirmasi Pesanan' : 'Lengkapi Pilihan Terlebih Dahulu') }}
               </button>
-              <p v-if="!canCheckout" class="text-center text-xs mt-2" style="color: #9ca3af;">
+              <p v-if="!selectedCourier || !selectedPayment" class="text-center text-xs mt-2" style="color: #9ca3af;">
                 Pilih kurir dan metode pembayaran untuk melanjutkan
               </p>
             </div>
@@ -311,6 +326,9 @@
             <p class="text-sm mb-2" style="color: #6b7280;">Terima kasih telah berbelanja di e-BuildPC.</p>
             <p class="text-sm mb-6" style="color: #6b7280;">Pesanan Anda akan segera diproses dan dikirim melalui <strong style="color: #111827;">{{ selectedCourierData?.name }}</strong> menggunakan <strong style="color: #111827;">{{ selectedPaymentData?.name }}</strong>.</p>
             <div class="p-4 rounded-2xl mb-6" style="background: #f0fdf4; border: 1px solid #bbf7d0;">
+              <p v-if="placedOrder" class="text-xs mb-1" style="color: #6b7280;">
+                Nomor Pesanan: <strong style="color: #111827;">#{{ placedOrder.order_id }}</strong>
+              </p>
               <p class="text-xs" style="color: #6b7280;">Total Pembayaran</p>
               <p class="text-2xl font-black" style="color: #10b981;">{{ formatPrice(grandTotal) }}</p>
             </div>
@@ -328,8 +346,11 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { cartStore, formatPrice } from '../store.js'
+import { orderApi } from '../api/index.js'
+
+onMounted(() => cartStore.fetch())
 
 // ─── Kurir dengan SVG logo ───
 const couriers = [
@@ -500,6 +521,9 @@ const activePaymentTab = ref('all')
 const selectedCourier = ref('')
 const selectedPayment = ref('')
 const showSuccess = ref(false)
+const isProcessing = ref(false)
+const checkoutError = ref('')
+const placedOrder = ref(null)
 
 const filteredPaymentMethods = computed(() => {
   if (activePaymentTab.value === 'all') return paymentMethods
@@ -514,16 +538,31 @@ const grandTotal = computed(() => {
   return cartStore.totalPrice * 1.11 + shippingCost
 })
 
-const canCheckout = computed(() => !!selectedCourier.value && !!selectedPayment.value)
+const canCheckout = computed(
+  () => !!selectedCourier.value && !!selectedPayment.value && !isProcessing.value
+)
 
-function handleConfirmCheckout() {
+async function handleConfirmCheckout() {
   if (!canCheckout.value) return
-  showSuccess.value = true
+  checkoutError.value = ''
+  isProcessing.value = true
+  try {
+    // Server creates the order from the authenticated user's cart,
+    // decrements stock, and clears the server-side cart.
+    const result = await orderApi.checkout()
+    placedOrder.value = result?.order || null
+    await cartStore.fetch() // cart is now empty on the server
+    showSuccess.value = true
+  } catch (err) {
+    checkoutError.value =
+      err.message || 'Checkout gagal. Silakan coba lagi.'
+  } finally {
+    isProcessing.value = false
+  }
 }
 
 function handleSuccessClose() {
   showSuccess.value = false
-  cartStore.clearCart()
 }
 </script>
 

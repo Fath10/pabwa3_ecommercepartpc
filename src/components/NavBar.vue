@@ -6,8 +6,6 @@
   >
     <div class="w-full px-3">
       <div class="flex items-center gap-2">
-
-        <!-- Logo -->
         <RouterLink
           :to="isAdmin ? '/admin' : '/'"
           class="flex items-center gap-2 group flex-shrink-0"
@@ -35,7 +33,6 @@
           style="background: rgba(255,255,255,0.1);"
         ></div>
 
-        <!-- Desktop Nav Links -->
         <div class="hidden md:flex items-center gap-0.5 flex-shrink-0">
           <RouterLink
             v-for="link in navLinks"
@@ -50,7 +47,6 @@
           </RouterLink>
         </div>
 
-        <!-- Search Bar user only -->
         <div
           v-if="!isAdmin"
           class="hidden md:flex flex-1 relative mx-2"
@@ -81,6 +77,7 @@
               class="w-full pl-9 pr-4 py-2 text-sm rounded-lg outline-none text-white transition-all duration-200"
               style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);"
             />
+
             <Transition name="dropdown">
               <div
                 v-if="showSuggestions && filteredSuggestions.length > 0"
@@ -94,29 +91,30 @@
                 </div>
 
                 <button
-                  v-for="p in filteredSuggestions"
-                  :key="p.id"
+                  v-for="product in filteredSuggestions"
+                  :key="product.id"
                   class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition-colors hover:bg-white/5"
-                  @mousedown.prevent="selectProduct(p)"
+                  @mousedown.prevent="selectProduct(product)"
                 >
                   <img
-                    :src="p.image"
-                    :alt="p.name"
+                    :src="product.image"
+                    :alt="product.name"
                     class="w-9 h-9 rounded-lg object-cover flex-shrink-0"
                     style="background: rgba(255,255,255,0.05);"
                   />
 
                   <div class="flex-1 min-w-0">
                     <p class="text-white font-medium leading-snug truncate">
-                      {{ p.name }}
+                      {{ product.name }}
                     </p>
+
                     <p class="text-xs text-gray-500 mt-0.5">
-                      {{ p.category }} · Stok {{ p.stock }}
+                      {{ product.category }} · Stok {{ product.stock }}
                     </p>
                   </div>
 
                   <span class="text-xs font-bold text-indigo-400 flex-shrink-0">
-                    {{ formatPrice(p.price) }}
+                    {{ formatPrice(product.price) }}
                   </span>
                 </button>
               </div>
@@ -124,13 +122,9 @@
           </div>
         </div>
 
-        <!-- Spacer admin -->
         <div v-else class="hidden md:flex flex-1"></div>
 
-        <!-- Right section -->
         <div class="flex items-center gap-1 flex-shrink-0 ml-auto md:ml-0">
-
-          <!-- Login Link -->
           <RouterLink
             v-if="!userStore.isLoggedIn"
             id="account-btn"
@@ -155,7 +149,6 @@
             <span class="hidden sm:inline">Login</span>
           </RouterLink>
 
-          <!-- User Profile -->
           <div v-else class="flex items-center gap-2">
             <span class="text-xs text-gray-300 hidden lg:inline">
               Halo,
@@ -181,7 +174,6 @@
             </button>
           </div>
 
-          <!-- Cart Icon user only -->
           <RouterLink
             v-if="!isAdmin"
             to="/cart"
@@ -214,7 +206,6 @@
             </Transition>
           </RouterLink>
 
-          <!-- Mobile hamburger -->
           <button
             @click="mobileMenuOpen = !mobileMenuOpen"
             class="md:hidden w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-all"
@@ -252,7 +243,6 @@
         </div>
       </div>
 
-      <!-- Mobile Menu -->
       <Transition name="slide-down">
         <div
           v-if="mobileMenuOpen"
@@ -280,7 +270,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { userStore, products, formatPrice } from '../store.js'
+import { userStore, productStore, formatPrice } from '../store.js'
 
 defineProps({
   cartCount: {
@@ -318,20 +308,21 @@ const navLinks = computed(() => {
 })
 
 const filteredSuggestions = computed(() => {
-  const q = searchQuery.value.trim().toLowerCase()
+  const allProducts = productStore.items || []
+  const query = searchQuery.value.trim().toLowerCase()
 
-  if (!q) {
-    return [...products]
-      .sort((a, b) => b.stock - a.stock)
+  if (!query) {
+    return [...allProducts]
+      .sort((a, b) => Number(b.stock || 0) - Number(a.stock || 0))
       .slice(0, 5)
   }
 
-  return products
-    .filter((p) => {
-      return (
-        p.name.toLowerCase().includes(q) ||
-        p.category.toLowerCase().includes(q)
-      )
+  return allProducts
+    .filter((product) => {
+      const name = String(product.name || '').toLowerCase()
+      const category = String(product.category || '').toLowerCase()
+
+      return name.includes(query) || category.includes(query)
     })
     .slice(0, 6)
 })
@@ -343,19 +334,20 @@ function onSearchInput() {
 function selectProduct(product) {
   searchQuery.value = ''
   showSuggestions.value = false
+  mobileMenuOpen.value = false
   router.push(`/produk/${product.id}`)
 }
 
 function doSearch() {
-  const q = searchQuery.value.trim()
+  const query = searchQuery.value.trim()
 
-  if (!q) return
+  if (!query) return
 
   showSuggestions.value = false
   router.push({
     path: '/katalog',
     query: {
-      q,
+      q: query,
     },
   })
 }
@@ -383,6 +375,7 @@ onMounted(() => {
   window.addEventListener('scroll', handleScroll)
   document.addEventListener('click', handleClickOutside)
 })
+
 onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll)
   document.removeEventListener('click', handleClickOutside)
@@ -402,6 +395,7 @@ onUnmounted(() => {
   from {
     transform: scale(0);
   }
+
   to {
     transform: scale(1);
   }
@@ -411,6 +405,7 @@ onUnmounted(() => {
   from {
     transform: scale(1);
   }
+
   to {
     transform: scale(0);
   }

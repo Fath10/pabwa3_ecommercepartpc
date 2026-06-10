@@ -47,7 +47,7 @@
                 Berdasarkan {{ totalReviewCount }} ulasan produk
               </p>
               <p class="text-sm leading-relaxed" style="color: #64748b;">
-                Rating utama mengikuti data produk. Ulasan baru dari pengguna akan tampil di bawah.
+                Ulasan diambil langsung dari database e-BuildPC dan diperbarui secara otomatis.
               </p>
             </div>
           </div>
@@ -60,6 +60,14 @@
         >
           {{ successMessage }}
         </div>
+
+        <div
+          v-if="loadError"
+          class="mt-5 px-4 py-3 rounded-2xl text-sm font-semibold"
+          style="background: #fef2f2; color: #dc2626; border: 1px solid #fecaca;"
+        >
+          {{ loadError }}
+        </div>
       </div>
 
       <!-- Review Area -->
@@ -71,11 +79,11 @@
                 Ulasan Pembeli
               </h3>
               <p class="text-sm mt-1" style="color: #64748b;">
-                Ulasan yang ditambahkan pengguna melalui halaman ini.
+                Bagikan pengalaman Anda dengan produk ini.
               </p>
             </div>
 
-            <div v-if="reviews.length > 0" class="sm:text-right">
+            <div class="sm:text-right">
               <button
                 v-if="isLoggedIn"
                 type="button"
@@ -118,8 +126,14 @@
             Menampilkan {{ filteredReviews.length }} ulasan
           </p>
 
+          <!-- Loading -->
+          <div v-if="loading" class="text-center py-12">
+            <div class="inline-block w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+            <p class="mt-3 text-sm" style="color: #94a3b8;">Memuat ulasan…</p>
+          </div>
+
           <!-- Empty State -->
-          <div v-if="reviews.length === 0" class="text-center py-12">
+          <div v-else-if="reviews.length === 0" class="text-center py-12">
             <div class="text-5xl mb-3">💬</div>
 
             <p class="text-base font-bold" style="color: #0f172a;">
@@ -127,7 +141,7 @@
             </p>
 
             <p class="text-sm mt-2 mb-5 max-w-md mx-auto" style="color: #94a3b8;">
-              Jadilah pengguna pertama yang memberi rating, menulis ulasan, dan menambahkan foto atau video produk.
+              Jadilah pengguna pertama yang memberi rating dan menulis ulasan untuk produk ini.
             </p>
 
             <button
@@ -213,43 +227,9 @@
                     </div>
                   </div>
 
-                  <p class="text-sm leading-relaxed mt-3 mb-3" style="color: #374151;">
+                  <p class="text-sm leading-relaxed mt-3" style="color: #374151;">
                     {{ review.comment }}
                   </p>
-
-                  <div v-if="review.media.length" class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <button
-                      v-for="(media, index) in review.media"
-                      :key="index"
-                      type="button"
-                      @click="openMediaViewer(review.media, index)"
-                      class="relative rounded-2xl overflow-hidden text-left group"
-                      style="border: 1px solid #e2e8f0; background: #f8fafc;"
-                    >
-                      <img
-                        v-if="media.type.startsWith('image')"
-                        :src="media.url"
-                        class="w-full h-28 object-cover"
-                        alt="Media ulasan"
-                      />
-
-                      <video
-                        v-else
-                        :src="media.url"
-                        class="w-full h-28 object-cover"
-                        muted
-                      ></video>
-
-                      <div
-                        class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                        style="background: rgba(15, 23, 42, 0.45); color: #fff;"
-                      >
-                        <span class="text-xs font-bold">
-                          Lihat Media
-                        </span>
-                      </div>
-                    </button>
-                  </div>
                 </div>
               </div>
             </article>
@@ -276,7 +256,7 @@
               Tulis Ulasan Anda
             </h3>
             <p class="text-sm leading-relaxed" style="color: #64748b;">
-              Beri rating, tulis pengalaman Anda, lalu tambahkan foto atau video bila ada.
+              Beri rating dan tulis pengalaman Anda dengan produk ini.
             </p>
           </div>
 
@@ -342,73 +322,6 @@
           ></textarea>
         </div>
 
-        <div>
-          <div class="flex items-center justify-between gap-3 mb-2">
-            <label class="block text-sm font-bold" style="color: #374151;">
-              Foto / Video Ulasan
-            </label>
-
-            <span class="text-xs" style="color: #94a3b8;">
-              {{ reviewForm.media.length }}/3 file
-            </span>
-          </div>
-
-          <input
-            id="review-media-upload"
-            type="file"
-            accept="image/*,video/*"
-            multiple
-            class="hidden"
-            @change="handleMediaUpload"
-          />
-
-          <label
-            for="review-media-upload"
-            class="block rounded-3xl p-5 text-center cursor-pointer transition-all hover:bg-indigo-50"
-            style="background: #f8fafc; border: 1.5px dashed #c7d2fe;"
-          >
-            <div class="text-3xl mb-2">📷</div>
-            <p class="text-sm font-bold mb-1" style="color: #4f46e5;">
-              Tambahkan foto atau video produk
-            </p>
-            <p class="text-xs leading-relaxed" style="color: #94a3b8;">
-              Klik area ini untuk memilih file. Maksimal 3 file, ukuran maksimal 1MB per file.
-            </p>
-          </label>
-        </div>
-
-        <div v-if="reviewForm.media.length" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <div
-            v-for="(media, index) in reviewForm.media"
-            :key="index"
-            class="relative rounded-2xl overflow-hidden"
-            style="border: 1px solid #e2e8f0; background: #fff;"
-          >
-            <img
-              v-if="media.type.startsWith('image')"
-              :src="media.url"
-              class="w-full h-32 object-cover"
-              alt="Preview media ulasan"
-            />
-
-            <video
-              v-else
-              :src="media.url"
-              controls
-              class="w-full h-32 object-cover"
-            ></video>
-
-            <button
-              type="button"
-              @click="removeMedia(index)"
-              class="absolute top-2 right-2 w-7 h-7 rounded-full text-white text-xs font-bold"
-              style="background: rgba(15, 23, 42, 0.75);"
-            >
-              ×
-            </button>
-          </div>
-        </div>
-
         <div class="flex flex-col sm:flex-row gap-3 pt-2">
           <button
             type="button"
@@ -421,78 +334,14 @@
 
           <button
             type="submit"
-            class="w-full py-3.5 rounded-2xl text-white font-bold text-sm transition-all hover:-translate-y-0.5"
+            :disabled="submitting"
+            class="w-full py-3.5 rounded-2xl text-white font-bold text-sm transition-all hover:-translate-y-0.5 disabled:opacity-60 disabled:translate-y-0"
             style="background: linear-gradient(135deg, #4f46e5, #7c3aed); box-shadow: 0 10px 24px -8px rgba(79,70,229,0.5);"
           >
-            Kirim Ulasan
+            {{ submitting ? 'Mengirim…' : 'Kirim Ulasan' }}
           </button>
         </div>
       </form>
-    </div>
-
-    <!-- Media Viewer -->
-    <div
-      v-if="selectedMedia"
-      class="fixed inset-0 z-[60] flex items-center justify-center px-4 py-6"
-      style="background: rgba(15, 23, 42, 0.78);"
-      @click.self="closeMediaViewer"
-    >
-      <div class="w-full max-w-4xl">
-        <div class="flex justify-between items-center mb-3">
-          <p class="text-sm font-semibold text-white">
-            Media ulasan {{ selectedMediaIndex + 1 }} / {{ selectedMediaList.length }}
-          </p>
-
-          <button
-            type="button"
-            @click="closeMediaViewer"
-            class="w-10 h-10 rounded-full text-white font-bold"
-            style="background: rgba(255,255,255,0.12);"
-          >
-            ×
-          </button>
-        </div>
-
-        <div class="rounded-3xl overflow-hidden bg-black">
-          <img
-            v-if="selectedMedia.type.startsWith('image')"
-            :src="selectedMedia.url"
-            class="w-full max-h-[75vh] object-contain"
-            alt="Media ulasan"
-          />
-
-          <video
-            v-else
-            :src="selectedMedia.url"
-            controls
-            autoplay
-            class="w-full max-h-[75vh]"
-          ></video>
-        </div>
-
-        <div
-          v-if="selectedMediaList.length > 1"
-          class="flex justify-center gap-3 mt-4"
-        >
-          <button
-            type="button"
-            @click="prevMedia"
-            class="px-4 py-2 rounded-xl text-sm font-bold text-white"
-            style="background: rgba(255,255,255,0.12);"
-          >
-            ← Sebelumnya
-          </button>
-
-          <button
-            type="button"
-            @click="nextMedia"
-            class="px-4 py-2 rounded-xl text-sm font-bold text-white"
-            style="background: rgba(255,255,255,0.12);"
-          >
-            Selanjutnya →
-          </button>
-        </div>
-      </div>
     </div>
   </section>
 </template>
@@ -500,6 +349,7 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import { userStore } from '../store.js'
+import { reviewApi } from '../api/index.js'
 
 const props = defineProps({
   product: {
@@ -513,115 +363,42 @@ const activeFilter = ref('all')
 const showForm = ref(false)
 const successMessage = ref('')
 const formError = ref('')
-
-const selectedMediaList = ref([])
-const selectedMediaIndex = ref(0)
+const loadError = ref('')
+const loading = ref(false)
+const submitting = ref(false)
 
 const reviewForm = ref({
   rating: 0,
-  comment: '',
-  media: []
+  comment: ''
 })
 
-const selectedMedia = computed(() => {
-  return selectedMediaList.value[selectedMediaIndex.value] || null
-})
+const isLoggedIn = computed(() => userStore.isLoggedIn)
+const currentUser = computed(() => userStore.user)
 
-const isLoggedIn = computed(() => {
-  if (userStore?.isLoggedIn || userStore?.user || userStore?.token) return true
-
-  const possibleKeys = [
-    'user',
-    'currentUser',
-    'loggedInUser',
-    'token',
-    'authToken',
-    'accessToken',
-    'isLoggedIn'
-  ]
-
-  return possibleKeys.some((key) => {
-    const value = localStorage.getItem(key)
-    return value && value !== 'false' && value !== 'null' && value !== 'undefined'
-  })
-})
-
-const currentUser = computed(() => {
-  if (userStore?.user) return userStore.user
-
-  const possibleUserKeys = ['user', 'currentUser', 'loggedInUser']
-
-  for (const key of possibleUserKeys) {
-    const value = localStorage.getItem(key)
-    if (!value) continue
-
-    try {
-      return JSON.parse(value)
-    } catch {
-      return { name: value }
-    }
-  }
-
-  return null
-})
-
-const currentUserName = computed(() => {
-  return (
-    currentUser.value?.name ||
-    currentUser.value?.username ||
-    currentUser.value?.email ||
-    'Pengguna e-BuildPC'
-  )
-})
-
-const currentUserRole = computed(() => {
-  return currentUser.value?.role || ''
-})
-
-const totalReviewCount = computed(() => {
-  return Number(props.product?.reviews || 0) + reviews.value.length
-})
+const totalReviewCount = computed(() => reviews.value.length)
 
 const averageRating = computed(() => {
-  const baseRating = Number(props.product?.rating || 0)
-  const baseReviews = Number(props.product?.reviews || 0)
-
-  const newRatingTotal = reviews.value.reduce(
-    (total, review) => total + Number(review.rating || 0),
-    0
-  )
-
-  const total = baseReviews + reviews.value.length
-  if (total === 0) return 0
-
-  return ((baseRating * baseReviews) + newRatingTotal) / total
+  if (reviews.value.length === 0) {
+    // Fall back to the aggregate rating provided by the product endpoint.
+    return Number(props.product?.rating || 0)
+  }
+  const sum = reviews.value.reduce((total, r) => total + Number(r.rating || 0), 0)
+  return sum / reviews.value.length
 })
 
 const displayRating = computed(() => averageRating.value.toFixed(1))
 
-const countWithMedia = computed(() => {
-  return reviews.value.filter(review => review.media?.length).length
-})
-
-const reviewFilters = computed(() => {
-  return [
-    { label: `Semua (${reviews.value.length})`, value: 'all' },
-    { label: `5 Bintang (${countByRating(5)})`, value: '5' },
-    { label: `4 Bintang (${countByRating(4)})`, value: '4' },
-    { label: `3 Bintang (${countByRating(3)})`, value: '3' },
-    { label: `2 Bintang (${countByRating(2)})`, value: '2' },
-    { label: `1 Bintang (${countByRating(1)})`, value: '1' },
-    { label: `Dengan Media (${countWithMedia.value})`, value: 'media' }
-  ]
-})
+const reviewFilters = computed(() => [
+  { label: `Semua (${reviews.value.length})`, value: 'all' },
+  { label: `5 Bintang (${countByRating(5)})`, value: '5' },
+  { label: `4 Bintang (${countByRating(4)})`, value: '4' },
+  { label: `3 Bintang (${countByRating(3)})`, value: '3' },
+  { label: `2 Bintang (${countByRating(2)})`, value: '2' },
+  { label: `1 Bintang (${countByRating(1)})`, value: '1' }
+])
 
 const filteredReviews = computed(() => {
   if (activeFilter.value === 'all') return reviews.value
-
-  if (activeFilter.value === 'media') {
-    return reviews.value.filter(review => review.media?.length)
-  }
-
   return reviews.value.filter(review => String(review.rating) === activeFilter.value)
 })
 
@@ -629,37 +406,48 @@ function countByRating(rating) {
   return reviews.value.filter(review => Number(review.rating) === rating).length
 }
 
-function getReviewStorageKey() {
-  return `ebuildpc_reviews_product_${props.product.id}`
-}
-
-function loadReviews() {
+function formatDate(value) {
+  if (!value) return ''
   try {
-    const savedReviews = localStorage.getItem(getReviewStorageKey())
-    reviews.value = savedReviews ? JSON.parse(savedReviews) : []
-  } catch (error) {
-    console.error('Gagal membaca ulasan:', error)
-    reviews.value = []
+    return new Date(value).toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    })
+  } catch {
+    return ''
   }
 }
 
-function saveReviews() {
+// Map a backend review row to the shape used by the template.
+function mapReview(row) {
+  return {
+    id: row.review_id,
+    userId: row.user_id,
+    user: row.name || 'Pengguna e-BuildPC',
+    rating: Number(row.rating),
+    comment: row.comment,
+    date: formatDate(row.created_at)
+  }
+}
+
+async function loadReviews() {
+  if (!props.product?.id) return
+  loading.value = true
+  loadError.value = ''
   try {
-    localStorage.setItem(getReviewStorageKey(), JSON.stringify(reviews.value))
-    return true
-  } catch (error) {
-    console.error('Gagal menyimpan ulasan:', error)
-    formError.value = 'Media terlalu besar untuk disimpan permanen di browser. Coba gunakan file yang lebih kecil.'
-    return false
+    const rows = await reviewApi.listByProduct(props.product.id)
+    reviews.value = (Array.isArray(rows) ? rows : []).map(mapReview)
+  } catch (err) {
+    loadError.value = err.message || 'Gagal memuat ulasan.'
+    reviews.value = []
+  } finally {
+    loading.value = false
   }
 }
 
 function resetReviewForm() {
-  reviewForm.value = {
-    rating: 0,
-    comment: '',
-    media: []
-  }
+  reviewForm.value = { rating: 0, comment: '' }
 }
 
 function openForm() {
@@ -679,148 +467,59 @@ function setRating(rating) {
   formError.value = ''
 }
 
-function readFileAsDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-
-    reader.onload = () => {
-      resolve({
-        name: file.name,
-        type: file.type,
-        url: reader.result
-      })
-    }
-
-    reader.onerror = reject
-    reader.readAsDataURL(file)
-  })
-}
-
-async function handleMediaUpload(event) {
-  formError.value = ''
-
-  const files = Array.from(event.target.files || [])
-  const remainingSlots = 3 - reviewForm.value.media.length
-
-  if (remainingSlots <= 0) {
-    formError.value = 'Maksimal 3 file media.'
-    event.target.value = ''
-    return
-  }
-
-  const validFiles = files
-    .filter(file => file.type.startsWith('image/') || file.type.startsWith('video/'))
-    .filter(file => file.size <= 1024 * 1024)
-    .slice(0, remainingSlots)
-
-  if (validFiles.length === 0) {
-    formError.value = 'File harus berupa gambar/video dan maksimal 1MB per file.'
-    event.target.value = ''
-    return
-  }
-
-  const mediaFiles = await Promise.all(validFiles.map(readFileAsDataUrl))
-  reviewForm.value.media.push(...mediaFiles)
-
-  event.target.value = ''
-}
-
-function removeMedia(index) {
-  reviewForm.value.media.splice(index, 1)
-}
-
-function submitReview() {
+async function submitReview() {
   formError.value = ''
 
   if (!isLoggedIn.value) {
     formError.value = 'Silakan login terlebih dahulu untuk memberi ulasan.'
     return
   }
-
   if (!reviewForm.value.rating) {
     formError.value = 'Pilih rating terlebih dahulu.'
     return
   }
-
   if (!reviewForm.value.comment.trim()) {
     formError.value = 'Tulis ulasan terlebih dahulu.'
     return
   }
 
-  const newReview = {
-    id: Date.now(),
-    user: currentUserName.value,
-    userRole: currentUserRole.value,
-    rating: reviewForm.value.rating,
-    comment: reviewForm.value.comment.trim(),
-    media: reviewForm.value.media,
-    date: new Date().toLocaleDateString('id-ID', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
+  submitting.value = true
+  try {
+    await reviewApi.create(props.product.id, {
+      rating: reviewForm.value.rating,
+      comment: reviewForm.value.comment.trim()
     })
+    await loadReviews()
+    resetReviewForm()
+    showForm.value = false
+    activeFilter.value = 'all'
+    successMessage.value = 'Ulasan berhasil ditambahkan.'
+    setTimeout(() => { successMessage.value = '' }, 3000)
+  } catch (err) {
+    // 409 = the backend rejects a second review from the same user.
+    formError.value = err.message || 'Gagal mengirim ulasan.'
+  } finally {
+    submitting.value = false
   }
-
-  reviews.value.unshift(newReview)
-
-  const saved = saveReviews()
-  if (!saved) return
-
-  resetReviewForm()
-  showForm.value = false
-  activeFilter.value = 'all'
-
-  successMessage.value = 'Ulasan berhasil ditambahkan.'
-  setTimeout(() => {
-    successMessage.value = ''
-  }, 3000)
 }
 
 function canDeleteReview(review) {
   if (!isLoggedIn.value) return false
-  if (currentUserRole.value === 'admin') return true
-  return review.user === currentUserName.value
+  // The backend only authorizes deleting your own review.
+  return review.userId === currentUser.value?.user_id
 }
 
-function deleteReview(reviewId) {
-  const confirmDelete = confirm('Hapus ulasan ini?')
-
-  if (!confirmDelete) return
-
-  reviews.value = reviews.value.filter(review => review.id !== reviewId)
-  saveReviews()
-
-  if (filteredReviews.value.length === 0) {
-    activeFilter.value = 'all'
+async function deleteReview(reviewId) {
+  if (!confirm('Hapus ulasan ini?')) return
+  try {
+    await reviewApi.remove(reviewId)
+    await loadReviews()
+    if (filteredReviews.value.length === 0) activeFilter.value = 'all'
+    successMessage.value = 'Ulasan berhasil dihapus.'
+    setTimeout(() => { successMessage.value = '' }, 3000)
+  } catch (err) {
+    loadError.value = err.message || 'Gagal menghapus ulasan.'
   }
-
-  successMessage.value = 'Ulasan berhasil dihapus.'
-  setTimeout(() => {
-    successMessage.value = ''
-  }, 3000)
-}
-
-function openMediaViewer(mediaList, index) {
-  selectedMediaList.value = mediaList
-  selectedMediaIndex.value = index
-}
-
-function closeMediaViewer() {
-  selectedMediaList.value = []
-  selectedMediaIndex.value = 0
-}
-
-function nextMedia() {
-  if (!selectedMediaList.value.length) return
-  selectedMediaIndex.value = (selectedMediaIndex.value + 1) % selectedMediaList.value.length
-}
-
-function prevMedia() {
-  if (!selectedMediaList.value.length) return
-  selectedMediaIndex.value =
-    selectedMediaIndex.value === 0
-      ? selectedMediaList.value.length - 1
-      : selectedMediaIndex.value - 1
 }
 
 function getInitial(name) {
@@ -830,13 +529,12 @@ function getInitial(name) {
 watch(
   () => props.product?.id,
   () => {
-    loadReviews()
     resetReviewForm()
-    closeMediaViewer()
     showForm.value = false
     activeFilter.value = 'all'
     successMessage.value = ''
     formError.value = ''
+    loadReviews()
   },
   { immediate: true }
 )

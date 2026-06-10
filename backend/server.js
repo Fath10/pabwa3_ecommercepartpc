@@ -14,7 +14,25 @@ dotenv.config();
 
 const app = express();
 
-app.use(cors());
+// ── CORS ──────────────────────────────────────────────
+// Allow the frontend origins listed in CLIENT_URL (comma-separated).
+// Requests with no Origin header (curl, server-to-server, same-origin) pass through.
+const allowedOrigins = (process.env.CLIENT_URL || "http://localhost:5173")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error(`Origin ${origin} not allowed by CORS`));
+    },
+    credentials: true,
+  })
+);
 
 app.use(express.json());
 
@@ -37,11 +55,6 @@ app.get(
         "e-BuildPC API berjalan",
     });
   }
-);
-
-app.use(
-  "/uploads",
-  express.static("uploads")
 );
 
 app.use(

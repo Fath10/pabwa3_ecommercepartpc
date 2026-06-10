@@ -100,11 +100,7 @@ const quickLinks = [
   { label: 'Katalog Produk', path: '/katalog' },
   { label: 'Artikel', path: '/artikel' },
   { label: 'Tentang Kami', path: '/tentang' },
-<<<<<<< HEAD
   { label: 'Bantuan', path: '/bantuan' },]
-=======
-]
->>>>>>> 30e37d261b6ccb96412709784af17465c862dd27
 
 const categories = [
   { label: 'Laptop', value: 'Laptop' },

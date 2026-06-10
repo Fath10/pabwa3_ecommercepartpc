@@ -196,6 +196,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { authApi } from '../api/index.js'
 
 const router = useRouter()
 
@@ -219,45 +220,25 @@ async function handleRegister() {
   isLoading.value = true
 
   try {
-    const res = await fetch('http://localhost:3000/api/auth/register', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        fullname: form.value.fullname,
-        email: form.value.email,
-        password: form.value.password
-      })
+    await authApi.register({
+      fullname: form.value.fullname,
+      email: form.value.email,
+      password: form.value.password,
     })
-
-    const data = await res.json()
-
-    if (!res.ok) {
-      isSuccess.value = false
-      message.value = data.message || 'Registrasi gagal.'
-      return
-    }
 
     isSuccess.value = true
     message.value = 'Akun berhasil dibuat! Mengalihkan ke halaman login...'
-    
+
     // Reset form
-<<<<<<< HEAD
     form.value = { fullname: '', email: '', password: '', confirmPassword: '' }
-=======
-    form.value = { fullname: '', email: '', password: '' }
->>>>>>> 30e37d261b6ccb96412709784af17465c862dd27
-    
+
     // Alihkan ke halaman login setelah 2 detik
     setTimeout(() => {
       router.push('/login')
     }, 2000)
-
   } catch (error) {
-    console.error('Error saat register:', error)
     isSuccess.value = false
-    message.value = 'Tidak dapat terhubung ke server backend. Pastikan server backend Anda menyala.'
+    message.value = error.message || 'Registrasi gagal.'
   } finally {
     isLoading.value = false
   }

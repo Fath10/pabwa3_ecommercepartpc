@@ -1,28 +1,26 @@
 import { createApp } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
 import './style.css'
-<<<<<<< HEAD
 
-=======
->>>>>>> 30e37d261b6ccb96412709784af17465c862dd27
 import App from './App.vue'
+import { userStore, productStore } from './store.js'
+
 import HomePage from './views/HomePage.vue'
 import KatalogPage from './views/KatalogPage.vue'
 import ArtikelPage from './views/ArtikelPage.vue'
 import ArtikelDetailPage from './views/ArtikelDetailPage.vue'
 import TentangPage from './views/TentangPage.vue'
+import BantuanPage from './views/BantuanPage.vue'
 import CartPage from './views/CartPage.vue'
+import CheckoutPage from './views/CheckoutPage.vue'
 import LoginPage from './views/LoginPage.vue'
 import RegisterPage from './views/RegisterPage.vue'
 import ProductDetailPage from './views/ProductDetailPage.vue'
-import BantuanPage from './views/BantuanPage.vue'
-import CheckoutPage from './views/CheckoutPage.vue'
+
 import AdminDashboard from './views/admin/AdminDashboard.vue'
 import AdminProducts from './views/admin/AdminProducts.vue'
 import AdminOrders from './views/admin/AdminOrders.vue'
 import AdminUsers from './views/admin/AdminUsers.vue'
-
-import { userStore } from './store.js'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -74,7 +72,6 @@ const router = createRouter({
       component: CartPage,
       meta: {
         title: 'e-BuildPC | Keranjang',
-        requiresAuth: true,
       },
     },
     {
@@ -107,7 +104,6 @@ const router = createRouter({
       },
     },
 
-    // Admin routes
     {
       path: '/admin',
       component: AdminDashboard,
@@ -151,26 +147,28 @@ const router = createRouter({
   },
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach((to) => {
   const isLoggedIn = userStore.isLoggedIn
   const isAdmin = userStore.isAdmin
 
-  // Kalau halaman butuh login, tapi belum login
   if (to.meta.requiresAuth && !isLoggedIn) {
-    return next('/login')
+    return {
+      path: '/login',
+      query: {
+        redirect: to.fullPath,
+      },
+    }
   }
 
-  // Kalau halaman khusus admin, tapi role bukan admin
   if (to.meta.adminOnly && !isAdmin) {
-    return next('/')
+    return '/'
   }
 
-  // Kalau sudah login tapi buka login/register lagi
   if ((to.path === '/login' || to.path === '/register') && isLoggedIn) {
-    return next(isAdmin ? '/admin' : '/')
+    return isAdmin ? '/admin' : '/'
   }
 
-  next()
+  return true
 })
 
 router.afterEach((to) => {
@@ -178,5 +176,9 @@ router.afterEach((to) => {
 })
 
 const app = createApp(App)
+
 app.use(router)
 app.mount('#app')
+
+userStore.init()
+productStore.fetchAll()

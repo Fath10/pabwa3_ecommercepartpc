@@ -195,13 +195,15 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { computed, onMounted } from 'vue'
 import ProductCard from '../components/ProductCard.vue'
-import { products } from '../store.js'
+import { productStore } from '../store.js'
 
 defineEmits(['add-to-cart'])
 
-const featuredProducts = products.slice(0, 4)
+onMounted(() => productStore.fetchAll())
+
+const featuredProducts = computed(() => productStore.items.slice(0, 4))
 
 function prevSlide() {}
 function nextSlide() {}
