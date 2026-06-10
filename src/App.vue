@@ -144,6 +144,8 @@ import NavBar from './components/NavBar.vue'
 import FooterSection from './components/FooterSection.vue'
 import ProductCard from './components/ProductCard.vue'
 import { cartStore } from './store.js'
+import { chatApi } from './api/index.js'
+import { API_BASE } from './api/client.js'
 
 const router = useRouter()
 const toasts = ref([])
@@ -208,7 +210,7 @@ async function sendMessage() {
   await scrollToBottom(true)
 
   try {
-    const response = await fetch('http://localhost:3000/api/chat-ai', {
+    const response = await fetch(`${API_BASE}/api/chat-ai`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

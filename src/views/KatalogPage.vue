@@ -153,7 +153,6 @@
           </button>
         </div>
       </div>
-
       <!-- Loading skeleton -->
       <div v-if="isLoading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         <div
@@ -177,7 +176,7 @@
         <h3 class="text-xl font-bold mb-2" style="color: #111827;">Gagal Memuat Produk</h3>
         <p class="text-gray-400 mb-6">Pastikan server backend berjalan di port 3000.</p>
         <button
-          @click="fetchProducts"
+          @click="productStore.fetchAll(true)"
           class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition-all"
         >
           Coba Lagi
@@ -272,6 +271,7 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ProductCard from '../components/ProductCard.vue'
+import { productStore } from '../store.js'
 
 const emit = defineEmits(['add-to-cart'])
 
@@ -279,10 +279,6 @@ const route = useRoute()
 const router = useRouter()
 
 // ── State ──────────────────────────────────────
-const allProducts = ref([])
-const isLoading = ref(true)
-const isError = ref(false)
-
 const search = ref('')
 const selectedCategory = ref('')
 const sortBy = ref('default')
@@ -292,46 +288,12 @@ const showSortDropdown = ref(false)
 
 const PRODUCTS_PER_PAGE = 12
 
-// ── Fetch dari API ─────────────────────────────
-const API_BASE = 'http://localhost:3000'
-
-async function fetchProducts() {
-  isLoading.value = true
-  isError.value = false
-  try {
-    const res = await fetch(`${API_BASE}/api/products`)
-    if (!res.ok) throw new Error('Gagal fetch produk')
-    const data = await res.json()
-
-    // Normalisasi field agar kompatibel dengan ProductCard
-    allProducts.value = data.map(p => ({
-      id: p.id,
-      name: p.name,
-      category: p.category,
-      price: p.price,
-      originalPrice: p.originalPrice,
-      // Resolve image URL
-      image: p.image
-        ? (p.image.startsWith('/uploads') ? `${API_BASE}${p.image}` : p.image)
-        : null,
-      badge: p.badge,
-      badgeColor: p.badgeColor,
-      rating: p.rating || 0,
-      reviews: p.reviews || 0,
-      stock: p.stock,
-      description: p.description,
-      specs: p.specs || [],
-    }))
-  } catch (err) {
-    console.error('Error fetch katalog:', err)
-    isError.value = true
-  } finally {
-    isLoading.value = false
-  }
-}
-
-// Kategori dinamis dari data API
-const categories = computed(() => [...new Set(allProducts.value.map(p => p.category))])
+// Catalog data comes from the backend via the shared product store.
+const products = computed(() => productStore.items)
+const categories = computed(() => productStore.categories)
+const isLoading = computed(() => productStore.loading)
+const isError = computed(() => !!productStore.error)
+const loadError = computed(() => productStore.error)
 
 function closeDropdowns() {
   showCategoryDropdown.value = false
@@ -391,8 +353,23 @@ watch(
   { immediate: true }
 )
 
+// Initialise / track the search term coming from the navbar (?q=...).
+watch(
+  () => route.query.q,
+  (q) => {
+    search.value = typeof q === 'string' ? q : ''
+    currentPage.value = 1
+  },
+  { immediate: true }
+)
+
+// Re-normalise the category once products (and therefore the category list) load.
+watch(categories, () => {
+  selectedCategory.value = normalizeCategory(route.query.category)
+})
+
 const filteredProducts = computed(() => {
-  let result = [...allProducts.value]
+  let result = [...products.value]
 
   if (search.value) {
     result = result.filter(p =>
@@ -445,7 +422,7 @@ function resetFilters() {
 }
 
 onMounted(() => {
-  fetchProducts()
+  productStore.fetchAll()
   document.addEventListener('click', closeDropdowns)
 })
 

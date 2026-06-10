@@ -27,6 +27,7 @@
         class="w-full object-contain group-hover:scale-105 transition-transform duration-400"
         :class="mini ? 'h-20' : 'h-36'"
         loading="lazy"
+        @error="onImgError"
       />
       <!-- Placeholder jika tidak ada gambar -->
       <div
@@ -40,7 +41,7 @@
         <span class="text-xs">No Image</span>
       </div>
     </div>
-
+ 
     <!-- Content -->
     <div class="flex flex-col flex-1" :class="mini ? 'p-2' : 'p-3'">
       <!-- Product name — fixed 2-line height in mini mode -->
@@ -49,7 +50,7 @@
         style="color: #111827;"
         :style="mini ? 'font-size:0.7rem; min-height:2.4em;' : 'font-size:0.78rem;'"
       >{{ product.name }}</h3>
-
+ 
       <!-- Price -->
       <div class="flex flex-col" :class="mini ? 'mb-1' : 'mb-2'">
         <p class="font-bold" style="color: #111827;" :style="`font-size: ${mini ? '0.75rem' : '0.85rem'};`">
@@ -57,7 +58,7 @@
         </p>
         <span v-if="product.overBudget" class="text-red-600 font-bold mt-0.5" style="font-size: 0.65rem; line-height: 1;">Melebihi sisa budget</span>
       </div>
-
+ 
       <!-- Stock indicator -->
       <div class="flex items-center gap-1.5" :class="mini ? 'mb-2' : 'mb-3'">
         <span
@@ -68,9 +69,9 @@
           {{ stockLabel }}
         </span>
       </div>
-
+ 
       <div class="flex-1"></div>
-
+ 
       <!-- "Tambah" button — disabled when out of stock -->
       <button
         @click.prevent.stop="product.stock > 0 && handleAddToCart($event)"
@@ -94,22 +95,23 @@
     </div>
   </RouterLink>
 </template>
-
+ 
 <script setup>
 import { computed } from 'vue'
 import { formatPrice } from '../store.js'
-
+import { PLACEHOLDER_IMAGE } from '../api/index.js'
+ 
 // Gabungan: mini prop dari remote + handleAddToCart dari fe-1137
 const props = defineProps({
   product: { type: Object, required: true },
   mini: { type: Boolean, default: false }
 })
 const emit = defineEmits(['add-to-cart'])
-
+ 
 function handleAddToCart(event) {
   emit('add-to-cart', props.product, event)
 }
-
+ 
 // Resolve URL gambar:
 // - Jika dari backend (/uploads/...) → prefix dengan base URL API
 // - Jika kosong/null → tampilkan placeholder
@@ -121,6 +123,10 @@ const resolvedImage = computed(() => {
   if (img.startsWith('/uploads')) return `${API_BASE}${img}`
   return img
 })
+ 
+function onImgError(event) {
+  if (event.target.src !== PLACEHOLDER_IMAGE) event.target.src = PLACEHOLDER_IMAGE
+}
 
 
 const badgeMap = {

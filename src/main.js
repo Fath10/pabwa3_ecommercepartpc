@@ -2,6 +2,7 @@ import { createApp } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
 import './style.css'
 import App from './App.vue'
+import { userStore, productStore } from './store.js'
 import HomePage from './views/HomePage.vue'
 import KatalogPage from './views/KatalogPage.vue'
 import ArtikelPage from './views/ArtikelPage.vue'
@@ -24,13 +25,20 @@ const router = createRouter({
     { path: '/tentang', component: TentangPage, meta: { title: 'e-BuildPC | Tentang Kami' } },
     { path: '/bantuan', component: BantuanPage, meta: { title: 'e-BuildPC | Bantuan' } },
     { path: '/cart', component: CartPage, meta: { title: 'e-BuildPC | Keranjang' } },
-    { path: '/checkout', component: CheckoutPage, meta: { title: 'e-BuildPC | Checkout' } },
     { path: '/login', component: LoginPage, meta: { title: 'e-BuildPC | Login' } },
     { path: '/register', component: RegisterPage, meta: { title: 'e-BuildPC | Buat Akun' } },
     { path: '/produk/:id', component: ProductDetailPage, meta: { title: 'e-BuildPC | Detail Produk' } },
+    { path: '/checkout', component: CheckoutPage, meta: { title: 'e-BuildPC | Checkout', requiresAuth: true } },
   ],
   scrollBehavior() {
     return { top: 0 }
+  }
+})
+
+// Routes flagged requiresAuth send guests to login, returning them afterwards.
+router.beforeEach((to) => {
+  if (to.meta.requiresAuth && !userStore.isLoggedIn) {
+    return { path: '/login', query: { redirect: to.fullPath } }
   }
 })
 
@@ -41,3 +49,7 @@ router.afterEach((to) => {
 const app = createApp(App)
 app.use(router)
 app.mount('#app')
+
+// Bootstrap: validate any stored session and preload the catalog.
+userStore.init()
+productStore.fetchAll()

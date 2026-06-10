@@ -1,12 +1,24 @@
 <template>
   <main class="pt-24 pb-20 min-h-screen" style="background: #f8fafc;">
 
-    <!-- Loading state -->
-    <div v-if="isLoading" class="max-w-3xl mx-auto px-4 text-center py-32">
-      <div class="flex justify-center mb-6">
-        <div class="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
-      </div>
-      <p class="text-gray-400 text-sm">Memuat produk...</p>
+    <!-- Loading -->
+    <div v-if="loading" class="max-w-3xl mx-auto px-4 text-center py-32">
+      <div class="inline-block w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+      <p class="mt-4 text-sm" style="color: #64748b;">Memuat produk…</p>
+    </div>
+
+    <!-- Error -->
+    <div v-else-if="error" class="max-w-3xl mx-auto px-4 text-center py-32">
+      <div class="text-7xl mb-6">⚠️</div>
+      <h1 class="text-2xl font-bold mb-3" style="color: #0f172a;">Gagal Memuat Produk</h1>
+      <p class="mb-8 text-sm" style="color: #64748b;">{{ error }}</p>
+      <button
+        @click="loadProduct(route.params.id)"
+        class="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-white font-bold text-sm transition-all hover:-translate-y-0.5"
+        style="background: linear-gradient(135deg, #4f46e5, #7c3aed);"
+      >
+        Coba Lagi
+      </button>
     </div>
 
     <!-- Product not found -->
@@ -219,85 +231,59 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { computed, ref, watch, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import ProductCard from '../components/ProductCard.vue'
 import ReviewSection from '../components/ReviewSection.vue'
-import { formatPrice } from '../store.js'
+import { productStore, formatPrice } from '../store.js'
+import { productApi } from '../api/index.js'
 
 const emit = defineEmits(['add-to-cart'])
 const route = useRoute()
 
-// ── State ──────────────────────────────────────────────
+// Detail is fetched on demand from GET /api/products/:id
 const product = ref(null)
-const isLoading = ref(true)
-const suggestedProducts = ref([])
+const loading = ref(true)
+const error = ref(null)
 
-// ── Fetch produk dari API backend ──────────────────────
-async function fetchProduct(id) {
-  isLoading.value = true
+async function loadProduct(id) {
+  loading.value = true
+  error.value = null
   product.value = null
-  suggestedProducts.value = []
-
   try {
-    const res = await fetch(`http://localhost:3000/api/products/${id}`)
-    if (!res.ok) {
+    product.value = await productApi.get(id)
+  } catch (err) {
+    if (err.status === 404) {
       product.value = null
-      return
+    } else {
+      error.value = err.message || 'Gagal memuat produk.'
     }
-    const data = await res.json()
-
-    // Normalisasi field agar sesuai dengan template
-    product.value = {
-      id: data.id,
-      name: data.name,
-      category: data.category,
-      price: data.price,
-      originalPrice: data.originalPrice,
-      // Ambil gambar pertama dari array images, fallback ke placeholder
-      image: data.images?.[0] || null,
-      // Ambil badge pertama
-      badge: data.badges?.[0]?.name || null,
-      badgeColor: data.badges?.[0]?.color || null,
-      rating: data.rating || 0,
-      reviews: data.reviewCount || 0,
-      stock: data.stock,
-      description: data.description,
-      specs: data.specs || {},
-    }
-
-    // Fetch produk lain (katalog) untuk saran
-    await fetchSuggested(data.id, data.category)
-  } catch (err) {
-    console.error('Gagal fetch produk:', err)
-    product.value = null
   } finally {
-    isLoading.value = false
+    loading.value = false
   }
 }
 
-async function fetchSuggested(currentId, currentCategory) {
-  try {
-    const res = await fetch('http://localhost:3000/api/products')
-    if (!res.ok) return
-    const all = await res.json()
+watch(
+  () => route.params.id,
+  (id) => {
+    if (id) loadProduct(id)
+  },
+  { immediate: true }
+)
 
-    // Prioritaskan kategori sama, exclude produk saat ini
-    const sameCategory = all.filter(p => p.id !== currentId && p.category === currentCategory)
-    const others = all.filter(p => p.id !== currentId && p.category !== currentCategory)
-    suggestedProducts.value = [...sameCategory, ...others].slice(0, 4)
-  } catch (err) {
-    console.error('Gagal fetch produk lain:', err)
-  }
-}
+// Suggested: ensure the catalog is loaded, then pick related products.
+onMounted(() => productStore.fetchAll())
 
-// ── Watch route changes (navigasi antar produk) ─────────
-watch(() => route.params.id, (id) => {
-  if (id) fetchProduct(id)
-})
-
-onMounted(() => {
-  fetchProduct(route.params.id)
+const suggestedProducts = computed(() => {
+  if (!product.value) return []
+  const all = productStore.items
+  const sameCategory = all.filter(
+    p => p.id !== product.value.id && p.category === product.value.category
+  )
+  const others = all.filter(
+    p => p.id !== product.value.id && p.category !== product.value.category
+  )
+  return [...sameCategory, ...others].slice(0, 4)
 })
 
 // ── Computed: Gambar produk ─────────────────────────────

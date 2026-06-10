@@ -138,9 +138,11 @@
 
 <script setup>
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { userStore } from '../store.js'
+import { authApi } from '../api/index.js'
 
+const route = useRoute()
 const router = useRouter()
 
 const form = ref({ email: '', password: '' })
@@ -153,33 +155,20 @@ async function handleLogin() {
   isLoading.value = true
 
   try {
-    const res = await fetch('http://localhost:3000/api/auth/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        email: form.value.email,
-        password: form.value.password
-      })
+    const data = await authApi.login({
+      email: form.value.email,
+      password: form.value.password,
     })
 
-    const data = await res.json()
+    // Persist the JWT + user, and merge any guest cart into the server cart.
+    await userStore.login(data.user, data.token)
 
-    if (!res.ok) {
-      errorMsg.value = data.message || 'Email atau password salah.'
-      return
-    }
-
-    // Simpan token JWT dan info user ke store reaktif & localStorage
-    userStore.login(data.user, data.token)
-
-    // Alihkan ke beranda (Home)
-    router.push('/')
-
+    // Return the user where they were headed, or the home page.
+    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/'
+    router.push(redirect)
   } catch (error) {
-    console.error('Error saat login:', error)
-    errorMsg.value = 'Tidak dapat terhubung ke server backend. Pastikan server backend Anda menyala.'
+    errorMsg.value =
+      error.message || 'Email atau password salah.'
   } finally {
     isLoading.value = false
   }
