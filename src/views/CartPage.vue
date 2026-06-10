@@ -19,7 +19,11 @@
         <!-- ─── EMPTY CART ─── -->
         <div v-if="cartStore.items.length === 0" class="text-center py-20">
           <div class="relative inline-block mb-8">
-            <div class="w-28 h-28 rounded-3xl flex items-center justify-center mx-auto text-5xl" style="background: rgba(79,70,229,0.08); border: 2px dashed rgba(79,70,229,0.2);">🛒</div>
+            <div class="w-28 h-28 rounded-3xl flex items-center justify-center mx-auto" style="background: rgba(79,70,229,0.08); border: 2px dashed rgba(79,70,229,0.2);">
+              <svg class="w-12 h-12" style="color: #4f46e5;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+            </div>
             <div class="absolute -bottom-2 -right-2 w-8 h-8 rounded-full flex items-center justify-center font-black text-sm" style="background: #fee2e2; border: 2px solid #fff; color: #ef4444;">0</div>
           </div>
           <h2 class="text-2xl font-black mb-3" style="color: #111827;">Keranjang Masih Kosong</h2>
@@ -60,7 +64,7 @@
                   <p class="text-xs mt-1" style="color: #9ca3af;">Subtotal: <span class="font-bold" style="color: #111827;">{{ formatPrice(item.price * item.quantity) }}</span></p>
                 </div>
 
-                <!-- Qty control only (no × button) -->
+                <!-- Qty control only -->
                 <div class="flex flex-col items-end justify-center flex-shrink-0">
                   <div class="flex items-center rounded-xl overflow-hidden" style="border: 1px solid #e5e7eb; background: #f9fafb;">
                     <button
@@ -81,7 +85,9 @@
 
             <!-- Free shipping badge -->
             <div class="flex items-center gap-3 p-4 rounded-xl" style="background: #f0fdf4; border: 1px solid #bbf7d0;">
-              <span class="text-xl">🚚</span>
+              <svg class="w-5 h-5 flex-shrink-0" style="color: #16a34a;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8 4H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-2m-4-2v6m0 0l-2-2m2 2l2-2M3 16h18" />
+              </svg>
               <p class="text-sm" style="color: #16a34a;">Selamat! Pesanan Anda mendapatkan <strong>gratis ongkir</strong></p>
             </div>
 
@@ -154,25 +160,31 @@
 
               <!-- Checkout CTA -->
               <div class="px-6 pb-6">
-                <button
+                <RouterLink
                   id="checkout-btn"
+                  to="/checkout"
                   class="w-full py-4 rounded-2xl text-white font-black text-base transition-all duration-300 hover:-translate-y-1 flex items-center justify-center gap-2"
-                  style="background: linear-gradient(135deg, #4f46e5, #7c3aed); box-shadow: 0 8px 32px rgba(79,70,229,0.3);"
-                  @click="handleCheckout"
+                  style="background: linear-gradient(135deg, #4f46e5, #7c3aed); box-shadow: 0 8px 32px rgba(79,70,229,0.3); display: flex;"
                 >
-                  💳 Checkout Sekarang
-                </button>
+                  <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                  </svg>
+                  Checkout Sekarang
+                </RouterLink>
 
                 <!-- Trust Badges -->
                 <div class="flex justify-center gap-4 mt-4">
                   <div class="flex items-center gap-1 text-xs" style="color: #9ca3af;">
-                    <span>🔒</span> Aman
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                    Aman
                   </div>
                   <div class="flex items-center gap-1 text-xs" style="color: #9ca3af;">
-                    <span>✅</span> Original
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    Original
                   </div>
                   <div class="flex items-center gap-1 text-xs" style="color: #9ca3af;">
-                    <span>🔄</span> Garansi
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                    Garansi
                   </div>
                 </div>
               </div>
@@ -183,14 +195,14 @@
       </div>
     </main>
 
-    <!-- ─── SARAN PRODUK (selalu tampil, di atas footer) ─── -->
+    <!-- ─── SARAN PRODUK ─── -->
     <section class="pb-16" style="background: #f9fafb;">
       <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="rounded-2xl overflow-hidden bg-white" style="border: 1px solid #e5e7eb; box-shadow: 0 2px 12px rgba(0,0,0,0.05);">
           <!-- Header -->
           <div class="px-6 py-5 flex items-center justify-between" style="border-bottom: 1px solid #f3f4f6;">
             <div>
-              <h2 class="font-black text-lg" style="color: #111827;">✨ Produk yang Mungkin Kamu Suka</h2>
+              <h2 class="font-black text-lg" style="color: #111827;">Produk yang Mungkin Kamu Suka</h2>
               <p class="text-xs mt-0.5" style="color: #9ca3af;">Rekomendasi pilihan terbaik untuk melengkapi kebutuhan PC-mu</p>
             </div>
             <RouterLink to="/katalog" class="text-xs font-semibold hover:underline" style="color: #4f46e5;">
@@ -199,21 +211,13 @@
           </div>
           <!-- Product Grid -->
           <div class="p-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            <RouterLink
+            <ProductCard
               v-for="p in suggestedProducts"
               :key="p.id"
-              :to="`/produk/${p.id}`"
-              class="group flex flex-col rounded-xl overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-md"
-              style="background: #f9fafb; border: 1px solid #e5e7eb;"
-            >
-              <div class="h-28 flex items-center justify-center p-3" style="background: #f1f5f9;">
-                <img :src="p.image" :alt="p.name" class="h-full w-full object-contain group-hover:scale-105 transition-transform duration-300" />
-              </div>
-              <div class="p-3">
-                <p class="text-xs font-semibold line-clamp-2 leading-snug mb-1.5 group-hover:text-indigo-600 transition-colors" style="color: #374151;">{{ p.name }}</p>
-                <p class="font-black text-xs" style="color: #4f46e5;">{{ formatPrice(p.price) }}</p>
-              </div>
-            </RouterLink>
+              :product="p"
+              mini
+              @add-to-cart="(product, event) => $emit('add-to-cart', product, event)"
+            />
           </div>
         </div>
       </div>
@@ -224,22 +228,23 @@
 
 <script setup>
 import { computed } from 'vue'
+import { useRouter } from 'vue-router'
+import ProductCard from '../components/ProductCard.vue'
 import { cartStore, products, formatPrice } from '../store.js'
+
+const router = useRouter()
+
+defineEmits(['add-to-cart'])
 
 // Saran produk: 6 produk paling populer (rating tertinggi) yang belum ada di keranjang
 const suggestedProducts = computed(() => {
   const cartIds = new Set(cartStore.items.map(i => i.id))
   const filtered = products.filter(p => !cartIds.has(p.id))
-  // Jika keranjang kosong, ambil dari semua produk
   const pool = filtered.length >= 6 ? filtered : products
   return [...pool]
     .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
     .slice(0, 6)
 })
-
-function handleCheckout() {
-  alert('🎉 Terima kasih! Fitur checkout akan segera hadir. Silakan hubungi kami via WhatsApp untuk pemesanan.')
-}
 </script>
 
 <style scoped>
