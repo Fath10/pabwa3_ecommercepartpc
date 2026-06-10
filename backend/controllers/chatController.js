@@ -772,12 +772,9 @@ function formatBuildContext(parts, totalBudget) {
   const fmt = (n) =>
     new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
 
-  const withinBudgetParts = parts.filter(p => !p.overBudget);
-  const overBudgetParts = parts.filter(p => p.overBudget);
-  const totalWithin = withinBudgetParts.reduce((s, p) => s + Number(p.price), 0);
-  const totalAll = parts.reduce((s, p) => s + Number(p.price), 0);
+  const totalWithin = parts.reduce((s, p) => s + Number(p.price), 0);
 
-  const withinLines = withinBudgetParts.map(
+  const withinLines = parts.map(
     (p) => `- [${p.slot_label}] ${p.product_name} | Harga: ${fmt(p.price)} | Stok: ${p.stock} unit`
   );
 
@@ -813,8 +810,8 @@ async function callOllamaStream(messages, res) {
       messages,
       stream: true, // ← STREAMING ON
       options: {
-        temperature: 0.2,   // rendah = lebih akurat, tidak mengarang
-        top_p: 0.8,
+        temperature: 0.1,   // sangat rendah = lebih akurat, tidak mengarang
+        top_p: 0.5,
         num_predict: 400,
       },
     }),
@@ -901,14 +898,17 @@ Berikut adalah komponen yang BISA DIDAPATKAN dengan budget tersebut dari toko in
 ${buildContext}
 
 TUGASMU:
-- Sampaikan bahwa dengan budget tersebut, mereka baru bisa mendapatkan komponen-komponen di atas.
-- JANGAN menyuruh user untuk menambahkan budget dengan angka berapapun. Cukup beritahu apa yang mereka dapatkan.
-- Jika ada komponen penting yang kurang (seperti tidak ada GPU atau Processor), beritahu secara ramah bahwa mereka mungkin perlu menabung lagi untuk melengkapi PC-nya di masa depan.
-- JANGAN mengarang perhitungan matematis.
+- Sampaikan komponen apa saja yang mereka dapatkan berdasarkan teks di atas.
+- DILARANG KERAS menyarankan user untuk menambahkan budget atau menabung sejumlah uang tertentu.
+- DILARANG KERAS mengarang/merekomendasikan produk yang tidak ada di daftar di atas.
+- Jika komponen tidak lengkap (misal tidak ada GPU atau Processor), beritahu saja secara ramah bahwa dengan budget ini, komponen tersebut belum dapat dibeli.
 - Gunakan bahasa natural, ramah, singkat (3-4 kalimat), tanpa format markdown.
 - HANYA sebut produk yang ada di daftar di atas.`;
 
-      const ollamaMessages = [];
+      const ollamaMessages = [
+        { role: "system", content: buildPrompt }
+      ];
+
       if (history && Array.isArray(history)) {
         for (const msg of history.slice(-4)) {
           ollamaMessages.push({
@@ -917,9 +917,10 @@ TUGASMU:
           });
         }
       }
+
       ollamaMessages.push({
         role: "user",
-        content: `${buildPrompt}\n\nPertanyaan user: "${userMessage}"\nJawab sekarang:`,
+        content: `Pertanyaan user: "${userMessage}"\nJawab sekarang:`,
       });
 
       // SET SSE HEADERS
@@ -969,22 +970,49 @@ TUGASMU:
       : [];
 
     if (isProductQuery && relevantProducts.length === 0) {
-      relevantProducts = await fetchBroadCatalog(maxPrice);
+      // Jangan gunakan broad catalog jika user mencari keyword spesifik (misal "laptop") tapi tidak ketemu.
+      // Hanya gunakan broad catalog jika keyword kosong (misal user cuma nanya "budget 5 juta dapat apa").
+      if (keywords.length === 0) {
+        relevantProducts = await fetchBroadCatalog(maxPrice);
+      }
     }
 
-    const productContext = isProductQuery
-      ? formatProductContext(relevantProducts)
-      : "";
+    if (isProductQuery && relevantProducts.length === 0) {
+      const emptyMsg = "Maaf, saat ini kami tidak memiliki produk yang cocok dengan pencarian Anda di toko e-BuildPC. Ada komponen PC lain yang ingin Anda cari?";
+      
+      res.setHeader("Content-Type", "text/event-stream");
+      res.setHeader("Cache-Control", "no-cache");
+      res.setHeader("Connection", "keep-alive");
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.flushHeaders();
+      
+      const tokens = emptyMsg.split(" ");
+      for (const t of tokens) {
+        res.write(`data: ${JSON.stringify({ token: t + " " })}\n\n`);
+        await new Promise(r => setTimeout(r, 30));
+      }
+      
+      res.write(`data: ${JSON.stringify({
+        type: "products",
+        products: [],
+        productsFound: 0,
+        done: true,
+      })}\n\n`);
+      
+      return res.end();
+    }
 
+    const productContext = formatProductContext(relevantProducts);
     const budgetNote = maxPrice
       ? `\nPengguna meminta produk dengan harga MAKSIMAL Rp ${maxPrice.toLocaleString("id-ID")}.`
       : "";
 
-    const systemPrompt = isProductQuery
-      ? `${SYSTEM_PROMPT_BASE}${budgetNote}\n\nBerikut adalah DAFTAR PRODUK yang tersedia saat ini:\n${productContext}`
-      : SYSTEM_PROMPT_BASE;
+    const systemPrompt = `${SYSTEM_PROMPT_BASE}${budgetNote}\n\nBerikut adalah DAFTAR PRODUK yang tersedia saat ini:\n${productContext}\n\nTUGASMU: Jawab HANYA menggunakan produk dari daftar di atas. DILARANG mengarang nama atau spesifikasi produk yang tidak ada di daftar.`;
 
-    const ollamaMessages = [];
+    const ollamaMessages = [
+      { role: "system", content: systemPrompt }
+    ];
+
     if (history && Array.isArray(history)) {
       const recentHistory = history.slice(-6);
       for (const msg of recentHistory) {
@@ -997,7 +1025,7 @@ TUGASMU:
 
     ollamaMessages.push({
       role: "user",
-      content: `${systemPrompt}\n\nPertanyaan Pengguna: "${userMessage}"\nBerikan jawabanmu sekarang:`,
+      content: `Pertanyaan Pengguna: "${userMessage}"\nBerikan jawabanmu sekarang:`,
     });
 
     // ── SET SSE HEADERS ──

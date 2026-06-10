@@ -263,10 +263,9 @@ async function sendMessage() {
     // Tunda kemunculan produk agar tampil setelah teks selesai dibaca
     if (productsBuffer && productsBuffer.length > 0) {
       setTimeout(async () => {
-        const msgIndex = messages.value.indexOf(aiMsg)
-        if (msgIndex !== -1) {
-          aiMsg.products = productsBuffer
-          messages.value.splice(msgIndex, 1, { ...aiMsg })
+        const lastMsg = messages.value[messages.value.length - 1]
+        if (lastMsg && lastMsg.role === 'bot') {
+          lastMsg.products = productsBuffer
           await nextTick()
           await scrollToBottom()
         }
