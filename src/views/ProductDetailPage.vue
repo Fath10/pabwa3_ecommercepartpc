@@ -1,8 +1,16 @@
 <template>
   <main class="pt-24 pb-20 min-h-screen" style="background: #f8fafc;">
 
+    <!-- Loading state -->
+    <div v-if="isLoading" class="max-w-3xl mx-auto px-4 text-center py-32">
+      <div class="flex justify-center mb-6">
+        <div class="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+      </div>
+      <p class="text-gray-400 text-sm">Memuat produk...</p>
+    </div>
+
     <!-- Product not found -->
-    <div v-if="!product" class="max-w-3xl mx-auto px-4 text-center py-32">
+    <div v-else-if="!product" class="max-w-3xl mx-auto px-4 text-center py-32">
       <div class="text-7xl mb-6">🔍</div>
       <h1 class="text-3xl font-bold mb-3" style="color: #0f172a;">Produk Tidak Ditemukan</h1>
       <p class="mb-8 text-sm" style="color: #64748b;">Produk yang Anda cari tidak tersedia atau telah dihapus.</p>
@@ -39,12 +47,13 @@
           >
             <!-- Badge -->
             <span
+              v-if="product.badge"
               class="absolute top-4 left-4 px-3 py-1 rounded-full text-white font-bold text-xs z-10"
               :class="badgeClass"
             >{{ product.badge }}</span>
 
             <img
-              :src="product.image"
+              :src="productImage"
               :alt="product.name"
               class="h-72 w-full object-contain p-8 transition-transform duration-500 hover:scale-105"
             />
@@ -131,11 +140,11 @@
           </div>
 
           <!-- Specs -->
-          <div class="mb-8">
+          <div v-if="productSpecs.length > 0" class="mb-8">
             <h2 class="text-sm font-bold uppercase tracking-wider mb-3" style="color: #94a3b8;">Spesifikasi Utama</h2>
             <div class="grid grid-cols-2 gap-2">
               <div
-                v-for="(spec, i) in product.specs"
+                v-for="(spec, i) in productSpecs"
                 :key="i"
                 class="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium"
                 style="background: #f8fafc; border: 1px solid #e2e8f0; color: #1e293b;"
@@ -210,32 +219,107 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import ProductCard from '../components/ProductCard.vue'
 import ReviewSection from '../components/ReviewSection.vue'
-import { products, formatPrice } from '../store.js'
+import { formatPrice } from '../store.js'
 
 const emit = defineEmits(['add-to-cart'])
 const route = useRoute()
 
-// Find product by id from URL param
-const product = computed(() => {
-  const id = Number(route.params.id)
-  return products.find(p => p.id === id) || null
+// ── State ──────────────────────────────────────────────
+const product = ref(null)
+const isLoading = ref(true)
+const suggestedProducts = ref([])
+
+// ── Fetch produk dari API backend ──────────────────────
+async function fetchProduct(id) {
+  isLoading.value = true
+  product.value = null
+  suggestedProducts.value = []
+
+  try {
+    const res = await fetch(`http://localhost:3000/api/products/${id}`)
+    if (!res.ok) {
+      product.value = null
+      return
+    }
+    const data = await res.json()
+
+    // Normalisasi field agar sesuai dengan template
+    product.value = {
+      id: data.id,
+      name: data.name,
+      category: data.category,
+      price: data.price,
+      originalPrice: data.originalPrice,
+      // Ambil gambar pertama dari array images, fallback ke placeholder
+      image: data.images?.[0] || null,
+      // Ambil badge pertama
+      badge: data.badges?.[0]?.name || null,
+      badgeColor: data.badges?.[0]?.color || null,
+      rating: data.rating || 0,
+      reviews: data.reviewCount || 0,
+      stock: data.stock,
+      description: data.description,
+      specs: data.specs || {},
+    }
+
+    // Fetch produk lain (katalog) untuk saran
+    await fetchSuggested(data.id, data.category)
+  } catch (err) {
+    console.error('Gagal fetch produk:', err)
+    product.value = null
+  } finally {
+    isLoading.value = false
+  }
+}
+
+async function fetchSuggested(currentId, currentCategory) {
+  try {
+    const res = await fetch('http://localhost:3000/api/products')
+    if (!res.ok) return
+    const all = await res.json()
+
+    // Prioritaskan kategori sama, exclude produk saat ini
+    const sameCategory = all.filter(p => p.id !== currentId && p.category === currentCategory)
+    const others = all.filter(p => p.id !== currentId && p.category !== currentCategory)
+    suggestedProducts.value = [...sameCategory, ...others].slice(0, 4)
+  } catch (err) {
+    console.error('Gagal fetch produk lain:', err)
+  }
+}
+
+// ── Watch route changes (navigasi antar produk) ─────────
+watch(() => route.params.id, (id) => {
+  if (id) fetchProduct(id)
 })
 
-// Suggested: up to 4 products from same category (excluding current)
-const suggestedProducts = computed(() => {
-  if (!product.value) return []
-  const sameCategory = products.filter(
-    p => p.id !== product.value.id && p.category === product.value.category
-  )
-  // Fill remaining slots with products from other categories if needed
-  const others = products.filter(
-    p => p.id !== product.value.id && p.category !== product.value.category
-  )
-  return [...sameCategory, ...others].slice(0, 4)
+onMounted(() => {
+  fetchProduct(route.params.id)
+})
+
+// ── Computed: Gambar produk ─────────────────────────────
+const productImage = computed(() => {
+  if (!product.value) return ''
+  const img = product.value.image
+  if (!img) return '/placeholder.jpg'
+  // Jika URL relatif dari backend (/uploads/...), tambahkan base URL
+  if (img.startsWith('/uploads')) return `http://localhost:3000${img}`
+  return img
+})
+
+// ── Computed: Specs (dari object atau array) ────────────
+const productSpecs = computed(() => {
+  if (!product.value?.specs) return []
+  const s = product.value.specs
+  if (Array.isArray(s)) return s
+  // Jika object, ubah jadi array "key: value"
+  if (typeof s === 'object') {
+    return Object.entries(s).map(([k, v]) => `${k}: ${v}`)
+  }
+  return []
 })
 
 // ── Stock helpers ──────────────────────────────────────

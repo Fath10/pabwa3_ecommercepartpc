@@ -71,10 +71,7 @@
             <!-- Chat Messages -->
             <div class="ai-messages" ref="messagesContainer">
               <template v-for="(msg, i) in messages" :key="i">
-                <div
-                  class="ai-message"
-                  :class="msg.role === 'user' ? 'ai-message-user' : 'ai-message-bot'"
-                >
+                <div class="ai-message" :class="msg.role === 'user' ? 'ai-message-user' : 'ai-message-bot'">
                   <div v-if="msg.role === 'bot'" class="ai-bot-avatar">🤖</div>
                   <div class="ai-bubble" :class="msg.role === 'user' ? 'ai-bubble-user' : 'ai-bubble-bot'">
                     {{ msg.content }}
@@ -83,13 +80,13 @@
 
                 <!-- Product Cards (if any) -->
                 <div v-if="msg.products && msg.products.length > 0" class="flex gap-2 overflow-x-auto py-2 px-1 w-full snap-x snap-mandatory scrollbar-hide flex-shrink-0" style="max-width: 100%;">
-                  <div v-for="prod in msg.products" :key="prod.id" class="flex-shrink-0 w-44 snap-center">
+                  <div v-for="(prod, idx) in msg.products" :key="prod.id" class="flex-shrink-0 w-44 snap-center product-card-animate" :style="{ '--card-delay': `${idx * 80}ms` }">
                     <ProductCard :product="prod" mini @add-to-cart="handleAddToCart" />
                   </div>
                 </div>
               </template>
 
-              <!-- Typing indicator -->
+              <!-- Typing indicator (saat AI sedang streaming) -->
               <div v-if="isTyping" class="ai-message ai-message-bot">
                 <div class="ai-bot-avatar">🤖</div>
                 <div class="ai-bubble ai-bubble-bot ai-typing">
@@ -179,40 +176,86 @@ const quickReplies = [
 
 async function sendMessage() {
   if (!userInput.value.trim() || isTyping.value) return
-  const text = userInput.value.trim()
+
+  const userMsg = userInput.value.trim()
   userInput.value = ''
-  
-  messages.value.push({ role: 'user', content: text })
+
+  // Tambah pesan user ke chat
+  messages.value.push({ role: 'user', content: userMsg })
+
+  // Jangan push AI message di awal - tunggu sampai response tiba
+  let aiMsg = null
+  let aiMsgAdded = false
+
   isTyping.value = true
   await scrollToBottom()
 
   try {
-    const historyToSend = messages.value
-      .slice(-10)
-      .filter((_, i) => i < messages.value.length - 1)
-      .map(m => ({ role: m.role, text: m.content }))
-
-    const res = await fetch('http://localhost:3000/api/chat-ai', {
+    const response = await fetch('http://localhost:3000/api/chat-ai', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        message: text,
-        history: historyToSend,
+        message: userMsg,
+        history: messages.value.slice(-6).filter((_, i) => i < messages.value.length - 1).map(m => ({ role: m.role, text: m.content })),
       }),
     })
 
-    const data = await res.json()
+    const reader = response.body.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
 
-    messages.value.push({
-      role: 'bot',
-      content: data.reply || '⚠️ Tidak ada respons dari server.',
-      products: data.products || [],
-    })
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n\n')
+      buffer = lines.pop() // simpan sisa yang belum lengkap
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue
+        
+        let json
+        try {
+          json = JSON.parse(line.slice(6))
+        } catch (_) {
+          continue
+        }
+
+        // Token pertama - buat AI message
+        if (json.token && !aiMsgAdded) {
+          aiMsg = { role: 'bot', content: json.token, isStreaming: true, products: [] }
+          messages.value.push(aiMsg)
+          aiMsgAdded = true
+          await nextTick()
+          await scrollToBottom()
+        }
+        // Token berikutnya
+        else if (json.token && aiMsg) {
+          aiMsg.content += json.token
+          await nextTick()
+          await scrollToBottom()
+        }
+        // Produk tiba
+        else if (json.type === 'products' && aiMsg) {
+          aiMsg.products = json.products
+          aiMsg.isStreaming = false
+        }
+      }
+    }
+
+    if (aiMsg) {
+      aiMsg.isStreaming = false
+    }
   } catch (err) {
-    messages.value.push({
-      role: 'bot',
-      content: '⚠️ Maaf, terjadi kesalahan saat menghubungi server. Pastikan backend sudah berjalan dan Ollama sudah aktif.',
-    })
+    console.error('Stream error:', err)
+    if (!aiMsg) {
+      aiMsg = { role: 'bot', content: '⚠️ Gagal menghubungi server.', isStreaming: false, products: [] }
+      messages.value.push(aiMsg)
+    } else {
+      aiMsg.content = '⚠️ Gagal menghubungi server.'
+      aiMsg.isStreaming = false
+    }
   } finally {
     isTyping.value = false
     await scrollToBottom()
@@ -533,6 +576,17 @@ function handleAddToCart(product, event) {
   display: flex;
   align-items: flex-end;
   gap: 8px;
+  animation: messageSlideIn 0.4s ease-out forwards;
+}
+@keyframes messageSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 .ai-message-user {
   flex-direction: row-reverse;
@@ -586,6 +640,22 @@ function handleAddToCart(product, event) {
 @keyframes typing {
   0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
   30% { transform: translateY(-6px); opacity: 1; }
+}
+
+/* Product card animation */
+.product-card-animate {
+  animation: cardSlideIn 0.5s ease-out forwards;
+  animation-delay: var(--card-delay, 0ms);
+}
+@keyframes cardSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 /* Quick replies */

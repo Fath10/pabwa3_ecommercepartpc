@@ -19,12 +19,24 @@
       :style="`background: #f1f5f9; height: ${mini ? '100px' : '170px'}; padding: ${mini ? '8px' : '12px'};`"
     >
       <img
-        :src="product.image"
+        v-if="resolvedImage"
+        :src="resolvedImage"
         :alt="product.name"
         class="w-full object-contain group-hover:scale-105 transition-transform duration-400"
         :class="mini ? 'h-20' : 'h-36'"
         loading="lazy"
       />
+      <!-- Placeholder jika tidak ada gambar -->
+      <div
+        v-else
+        class="flex flex-col items-center justify-center gap-1 text-gray-300"
+        :class="mini ? 'h-20' : 'h-36'"
+      >
+        <svg class="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+        <span class="text-xs">No Image</span>
+      </div>
     </div>
 
     <!-- Content -->
@@ -92,6 +104,18 @@ const emit = defineEmits(['add-to-cart'])
 function handleAddToCart(event) {
   emit('add-to-cart', props.product, event)
 }
+
+// Resolve URL gambar:
+// - Jika dari backend (/uploads/...) → prefix dengan base URL API
+// - Jika kosong/null → tampilkan placeholder
+// - Jika path lain (store.js dll) → biarkan apa adanya
+const API_BASE = 'http://localhost:3000'
+const resolvedImage = computed(() => {
+  const img = props.product?.image
+  if (!img) return null
+  if (img.startsWith('/uploads')) return `${API_BASE}${img}`
+  return img
+})
 
 
 const badgeMap = {

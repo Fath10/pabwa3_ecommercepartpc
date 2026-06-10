@@ -568,11 +568,10 @@ function formatProductContext(products) {
 }
 
 // ══════════════════════════════════════════════
-// Helper: Panggil Ollama API
+// Helper: Panggil Ollama API dengan Streaming
 // ══════════════════════════════════════════════
-async function callOllama(messages) {
-  const baseUrl =
-    process.env.OLLAMA_BASE_URL || "http://localhost:11434";
+async function callOllamaStream(messages, res) {
+  const baseUrl = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
   const model = process.env.OLLAMA_MODEL || "llama3.2";
 
   const response = await fetch(`${baseUrl}/api/chat`, {
@@ -581,7 +580,7 @@ async function callOllama(messages) {
     body: JSON.stringify({
       model,
       messages,
-      stream: false,
+      stream: true, // ← STREAMING ON
       options: {
         temperature: 0.5,
         top_p: 0.85,
@@ -591,32 +590,47 @@ async function callOllama(messages) {
   });
 
   if (!response.ok) {
-    const errText = await response.text();
-    throw new Error(
-      `Ollama API error (${response.status}): ${errText}`
-    );
+    throw new Error(`Ollama API error (${response.status})`);
   }
 
-  const data = await response.json();
-  return data.message?.content || "Maaf, saya tidak bisa memberikan jawaban saat ini.";
+  let fullText = "";
+  const decoder = new TextDecoder();
+
+  for await (const chunk of response.body) {
+    const line = decoder.decode(chunk).trim();
+    if (!line) continue;
+
+    try {
+      const parsed = JSON.parse(line);
+      const token = parsed.message?.content || "";
+      if (!token) continue; // Skip token kosong
+
+      fullText += token;
+
+      // Kirim token ke frontend via SSE dengan format yang benar
+      res.write(`data: ${JSON.stringify({ token })}\n\n`);
+      // Paksa kirim ke browser setiap token (jangan di-buffer)
+      if (res.flush) res.flush();
+    } catch (_) {}
+  }
+
+  return fullText;
 }
 
 // ══════════════════════════════════════════════
-// MAIN CONTROLLER: POST /api/chat-ai
+// MAIN CONTROLLER: POST /api/chat-ai (Streaming SSE)
 // ══════════════════════════════════════════════
 export const chat = async (req, res) => {
   try {
     const { message, history } = req.body;
 
     if (!message || !message.trim()) {
-      return res.status(400).json({
-        message: "Pesan tidak boleh kosong",
-      });
+      return res.status(400).json({ message: "Pesan tidak boleh kosong" });
     }
 
     const userMessage = message.trim();
 
-    // ── LAPIS 0: Cek salam / basa-basi → balas ramah tanpa LLM ──
+    // ── LAPIS 0: Salam → balas langsung tanpa LLM ──
     const greetingReply = getGreetingReply(userMessage);
     if (greetingReply) {
       return res.status(200).json({
@@ -626,7 +640,7 @@ export const chat = async (req, res) => {
       });
     }
 
-    // ── LAPIS 1: Cek input terlarang SEBELUM kirim ke LLM ──
+    // ── LAPIS 1: Input terlarang ──
     if (isBlockedInput(userMessage)) {
       return res.status(200).json({
         reply: REFUSAL_MESSAGE,
@@ -636,20 +650,15 @@ export const chat = async (req, res) => {
       });
     }
 
-    // 1. Deteksi apakah pesan berkaitan dengan produk PC
+    // RAG & keyword extraction (sama seperti sebelumnya)
     const isProductQuery = isProductRelatedQuery(userMessage);
-
-    // 2. Ekstrak kata kunci & budget dari pesan user
     const keywords = extractKeywords(userMessage);
     const maxPrice = parseBudget(userMessage);
 
-    // 3. RAG — Query produk relevan HANYA jika pertanyaan tentang produk
     let relevantProducts = isProductQuery
       ? await fetchRelevantProducts(keywords, maxPrice)
       : [];
 
-    // 3b. Fallback: jika query tentang produk tapi hasil kosong (query terlalu umum),
-    //     ambil produk termurah per kategori sebagai konteks
     if (isProductQuery && relevantProducts.length === 0) {
       relevantProducts = await fetchBroadCatalog(maxPrice);
     }
@@ -658,20 +667,17 @@ export const chat = async (req, res) => {
       ? formatProductContext(relevantProducts)
       : "";
 
-    // 4. Bangun system prompt dengan konteks produk (LAPIS 2)
     const budgetNote = maxPrice
-      ? `\nPengguna meminta produk dengan harga MAKSIMAL Rp ${maxPrice.toLocaleString("id-ID")}. Tampilkan hanya produk yang sesuai budget tersebut.`
+      ? `\nPengguna meminta produk dengan harga MAKSIMAL Rp ${maxPrice.toLocaleString("id-ID")}.`
       : "";
+
     const systemPrompt = isProductQuery
       ? `${SYSTEM_PROMPT_BASE}${budgetNote}\n\nBerikut adalah DAFTAR PRODUK yang tersedia saat ini:\n${productContext}`
       : SYSTEM_PROMPT_BASE;
 
-    // 5. Susun messages untuk Ollama
     const ollamaMessages = [];
-
-    // Masukkan riwayat chat (max 10 pesan terakhir)
     if (history && Array.isArray(history)) {
-      const recentHistory = history.slice(-10);
+      const recentHistory = history.slice(-6); // ← Kurangi dari -10 ke -6
       for (const msg of recentHistory) {
         ollamaMessages.push({
           role: msg.role === "user" ? "user" : "assistant",
@@ -680,20 +686,20 @@ export const chat = async (req, res) => {
       }
     }
 
-    // Tambahkan instruksi sistem dan pesan user
     ollamaMessages.push({
       role: "user",
-      content: `${systemPrompt}\n\nPertanyaan Pengguna: "${userMessage}"\nBerikan jawabanmu sekarang berdasarkan daftar produk di atas:`
+      content: `${systemPrompt}\n\nPertanyaan Pengguna: "${userMessage}"\nBerikan jawabanmu sekarang:`,
     });
 
-    // 6. Panggil Ollama
-    let aiReply = await callOllama(ollamaMessages);
+    // ── SET SSE HEADERS ──
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.flushHeaders();
 
-    // ── LAPIS 3: Sanitasi output dari LLM ──
-    aiReply = sanitizeOutput(aiReply);
-
-    // 7. Format products for frontend ProductCard (hanya jika ada produk relevan)
-    let formattedProducts = relevantProducts.map((p) => ({
+    // Format produk untuk frontend
+    const formattedProducts = relevantProducts.map((p) => ({
       id: p.product_id,
       name: p.product_name,
       description: p.description,
@@ -705,35 +711,43 @@ export const chat = async (req, res) => {
       badgeColor: "blue",
     }));
 
-    // Jika AI menolak menjawab karena di luar topik, kosongkan rekomendasi produk
-    if (aiReply.includes("Maaf, saya hanya bisa membantu seputar produk")) {
-      formattedProducts = [];
-    }
+    // ── STREAM AI RESPONSE ──
+    let fullReply = await callOllamaStream(ollamaMessages, res);
+    fullReply = sanitizeOutput(fullReply);
 
-    // 8. Kirim respons ke frontend
-    return res.status(200).json({
-      reply: aiReply,
-      productsFound: relevantProducts.length,
-      products: formattedProducts,
-    });
+    // Cek apakah AI menolak (di luar topik)
+    const isRefusal = fullReply.includes("Maaf, saya hanya bisa membantu seputar produk");
+
+    // Urutkan produk dari termurah ke termahal
+    const sortedProducts = isRefusal
+      ? []
+      : [...formattedProducts].sort((a, b) => a.price - b.price);
+
+    // Kirim produk SETELAH stream AI selesai
+    res.write(
+      `data: ${JSON.stringify({
+        type: "products",
+        products: sortedProducts,
+        productsFound: sortedProducts.length,
+        done: true,
+      })}\n\n`
+    );
+
+    res.end();
   } catch (error) {
     console.error("Chat AI Error:", error.message);
 
-    if (
+    const errorMsg =
       error.message.includes("ECONNREFUSED") ||
       error.message.includes("fetch failed")
-    ) {
-      return res.status(503).json({
-        reply:
-          "⚠️ Server Ollama tidak terdeteksi. Pastikan Ollama sudah berjalan di komputer Anda (jalankan perintah `ollama serve` di terminal).",
-        error: "OLLAMA_NOT_RUNNING",
-      });
+        ? "⚠️ Server Ollama tidak terdeteksi. Jalankan `ollama serve` di terminal."
+        : "⚠️ Maaf, terjadi kesalahan pada server. Silakan coba lagi.";
+
+    if (!res.headersSent) {
+      return res.status(503).json({ reply: errorMsg });
     }
 
-    return res.status(500).json({
-      reply:
-        "⚠️ Maaf, terjadi kesalahan pada server. Silakan coba lagi nanti.",
-      error: "SERVER_ERROR",
-    });
+    res.write(`data: ${JSON.stringify({ token: errorMsg, done: true })}\n\n`);
+    res.end();
   }
 };

@@ -154,9 +154,39 @@
         </div>
       </div>
 
+      <!-- Loading skeleton -->
+      <div v-if="isLoading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div
+          v-for="i in 8"
+          :key="i"
+          class="rounded-xl overflow-hidden animate-pulse"
+          style="border: 1px solid #e5e7eb;"
+        >
+          <div class="h-44 bg-gray-200"></div>
+          <div class="p-3 space-y-2">
+            <div class="h-3 bg-gray-200 rounded w-3/4"></div>
+            <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+            <div class="h-8 bg-gray-200 rounded mt-3"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Error state -->
+      <div v-else-if="isError" class="text-center py-20">
+        <div class="text-6xl mb-4">⚠️</div>
+        <h3 class="text-xl font-bold mb-2" style="color: #111827;">Gagal Memuat Produk</h3>
+        <p class="text-gray-400 mb-6">Pastikan server backend berjalan di port 3000.</p>
+        <button
+          @click="fetchProducts"
+          class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition-all"
+        >
+          Coba Lagi
+        </button>
+      </div>
+
       <!-- Product Grid -->
       <div
-        v-if="filteredProducts.length > 0"
+        v-else-if="filteredProducts.length > 0"
         class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
       >
         <ProductCard
@@ -168,7 +198,7 @@
       </div>
 
       <!-- Empty state -->
-      <div v-if="filteredProducts.length === 0" class="text-center py-20">
+      <div v-else class="text-center py-20">
         <div class="text-6xl mb-4">😔</div>
         <h3 class="text-xl font-bold mb-2" style="color: #111827;">Produk Tidak Ditemukan</h3>
         <p class="text-gray-400 mb-6">Coba ubah filter atau kata kunci pencarian Anda.</p>
@@ -242,12 +272,16 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ProductCard from '../components/ProductCard.vue'
-import { products } from '../store.js'
 
 const emit = defineEmits(['add-to-cart'])
 
 const route = useRoute()
 const router = useRouter()
+
+// ── State ──────────────────────────────────────
+const allProducts = ref([])
+const isLoading = ref(true)
+const isError = ref(false)
 
 const search = ref('')
 const selectedCategory = ref('')
@@ -257,7 +291,47 @@ const showCategoryDropdown = ref(false)
 const showSortDropdown = ref(false)
 
 const PRODUCTS_PER_PAGE = 12
-const categories = [...new Set(products.map(p => p.category))]
+
+// ── Fetch dari API ─────────────────────────────
+const API_BASE = 'http://localhost:3000'
+
+async function fetchProducts() {
+  isLoading.value = true
+  isError.value = false
+  try {
+    const res = await fetch(`${API_BASE}/api/products`)
+    if (!res.ok) throw new Error('Gagal fetch produk')
+    const data = await res.json()
+
+    // Normalisasi field agar kompatibel dengan ProductCard
+    allProducts.value = data.map(p => ({
+      id: p.id,
+      name: p.name,
+      category: p.category,
+      price: p.price,
+      originalPrice: p.originalPrice,
+      // Resolve image URL
+      image: p.image
+        ? (p.image.startsWith('/uploads') ? `${API_BASE}${p.image}` : p.image)
+        : null,
+      badge: p.badge,
+      badgeColor: p.badgeColor,
+      rating: p.rating || 0,
+      reviews: p.reviews || 0,
+      stock: p.stock,
+      description: p.description,
+      specs: p.specs || [],
+    }))
+  } catch (err) {
+    console.error('Error fetch katalog:', err)
+    isError.value = true
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// Kategori dinamis dari data API
+const categories = computed(() => [...new Set(allProducts.value.map(p => p.category))])
 
 function closeDropdowns() {
   showCategoryDropdown.value = false
@@ -277,7 +351,7 @@ function toggleSortDropdown() {
 function normalizeCategory(category) {
   const value = String(category || '').trim()
 
-  const matchedCategory = categories.find(
+  const matchedCategory = categories.value.find(
     cat => String(cat).toLowerCase() === value.toLowerCase()
   )
 
@@ -318,7 +392,7 @@ watch(
 )
 
 const filteredProducts = computed(() => {
-  let result = [...products]
+  let result = [...allProducts.value]
 
   if (search.value) {
     result = result.filter(p =>
@@ -371,6 +445,7 @@ function resetFilters() {
 }
 
 onMounted(() => {
+  fetchProducts()
   document.addEventListener('click', closeDropdowns)
 })
 
