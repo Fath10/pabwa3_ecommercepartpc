@@ -2,7 +2,9 @@
   <RouterLink
     :to="`/produk/${product.id}`"
     class="group relative overflow-hidden flex flex-col transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
-    style="background: #ffffff; border: 1px solid #e5e7eb; border-radius: 10px; text-decoration: none;"
+    :style="mini
+      ? 'background:#fff; border:1px solid #e5e7eb; border-radius:10px; text-decoration:none; height:260px;'
+      : 'background:#fff; border:1px solid #e5e7eb; border-radius:10px; text-decoration:none;'"
   >
     <!-- Badge -->
     <div class="absolute top-2 left-2 z-10">
@@ -41,17 +43,20 @@
 
     <!-- Content -->
     <div class="flex flex-col flex-1" :class="mini ? 'p-2' : 'p-3'">
-      <!-- Product name -->
+      <!-- Product name — fixed 2-line height in mini mode -->
       <h3
         class="font-semibold mb-1.5 line-clamp-2 leading-snug"
         style="color: #111827;"
-        :style="`font-size: ${mini ? '0.7rem' : '0.78rem'};`"
+        :style="mini ? 'font-size:0.7rem; min-height:2.4em;' : 'font-size:0.78rem;'"
       >{{ product.name }}</h3>
 
       <!-- Price -->
-      <p class="font-bold" :class="mini ? 'mb-1' : 'mb-2'" style="color: #111827;" :style="`font-size: ${mini ? '0.75rem' : '0.85rem'};`">
-        {{ formatPrice(product.price) }}
-      </p>
+      <div class="flex flex-col" :class="mini ? 'mb-1' : 'mb-2'">
+        <p class="font-bold" style="color: #111827;" :style="`font-size: ${mini ? '0.75rem' : '0.85rem'};`">
+          {{ formatPrice(product.price) }}
+        </p>
+        <span v-if="product.overBudget" class="text-red-600 font-bold mt-0.5" style="font-size: 0.65rem; line-height: 1;">Melebihi sisa budget</span>
+      </div>
 
       <!-- Stock indicator -->
       <div class="flex items-center gap-1.5" :class="mini ? 'mb-2' : 'mb-3'">

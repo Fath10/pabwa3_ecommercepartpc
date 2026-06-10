@@ -154,11 +154,31 @@ function sanitizeOutput(text) {
   // Hapus pola yang terlihat seperti kode
   cleaned = cleaned.replace(/^\s*(function|def|class|import|const|let|var|<!DOCTYPE)\b.*$/gm, "");
 
+  // ── Hapus Markdown formatting ──
+  // Bold: **teks** atau __teks__
+  cleaned = cleaned.replace(/\*\*(.+?)\*\*/g, "$1");
+  cleaned = cleaned.replace(/__(.+?)__/g, "$1");
+
+  // Italic: *teks* atau _teks_
+  cleaned = cleaned.replace(/\*(.+?)\*/g, "$1");
+  cleaned = cleaned.replace(/_(.+?)_/g, "$1");
+
+  // Header: ### ## #
+  cleaned = cleaned.replace(/^#{1,6}\s+/gm, "");
+
+  // Bullet list: - item atau * item (di awal baris)
+  cleaned = cleaned.replace(/^\s*[-*]\s+/gm, "• ");
+
+  // Numbered list: 1. item → tetap, tapi hapus jika ada format aneh
+  // Horizontal rule: --- atau ***
+  cleaned = cleaned.replace(/^[-*]{3,}\s*$/gm, "");
+
   // Trim whitespace berlebih
   cleaned = cleaned.replace(/\n{3,}/g, "\n\n").trim();
 
   return cleaned;
 }
+
 
 // ══════════════════════════════════════════════
 // Helper: Levenshtein distance (untuk fuzzy matching typo)
@@ -568,6 +588,217 @@ function formatProductContext(products) {
 }
 
 // ══════════════════════════════════════════════
+// RAKIT PC: Deteksi & alokasi budget per komponen
+// ══════════════════════════════════════════════
+const RAKIT_PC_PATTERNS = [
+  // Eksplisit: rakit/build + pc
+  /\b(rakit|build|bangun|susun|bikin|buat)\b.{0,30}\b(pc|komputer|computer|gaming\s*pc|gaming\s*rig|rig)\b/i,
+  /\b(pc|komputer|gaming)\b.{0,30}\b(rakit|build|bangun|susun)\b/i,
+
+  // Rekomendasi + komponen/build/pc gaming
+  /\b(rekomendasikan?|sarankan?|suggest|recommend|kasih\s+rekom|beri\s+rekom)\b.{0,40}\b(rakitan|komponen|build|pc\s*gaming|spek|part)\b/i,
+  /\b(spek|spec|komponen|part|build)\b.{0,20}\b(pc|gaming|komputer)\b.{0,20}\d/i,
+  /\b(build|rakit|spek)\b.{0,20}\b(budget|bajet|anggaran)\b/i,
+
+  // "rekomendasi pc X juta" — pola paling umum
+  /\b(rekomendasi|rekom|saran|suggest)\b.{0,20}\b(pc|komputer|gaming)\b.{0,20}\d/i,
+  /\b(pc|komputer|gaming)\b.{0,10}\d+\s*(juta|jt|rb|ribu)/i,
+
+  // Langsung sebut budget + pc
+  /\d+\s*(juta|jt).{0,20}\b(pc|rakit|gaming|komputer|komponen)\b/i,
+  /\b(pc|gaming|komputer)\b.{0,10}(bajet|budget|anggaran).{0,10}\d/i,
+];
+
+function isRakitPCQuery(message) {
+  return RAKIT_PC_PATTERNS.some((p) => p.test(message));
+}
+
+// Alokasi budget per kategori (total 100%)
+const PC_BUILD_ALLOCATION = [
+  { category: "GPU",         pct: 0.30, label: "GPU / Kartu Grafis" },
+  { category: "Processor",   pct: 0.20, label: "Processor (CPU)"    },
+  { category: "Motherboard", pct: 0.15, label: "Motherboard"        },
+  { category: "RAM",         pct: 0.13, label: "RAM"                },
+  { category: "Storage",     pct: 0.10, label: "Storage (SSD/HDD)"  },
+  { category: "PSU",         pct: 0.05, label: "Power Supply (PSU)" },
+  { category: "Casing",      pct: 0.04, label: "Casing"             },
+  { category: "Cooling",     pct: 0.03, label: "CPU Cooler"         },
+];
+
+// Ambil semua kategori dari database (untuk mapping dinamis)
+async function getDBCategories() {
+  try {
+    const result = await pool.query(
+      `SELECT category_id, category_name FROM categories ORDER BY category_id ASC`
+    );
+    return result.rows; // [{ category_id, category_name }]
+  } catch (err) {
+    console.error("getDBCategories error:", err.message);
+    return [];
+  }
+}
+
+// Cari nama kategori DB yang paling cocok dengan slot build
+function matchCategory(slotCategory, dbCategories) {
+  const lower = slotCategory.toLowerCase();
+
+  // Sinonim mapping: slot name → kata kunci untuk mencocokkan kategori DB
+  const synonyms = {
+    gpu: ["gpu", "vga", "grafis", "graphic", "kartu grafis", "video"],
+    processor: ["processor", "prosesor", "cpu", "intel", "amd"],
+    motherboard: ["motherboard", "mobo", "mainboard"],
+    ram: ["ram", "memory", "memori", "ddr"],
+    storage: ["storage", "ssd", "hdd", "nvme", "harddisk"],
+    psu: ["psu", "power supply", "power"],
+    casing: ["casing", "case", "kabinet", "chassis"],
+    cooling: ["cooling", "cooler", "heatsink", "fan", "aio"],
+    monitor: ["monitor", "layar", "display"],
+    laptop: ["laptop", "notebook"],
+  };
+
+  const keywords = synonyms[lower] || [lower];
+
+  // Cari kategori DB yang namanya mengandung salah satu keyword
+  for (const kw of keywords) {
+    const match = dbCategories.find((c) =>
+      c.category_name.toLowerCase().includes(kw)
+    );
+    if (match) return match.category_name;
+  }
+  return null; // tidak ditemukan
+}
+
+// Ambil produk — algoritma greedy: sebanyak mungkin komponen dalam budget
+async function fetchPCBuild(totalBudget) {
+  const dbCategories = await getDBCategories();
+
+  // Step 1: Ambil produk TERMURAH per kategori dari DB
+  const cheapestPerSlot = [];
+  for (const slot of PC_BUILD_ALLOCATION) {
+    const realCategoryName = matchCategory(slot.category, dbCategories);
+    if (!realCategoryName) continue;
+
+    try {
+      const result = await pool.query(
+        `SELECT p.product_id, p.product_name, p.description, p.price, p.stock, c.category_name,
+           COALESCE((SELECT pi.image_url FROM product_images pi WHERE pi.product_id = p.product_id LIMIT 1), NULL) AS image_url
+         FROM products p
+         LEFT JOIN categories c ON p.category_id = c.category_id
+         WHERE p.is_active = TRUE AND p.stock > 0
+           AND LOWER(c.category_name) = LOWER($1)
+         ORDER BY p.price ASC LIMIT 1`,
+        [realCategoryName]
+      );
+      if (result.rows.length > 0) {
+        cheapestPerSlot.push({
+          ...result.rows[0],
+          slot_label: slot.label,
+          slot_category: slot.category,
+          realCategoryName,
+        });
+      }
+    } catch (err) {
+      console.error(`PC build cheapest fetch [${slot.category}]:`, err.message);
+    }
+  }
+
+  // Step 2: Urutkan dari termurah ke termahal → greedy pilih yang masuk budget
+  const sorted = [...cheapestPerSlot].sort((a, b) => Number(a.price) - Number(b.price));
+  let running = 0;
+  const selected = new Set();
+
+  for (const item of sorted) {
+    const price = Number(item.price);
+    if (running + price <= totalBudget) {
+      selected.add(item.slot_category);
+      item._selected = true;
+      running += price;
+    }
+  }
+
+  // Step 3: Dengan sisa budget, coba upgrade GPU atau CPU (prioritas tertinggi)
+  const UPGRADE_PRIORITY = ["GPU", "Processor", "Motherboard", "RAM", "Storage"];
+  const remaining = totalBudget - running;
+
+  for (const slotKey of UPGRADE_PRIORITY) {
+    const base = cheapestPerSlot.find(
+      (s) => s.slot_category.toLowerCase() === slotKey.toLowerCase() && s._selected
+    );
+    if (!base) continue;
+
+    const upgradeMax = remaining + Number(base.price);
+    try {
+      const upgraded = await pool.query(
+        `SELECT p.product_id, p.product_name, p.description, p.price, p.stock, c.category_name,
+           COALESCE((SELECT pi.image_url FROM product_images pi WHERE pi.product_id = p.product_id LIMIT 1), NULL) AS image_url
+         FROM products p
+         LEFT JOIN categories c ON p.category_id = c.category_id
+         WHERE p.is_active = TRUE AND p.stock > 0
+           AND LOWER(c.category_name) = LOWER($1)
+           AND p.price <= $2 AND p.price > $3
+         ORDER BY p.price DESC LIMIT 1`,
+        [base.realCategoryName, upgradeMax, Number(base.price)]
+      );
+      if (upgraded.rows.length > 0) {
+        // Ganti dengan versi upgrade
+        const upgradedPrice = Number(upgraded.rows[0].price);
+        running = running - Number(base.price) + upgradedPrice;
+        Object.assign(base, upgraded.rows[0]);
+        break; // Hanya upgrade satu komponen
+      }
+    } catch (err) {
+      console.error(`PC build upgrade [${slotKey}]:`, err.message);
+    }
+  }
+
+  // Step 4: Bangun hasil — hanya masukkan komponen yang masuk budget
+  const withinBudget = cheapestPerSlot.filter((s) => s._selected);
+
+  // Susun kembali sesuai urutan PC_BUILD_ALLOCATION
+  const slotOrder = PC_BUILD_ALLOCATION.map((s) => s.category.toLowerCase());
+  const sortBySlot = (a, b) =>
+    slotOrder.indexOf(a.slot_category.toLowerCase()) -
+    slotOrder.indexOf(b.slot_category.toLowerCase());
+
+  const buildParts = withinBudget.sort(sortBySlot).map((p) => ({ ...p, overBudget: false }));
+
+  return buildParts;
+}
+
+
+
+// Format build summary untuk context LLM
+function formatBuildContext(parts, totalBudget) {
+  const fmt = (n) =>
+    new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
+
+  const withinBudgetParts = parts.filter(p => !p.overBudget);
+  const overBudgetParts = parts.filter(p => p.overBudget);
+  const totalWithin = withinBudgetParts.reduce((s, p) => s + Number(p.price), 0);
+  const totalAll = parts.reduce((s, p) => s + Number(p.price), 0);
+
+  const withinLines = withinBudgetParts.map(
+    (p) => `- [${p.slot_label}] ${p.product_name} | Harga: ${fmt(p.price)} | Stok: ${p.stock} unit`
+  );
+
+  const result = [
+    `Budget user: ${fmt(totalBudget)}`,
+    "",
+  ];
+
+  if (withinLines.length > 0) {
+    result.push("Komponen yang BISA DIDAPATKAN dengan budget ini:");
+    result.push(...withinLines);
+    result.push(`Subtotal: ${fmt(totalWithin)}`);
+    result.push(`Sisa budget: ${fmt(totalBudget - totalWithin)}`);
+  } else {
+    result.push("TIDAK ADA komponen apapun yang bisa didapatkan dengan budget ini. Harga part PC paling murah di toko melebihi budget user.");
+  }
+
+  return result.join("\n");
+}
+
+// ══════════════════════════════════════════════
 // Helper: Panggil Ollama API dengan Streaming
 // ══════════════════════════════════════════════
 async function callOllamaStream(messages, res) {
@@ -582,9 +813,9 @@ async function callOllamaStream(messages, res) {
       messages,
       stream: true, // ← STREAMING ON
       options: {
-        temperature: 0.5,
-        top_p: 0.85,
-        num_predict: 512,
+        temperature: 0.2,   // rendah = lebih akurat, tidak mengarang
+        top_p: 0.8,
+        num_predict: 400,
       },
     }),
   });
@@ -650,10 +881,88 @@ export const chat = async (req, res) => {
       });
     }
 
-    // RAG & keyword extraction (sama seperti sebelumnya)
+    // ── LAPIS 2: Deteksi query rakit PC ──
+    const rakitPC = isRakitPCQuery(userMessage);
+    const budget = parseBudget(userMessage);
+
+    if (rakitPC && budget) {
+      // ── PATH: PC BUILD RECOMMENDATION ──
+      const buildParts = await fetchPCBuild(budget);
+      const buildContext = formatBuildContext(buildParts, budget);
+
+      const fmt = (n) =>
+        new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
+
+      const buildPrompt = `${SYSTEM_PROMPT_BASE}
+
+User meminta rekomendasi rakitan PC dengan budget ${fmt(budget)}.
+Berikut adalah komponen yang BISA DIDAPATKAN dengan budget tersebut dari toko ini:
+
+${buildContext}
+
+TUGASMU:
+- Sampaikan bahwa dengan budget tersebut, mereka baru bisa mendapatkan komponen-komponen di atas.
+- JANGAN menyuruh user untuk menambahkan budget dengan angka berapapun. Cukup beritahu apa yang mereka dapatkan.
+- Jika ada komponen penting yang kurang (seperti tidak ada GPU atau Processor), beritahu secara ramah bahwa mereka mungkin perlu menabung lagi untuk melengkapi PC-nya di masa depan.
+- JANGAN mengarang perhitungan matematis.
+- Gunakan bahasa natural, ramah, singkat (3-4 kalimat), tanpa format markdown.
+- HANYA sebut produk yang ada di daftar di atas.`;
+
+      const ollamaMessages = [];
+      if (history && Array.isArray(history)) {
+        for (const msg of history.slice(-4)) {
+          ollamaMessages.push({
+            role: msg.role === "user" ? "user" : "assistant",
+            content: msg.text || msg.content || "",
+          });
+        }
+      }
+      ollamaMessages.push({
+        role: "user",
+        content: `${buildPrompt}\n\nPertanyaan user: "${userMessage}"\nJawab sekarang:`,
+      });
+
+      // SET SSE HEADERS
+      res.setHeader("Content-Type", "text/event-stream");
+      res.setHeader("Cache-Control", "no-cache");
+      res.setHeader("Connection", "keep-alive");
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.flushHeaders();
+
+      // Stream AI explanation
+      await callOllamaStream(ollamaMessages, res);
+
+      // Format build parts sebagai product cards untuk frontend
+      const buildProductCards = buildParts.map((p) => ({
+        id: p.product_id,
+        name: p.product_name,
+        description: p.description,
+        price: Number(p.price),
+        stock: p.stock,
+        image: p.image_url || null,
+        category: p.category_name,
+        badge: p.overBudget ? `${p.slot_label} ⚠️` : p.slot_label,
+        badgeColor: p.overBudget ? "red" : "blue",
+        overBudget: p.overBudget || false,
+      }));
+
+      res.write(
+        `data: ${JSON.stringify({
+          type: "products",
+          products: buildProductCards,
+          productsFound: buildProductCards.length,
+          isBuild: true,
+          done: true,
+        })}\n\n`
+      );
+
+      return res.end();
+    }
+
+    // ── PATH NORMAL: RAG keyword search ──
     const isProductQuery = isProductRelatedQuery(userMessage);
     const keywords = extractKeywords(userMessage);
-    const maxPrice = parseBudget(userMessage);
+    const maxPrice = budget; // pakai budget yang sudah di-parse
 
     let relevantProducts = isProductQuery
       ? await fetchRelevantProducts(keywords, maxPrice)
@@ -677,7 +986,7 @@ export const chat = async (req, res) => {
 
     const ollamaMessages = [];
     if (history && Array.isArray(history)) {
-      const recentHistory = history.slice(-6); // ← Kurangi dari -10 ke -6
+      const recentHistory = history.slice(-6);
       for (const msg of recentHistory) {
         ollamaMessages.push({
           role: msg.role === "user" ? "user" : "assistant",
@@ -705,7 +1014,7 @@ export const chat = async (req, res) => {
       description: p.description,
       price: p.price,
       stock: p.stock,
-      image: "/placeholder.jpg",
+      image: p.image_url || null,
       category: p.category_name,
       badge: p.category_name || "Produk",
       badgeColor: "blue",

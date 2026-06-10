@@ -74,13 +74,13 @@
                 <div class="ai-message" :class="msg.role === 'user' ? 'ai-message-user' : 'ai-message-bot'">
                   <div v-if="msg.role === 'bot'" class="ai-bot-avatar">🤖</div>
                   <div class="ai-bubble" :class="msg.role === 'user' ? 'ai-bubble-user' : 'ai-bubble-bot'">
-                    {{ msg.content }}
+                    {{ msg.role === 'bot' ? stripMarkdown(msg.content) : msg.content }}
                   </div>
                 </div>
 
                 <!-- Product Cards (if any) -->
-                <div v-if="msg.products && msg.products.length > 0" class="flex gap-2 overflow-x-auto py-2 px-1 w-full snap-x snap-mandatory scrollbar-hide flex-shrink-0" style="max-width: 100%;">
-                  <div v-for="(prod, idx) in msg.products" :key="prod.id" class="flex-shrink-0 w-44 snap-center product-card-animate" :style="{ '--card-delay': `${idx * 80}ms` }">
+                <div v-if="msg.products && msg.products.length > 0" class="flex items-stretch gap-2 overflow-x-auto py-2 px-1 w-full snap-x snap-mandatory scrollbar-hide flex-shrink-0" style="max-width: 100%;">
+                  <div v-for="(prod, idx) in msg.products" :key="prod.id" class="flex-shrink-0 snap-center product-card-animate" style="width: 176px;" :style="{ '--card-delay': `${idx * 80}ms` }">
                     <ProductCard :product="prod" mini @add-to-cart="handleAddToCart" />
                   </div>
                 </div>
@@ -149,6 +149,23 @@ const router = useRouter()
 const toasts = ref([])
 let toastId = 0
 
+// ── Strip markdown formatting dari teks AI ──
+function stripMarkdown(text) {
+  if (!text) return ''
+  return text
+    .replace(/\*\*(.+?)\*\*/g, '$1')   // **bold**
+    .replace(/__(.+?)__/g, '$1')        // __bold__
+    .replace(/\*(.+?)\*/g, '$1')        // *italic*
+    .replace(/_(.+?)_/g, '$1')          // _italic_
+    .replace(/^#{1,6}\s+/gm, '')        // # headers
+    .replace(/^\s*[-*]\s+/gm, '• ')    // bullet lists → •
+    .replace(/^[-*]{3,}\s*$/gm, '')     // horizontal rules
+    .replace(/`[^`]+`/g, '')            // inline code
+    .replace(/```[\s\S]*?```/g, '')     // code blocks
+    .replace(/\n{3,}/g, '\n\n')        // trim extra newlines
+    .trim()
+}
+
 // Fly-to-cart animation
 const flyParticles = ref([])
 let particleId = 0
@@ -168,10 +185,10 @@ const messages = ref([
 ])
 
 const quickReplies = [
+  '🖥️ Rakit PC Gaming 10 Juta',
+  '🖥️ Rakit PC Gaming 20 Juta',
   '💻 Rekomendasi PC Gaming',
-  '🔧 Tips Merakit PC',
-  '💰 Budget 10 Jutaan',
-  '❓ Cara Order',
+  '💰 Budget 5 Jutaan',
 ]
 
 async function sendMessage() {
@@ -188,7 +205,7 @@ async function sendMessage() {
   let aiMsgAdded = false
 
   isTyping.value = true
-  await scrollToBottom()
+  await scrollToBottom(true)
 
   try {
     const response = await fetch('http://localhost:3000/api/chat-ai', {
@@ -203,14 +220,17 @@ async function sendMessage() {
     const reader = response.body.getReader()
     const decoder = new TextDecoder()
     let buffer = ''
+    let fullTextBuffer = ''
+    let productsBuffer = []
 
+    // Kumpulkan DULU seluruh stream sampai selesai
     while (true) {
       const { done, value } = await reader.read()
       if (done) break
 
       buffer += decoder.decode(value, { stream: true })
       const lines = buffer.split('\n\n')
-      buffer = lines.pop() // simpan sisa yang belum lengkap
+      buffer = lines.pop()
 
       for (const line of lines) {
         if (!line.startsWith('data: ')) continue
@@ -222,31 +242,37 @@ async function sendMessage() {
           continue
         }
 
-        // Token pertama - buat AI message
-        if (json.token && !aiMsgAdded) {
-          aiMsg = { role: 'bot', content: json.token, isStreaming: true, products: [] }
-          messages.value.push(aiMsg)
-          aiMsgAdded = true
-          await nextTick()
-          await scrollToBottom()
+        if (json.token) {
+          fullTextBuffer += json.token
         }
-        // Token berikutnya
-        else if (json.token && aiMsg) {
-          aiMsg.content += json.token
-          await nextTick()
-          await scrollToBottom()
-        }
-        // Produk tiba
-        else if (json.type === 'products' && aiMsg) {
-          aiMsg.products = json.products
-          aiMsg.isStreaming = false
+        else if (json.type === 'products') {
+          productsBuffer = json.products || []
         }
       }
     }
 
-    if (aiMsg) {
-      aiMsg.isStreaming = false
+    // Stream sudah selesai, SEKARANG baru kita hilangkan titik-titik
+    isTyping.value = false 
+    
+    // Tampilkan teks seketika (tanpa animasi ngetik), produk dikosongkan dulu
+    aiMsg = { role: 'bot', content: fullTextBuffer, isStreaming: false, products: [] }
+    messages.value.push(aiMsg)
+    
+    await scrollToBottom()
+
+    // Tunda kemunculan produk agar tampil setelah teks selesai dibaca
+    if (productsBuffer && productsBuffer.length > 0) {
+      setTimeout(async () => {
+        const msgIndex = messages.value.indexOf(aiMsg)
+        if (msgIndex !== -1) {
+          aiMsg.products = productsBuffer
+          messages.value.splice(msgIndex, 1, { ...aiMsg })
+          await nextTick()
+          await scrollToBottom()
+        }
+      }, 700) // Munculkan produk 0.7 detik setelah teks muncul
     }
+
   } catch (err) {
     console.error('Stream error:', err)
     if (!aiMsg) {
@@ -258,6 +284,7 @@ async function sendMessage() {
     }
   } finally {
     isTyping.value = false
+
     await scrollToBottom()
   }
 }
@@ -267,10 +294,15 @@ async function sendQuickReply(text) {
   await sendMessage()
 }
 
-async function scrollToBottom() {
+async function scrollToBottom(force = false) {
   await nextTick()
   if (messagesContainer.value) {
-    messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+    const el = messagesContainer.value
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
+    // Auto-scroll hanya jika user sedang berada di paling bawah (jarak < 50px) atau di-force
+    if (force || distanceFromBottom < 50) {
+      el.scrollTop = el.scrollHeight
+    }
   }
 }
 
@@ -278,7 +310,7 @@ function toggleChat() {
   chatOpen.value = !chatOpen.value
   if (chatOpen.value) {
     hasNotification.value = false
-    nextTick(() => scrollToBottom())
+    nextTick(() => scrollToBottom(true))
   }
 }
 
