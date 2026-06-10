@@ -227,20 +227,27 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import ProductCard from '../components/ProductCard.vue'
-import { cartStore, products, formatPrice } from '../store.js'
+import { cartStore, productStore, formatPrice } from '../store.js'
 
 const router = useRouter()
 
 defineEmits(['add-to-cart'])
 
+onMounted(() => {
+  // Sync the authoritative server cart (for logged-in users) and the catalog.
+  cartStore.fetch()
+  productStore.fetchAll()
+})
+
 // Saran produk: 6 produk paling populer (rating tertinggi) yang belum ada di keranjang
 const suggestedProducts = computed(() => {
+  const all = productStore.items
   const cartIds = new Set(cartStore.items.map(i => i.id))
-  const filtered = products.filter(p => !cartIds.has(p.id))
-  const pool = filtered.length >= 6 ? filtered : products
+  const filtered = all.filter(p => !cartIds.has(p.id))
+  const pool = filtered.length >= 6 ? filtered : all
   return [...pool]
     .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
     .slice(0, 6)

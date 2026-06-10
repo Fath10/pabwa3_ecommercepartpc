@@ -1,8 +1,28 @@
 <template>
   <main class="pt-24 pb-20 min-h-screen" style="background: #f8fafc;">
 
+    <!-- Loading -->
+    <div v-if="loading" class="max-w-3xl mx-auto px-4 text-center py-32">
+      <div class="inline-block w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+      <p class="mt-4 text-sm" style="color: #64748b;">Memuat produk…</p>
+    </div>
+
+    <!-- Error -->
+    <div v-else-if="error" class="max-w-3xl mx-auto px-4 text-center py-32">
+      <div class="text-7xl mb-6">⚠️</div>
+      <h1 class="text-2xl font-bold mb-3" style="color: #0f172a;">Gagal Memuat Produk</h1>
+      <p class="mb-8 text-sm" style="color: #64748b;">{{ error }}</p>
+      <button
+        @click="loadProduct(route.params.id)"
+        class="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-white font-bold text-sm transition-all hover:-translate-y-0.5"
+        style="background: linear-gradient(135deg, #4f46e5, #7c3aed);"
+      >
+        Coba Lagi
+      </button>
+    </div>
+
     <!-- Product not found -->
-    <div v-if="!product" class="max-w-3xl mx-auto px-4 text-center py-32">
+    <div v-else-if="!product" class="max-w-3xl mx-auto px-4 text-center py-32">
       <div class="text-7xl mb-6">🔍</div>
       <h1 class="text-3xl font-bold mb-3" style="color: #0f172a;">Produk Tidak Ditemukan</h1>
       <p class="mb-8 text-sm" style="color: #64748b;">Produk yang Anda cari tidak tersedia atau telah dihapus.</p>
@@ -210,29 +230,54 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, watch, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import ProductCard from '../components/ProductCard.vue'
 import ReviewSection from '../components/ReviewSection.vue'
-import { products, formatPrice } from '../store.js'
+import { productStore, formatPrice } from '../store.js'
+import { productApi } from '../api/index.js'
 
 const emit = defineEmits(['add-to-cart'])
 const route = useRoute()
 
-// Find product by id from URL param
-const product = computed(() => {
-  const id = Number(route.params.id)
-  return products.find(p => p.id === id) || null
-})
+// Detail is fetched on demand from GET /api/products/:id
+const product = ref(null)
+const loading = ref(true)
+const error = ref(null)
 
-// Suggested: up to 4 products from same category (excluding current)
+async function loadProduct(id) {
+  loading.value = true
+  error.value = null
+  product.value = null
+  try {
+    product.value = await productApi.get(id)
+  } catch (err) {
+    if (err.status === 404) {
+      product.value = null
+    } else {
+      error.value = err.message || 'Gagal memuat produk.'
+    }
+  } finally {
+    loading.value = false
+  }
+}
+
+watch(
+  () => route.params.id,
+  (id) => loadProduct(id),
+  { immediate: true }
+)
+
+// Suggested: ensure the catalog is loaded, then pick related products.
+onMounted(() => productStore.fetchAll())
+
 const suggestedProducts = computed(() => {
   if (!product.value) return []
-  const sameCategory = products.filter(
+  const all = productStore.items
+  const sameCategory = all.filter(
     p => p.id !== product.value.id && p.category === product.value.category
   )
-  // Fill remaining slots with products from other categories if needed
-  const others = products.filter(
+  const others = all.filter(
     p => p.id !== product.value.id && p.category !== product.value.category
   )
   return [...sameCategory, ...others].slice(0, 4)

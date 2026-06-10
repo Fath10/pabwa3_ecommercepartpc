@@ -172,7 +172,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { userStore, products, formatPrice } from '../store.js'
+import { userStore, productStore, formatPrice } from '../store.js'
 
 const props = defineProps({ cartCount: { type: Number, default: 0 } })
 const router = useRouter()
@@ -191,16 +191,17 @@ const navLinks = [
 
 // Computed: tampilkan produk stok terbanyak saat kosong, atau filter nama saat ada query
 const filteredSuggestions = computed(() => {
+  const all = productStore.items
   const q = searchQuery.value.trim().toLowerCase()
   if (!q) {
     // Urutkan berdasarkan stok terbanyak, ambil 5 teratas
-    return [...products]
+    return [...all]
       .sort((a, b) => b.stock - a.stock)
       .slice(0, 5)
   }
   // Filter berdasarkan nama produk atau kategori
-  return products
-    .filter(p => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q))
+  return all
+    .filter(p => p.name.toLowerCase().includes(q) || (p.category || '').toLowerCase().includes(q))
     .slice(0, 6)
 })
 

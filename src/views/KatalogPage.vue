@@ -154,9 +154,28 @@
         </div>
       </div>
 
+      <!-- Loading state -->
+      <div v-if="loading" class="text-center py-20">
+        <div class="inline-block w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+        <p class="mt-4 text-sm" style="color: #6b7280;">Memuat produk…</p>
+      </div>
+
+      <!-- Error state -->
+      <div v-else-if="loadError" class="text-center py-20">
+        <div class="text-6xl mb-4">⚠️</div>
+        <h3 class="text-xl font-bold mb-2" style="color: #111827;">Gagal Memuat Produk</h3>
+        <p class="text-gray-400 mb-6">{{ loadError }}</p>
+        <button
+          @click="productStore.fetchAll(true)"
+          class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition-all"
+        >
+          Coba Lagi
+        </button>
+      </div>
+
       <!-- Product Grid -->
       <div
-        v-if="filteredProducts.length > 0"
+        v-else-if="filteredProducts.length > 0"
         class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
       >
         <ProductCard
@@ -168,7 +187,7 @@
       </div>
 
       <!-- Empty state -->
-      <div v-if="filteredProducts.length === 0" class="text-center py-20">
+      <div v-else class="text-center py-20">
         <div class="text-6xl mb-4">😔</div>
         <h3 class="text-xl font-bold mb-2" style="color: #111827;">Produk Tidak Ditemukan</h3>
         <p class="text-gray-400 mb-6">Coba ubah filter atau kata kunci pencarian Anda.</p>
@@ -242,7 +261,7 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ProductCard from '../components/ProductCard.vue'
-import { products } from '../store.js'
+import { productStore } from '../store.js'
 
 const emit = defineEmits(['add-to-cart'])
 
@@ -257,7 +276,12 @@ const showCategoryDropdown = ref(false)
 const showSortDropdown = ref(false)
 
 const PRODUCTS_PER_PAGE = 12
-const categories = [...new Set(products.map(p => p.category))]
+
+// Catalog data comes from the backend via the shared product store.
+const products = computed(() => productStore.items)
+const categories = computed(() => productStore.categories)
+const loading = computed(() => productStore.loading)
+const loadError = computed(() => productStore.error)
 
 function closeDropdowns() {
   showCategoryDropdown.value = false
@@ -277,7 +301,7 @@ function toggleSortDropdown() {
 function normalizeCategory(category) {
   const value = String(category || '').trim()
 
-  const matchedCategory = categories.find(
+  const matchedCategory = categories.value.find(
     cat => String(cat).toLowerCase() === value.toLowerCase()
   )
 
@@ -317,8 +341,23 @@ watch(
   { immediate: true }
 )
 
+// Initialise / track the search term coming from the navbar (?q=...).
+watch(
+  () => route.query.q,
+  (q) => {
+    search.value = typeof q === 'string' ? q : ''
+    currentPage.value = 1
+  },
+  { immediate: true }
+)
+
+// Re-normalise the category once products (and therefore the category list) load.
+watch(categories, () => {
+  selectedCategory.value = normalizeCategory(route.query.category)
+})
+
 const filteredProducts = computed(() => {
-  let result = [...products]
+  let result = [...products.value]
 
   if (search.value) {
     result = result.filter(p =>
@@ -371,6 +410,7 @@ function resetFilters() {
 }
 
 onMounted(() => {
+  productStore.fetchAll()
   document.addEventListener('click', closeDropdowns)
 })
 

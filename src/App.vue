@@ -147,6 +147,7 @@ import NavBar from './components/NavBar.vue'
 import FooterSection from './components/FooterSection.vue'
 import ProductCard from './components/ProductCard.vue'
 import { cartStore } from './store.js'
+import { chatApi } from './api/index.js'
 
 const router = useRouter()
 const toasts = ref([])
@@ -192,16 +193,7 @@ async function sendMessage() {
       .filter((_, i) => i < messages.value.length - 1)
       .map(m => ({ role: m.role, text: m.content }))
 
-    const res = await fetch('http://localhost:3000/api/chat-ai', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message: text,
-        history: historyToSend,
-      }),
-    })
-
-    const data = await res.json()
+    const data = await chatApi.send(text, historyToSend)
 
     messages.value.push({
       role: 'bot',
@@ -209,9 +201,13 @@ async function sendMessage() {
       products: data.products || [],
     })
   } catch (err) {
+    // The chat endpoint returns a friendly `reply` even on errors (e.g. Ollama down).
     messages.value.push({
       role: 'bot',
-      content: '⚠️ Maaf, terjadi kesalahan saat menghubungi server. Pastikan backend sudah berjalan dan Ollama sudah aktif.',
+      content:
+        err.data?.reply ||
+        err.message ||
+        '⚠️ Maaf, terjadi kesalahan saat menghubungi server. Pastikan backend sudah berjalan.',
     })
   } finally {
     isTyping.value = false

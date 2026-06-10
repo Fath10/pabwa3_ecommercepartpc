@@ -19,11 +19,12 @@
       :style="`background: #f1f5f9; height: ${mini ? '100px' : '170px'}; padding: ${mini ? '8px' : '12px'};`"
     >
       <img
-        :src="product.image"
+        :src="product.image || PLACEHOLDER_IMAGE"
         :alt="product.name"
         class="w-full object-contain group-hover:scale-105 transition-transform duration-400"
         :class="mini ? 'h-20' : 'h-36'"
         loading="lazy"
+        @error="onImgError"
       />
     </div>
 
@@ -81,6 +82,7 @@
 <script setup>
 import { computed } from 'vue'
 import { formatPrice } from '../store.js'
+import { PLACEHOLDER_IMAGE } from '../api/index.js'
 
 // Gabungan: mini prop dari remote + handleAddToCart dari fe-1137
 const props = defineProps({
@@ -91,6 +93,10 @@ const emit = defineEmits(['add-to-cart'])
 
 function handleAddToCart(event) {
   emit('add-to-cart', props.product, event)
+}
+
+function onImgError(event) {
+  if (event.target.src !== PLACEHOLDER_IMAGE) event.target.src = PLACEHOLDER_IMAGE
 }
 
 
