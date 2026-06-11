@@ -12,35 +12,34 @@ export const checkout = async (
 
     const user_id =
       req.user.user_id;
+    const { product_ids } = req.body;
 
     await client.query(
       "BEGIN"
     );
 
-    const cartResult =
-      await client.query(
-        `
-        SELECT
-          c.cart_id,
-          c.quantity,
+    let cartQuery = `
+      SELECT
+        c.cart_id,
+        c.quantity,
+        p.product_id,
+        p.product_name,
+        p.price,
+        p.stock
+      FROM carts c
+      JOIN products p
+      ON c.product_id = p.product_id
+      WHERE c.user_id = $1
+    `;
+    const queryParams = [user_id];
 
-          p.product_id,
-          p.product_name,
-          p.price,
-          p.stock
+    if (product_ids && Array.isArray(product_ids) && product_ids.length > 0) {
+      cartQuery += ` AND p.product_id = ANY($2::int[])`;
+      queryParams.push(product_ids.map(Number));
+    }
 
-        FROM carts c
-
-        JOIN products p
-        ON c.product_id = p.product_id
-
-        WHERE c.user_id = $1
-        `,
-        [user_id]
-      );
-
-    const cartItems =
-      cartResult.rows;
+    const cartResult = await client.query(cartQuery, queryParams);
+    const cartItems = cartResult.rows;
 
     if (
       cartItems.length === 0
@@ -52,7 +51,7 @@ export const checkout = async (
 
       return res.status(400).json({
         message:
-          "Keranjang kosong"
+          "Keranjang kosong atau item yang dipilih tidak valid"
       });
 
     }
@@ -177,13 +176,24 @@ export const checkout = async (
       );
 
     }
-    await client.query(
-      `
-      DELETE FROM carts
-      WHERE user_id = $1
-      `,
-      [user_id]
-    );
+
+    if (product_ids && Array.isArray(product_ids) && product_ids.length > 0) {
+      await client.query(
+        `
+        DELETE FROM carts
+        WHERE user_id = $1 AND product_id = ANY($2::int[])
+        `,
+        [user_id, product_ids.map(Number)]
+      );
+    } else {
+      await client.query(
+        `
+        DELETE FROM carts
+        WHERE user_id = $1
+        `,
+        [user_id]
+      );
+    }
 
     await client.query(
       "COMMIT"

@@ -52,7 +52,7 @@
             <div>
               <div class="flex items-center justify-between mb-1.5">
                 <label for="password" class="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Password</label>
-                <a href="#" class="text-xs text-indigo-400 hover:text-indigo-300 transition-colors">Lupa password?</a>
+                <RouterLink to="/forgot-password" class="text-xs text-indigo-400 hover:text-indigo-300 transition-colors">Lupa password?</RouterLink>
               </div>
               <div class="relative">
                 <span class="absolute inset-y-0 left-3 flex items-center text-gray-500">
@@ -114,6 +114,16 @@
             </button>
           </form>
 
+          <!-- Divider Google -->
+          <div class="flex items-center gap-3 my-6">
+            <div class="flex-1 h-px" style="background: rgba(255,255,255,0.08);"></div>
+            <span class="text-xs text-gray-500">Atau masuk dengan</span>
+            <div class="flex-1 h-px" style="background: rgba(255,255,255,0.08);"></div>
+          </div>
+
+          <!-- Container untuk Tombol Google -->
+          <div id="google-button-div" class="w-full flex justify-center mb-6"></div>
+
           <!-- Divider -->
           <div class="flex items-center gap-3 my-6">
             <div class="flex-1 h-px" style="background: rgba(255,255,255,0.08);"></div>
@@ -137,7 +147,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { userStore } from '../store.js'
 import { authApi } from '../api/index.js'
@@ -149,6 +159,48 @@ const form = ref({ email: '', password: '' })
 const showPassword = ref(false)
 const isLoading = ref(false)
 const errorMsg = ref('')
+
+onMounted(() => {
+  const script = document.createElement('script')
+  script.src = 'https://accounts.google.com/gsi/client'
+  script.async = true
+  document.head.appendChild(script)
+
+  window.handleGoogleCallback = async (response) => {
+    try {
+      isLoading.value = true
+      errorMsg.value = ''
+      const data = await authApi.googleLogin(response.credential)
+      
+      await userStore.login(data.user, data.token)
+      
+      const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/'
+      router.push(redirect)
+    } catch (err) {
+      errorMsg.value = err.message || 'Login dengan Google gagal'
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  script.onload = () => {
+    // We use a placeholder client ID so it renders, user needs to replace in .env
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '1021469795034-uop92vjk1i4cdmb21rsmttbplsh9rscu.apps.googleusercontent.com'
+    window.google.accounts.id.initialize({
+      client_id: clientId,
+      callback: window.handleGoogleCallback
+    });
+    
+    // Style the button to match dark mode theme
+    const btnContainer = document.getElementById("google-button-div")
+    if(btnContainer) {
+      window.google.accounts.id.renderButton(
+        btnContainer,
+        { theme: "filled_black", size: "large", width: 320, shape: "rectangular" }
+      );
+    }
+  }
+})
 
 async function handleLogin() {
   errorMsg.value = ''

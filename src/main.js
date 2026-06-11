@@ -14,6 +14,15 @@ import RegisterPage from './views/RegisterPage.vue'
 import ProductDetailPage from './views/ProductDetailPage.vue'
 import BantuanPage from './views/BantuanPage.vue'
 import CheckoutPage from './views/CheckoutPage.vue'
+import ProfilePage from './views/ProfilePage.vue'
+import OrderDetailPage from './views/OrderDetailPage.vue'
+import AdminDashboard from './views/admin/AdminDashboard.vue'
+import AdminProducts from './views/admin/AdminProducts.vue'
+import AdminOrders from './views/admin/AdminOrders.vue'
+import AdminUsers from './views/admin/AdminUsers.vue'
+import ForgotPasswordPage from './views/ForgotPasswordPage.vue'
+import ResetPasswordPage from './views/ResetPasswordPage.vue'
+import NotFoundPage from './views/NotFoundPage.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -27,18 +36,39 @@ const router = createRouter({
     { path: '/cart', component: CartPage, meta: { title: 'e-BuildPC | Keranjang' } },
     { path: '/login', component: LoginPage, meta: { title: 'e-BuildPC | Login' } },
     { path: '/register', component: RegisterPage, meta: { title: 'e-BuildPC | Buat Akun' } },
+    { path: '/forgot-password', component: ForgotPasswordPage, meta: { title: 'e-BuildPC | Lupa Password' } },
+    { path: '/reset-password/:token', component: ResetPasswordPage, meta: { title: 'e-BuildPC | Reset Password' } },
     { path: '/produk/:id', component: ProductDetailPage, meta: { title: 'e-BuildPC | Detail Produk' } },
     { path: '/checkout', component: CheckoutPage, meta: { title: 'e-BuildPC | Checkout', requiresAuth: true } },
+    { path: '/profile', component: ProfilePage, meta: { title: 'e-BuildPC | Profil Saya', requiresAuth: true } },
+    { path: '/orders', redirect: '/profile' },
+    { path: '/orders/:id', component: OrderDetailPage, meta: { title: 'e-BuildPC | Detail Pesanan', requiresAuth: true } },
+    { path: '/admin', component: AdminDashboard, meta: { title: 'e-BuildPC | Admin Dashboard', requiresAuth: true, adminOnly: true } },
+    { path: '/admin/produk', component: AdminProducts, meta: { title: 'e-BuildPC | Kelola Produk', requiresAuth: true, adminOnly: true } },
+    { path: '/admin/pesanan', component: AdminOrders, meta: { title: 'e-BuildPC | Kelola Pesanan', requiresAuth: true, adminOnly: true } },
+    { path: '/admin/pengguna', component: AdminUsers, meta: { title: 'e-BuildPC | Kelola Pengguna', requiresAuth: true, adminOnly: true } },
+    { path: '/:pathMatch(.*)*', component: NotFoundPage, meta: { title: 'e-BuildPC | Halaman Tidak Ditemukan' } }
   ],
   scrollBehavior() {
     return { top: 0 }
   }
 })
 
-// Routes flagged requiresAuth send guests to login, returning them afterwards.
 router.beforeEach((to) => {
-  if (to.meta.requiresAuth && !userStore.isLoggedIn) {
+  const isLoggedIn = userStore.isLoggedIn
+  const isAdmin = userStore.isAdmin
+
+  if (to.meta.requiresAuth && !isLoggedIn) {
     return { path: '/login', query: { redirect: to.fullPath } }
+  }
+
+  if (to.meta.adminOnly && !isAdmin) {
+    return '/'
+  }
+
+  // Prevent logged in users from visiting login/register
+  if ((to.path === '/login' || to.path === '/register') && isLoggedIn) {
+    return isAdmin ? '/admin' : '/'
   }
 })
 

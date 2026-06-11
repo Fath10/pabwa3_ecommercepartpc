@@ -50,6 +50,10 @@ export const userStore = reactive({
     return !!this.user && !!this.token
   },
 
+  get isAdmin() {
+    return this.user?.role === 'admin'
+  },
+
   async login(userData, tokenData) {
     this.user = userData
     this.token = tokenData

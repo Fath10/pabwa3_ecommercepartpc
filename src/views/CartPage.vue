@@ -41,15 +41,46 @@
 
           <!-- Cart Items List -->
           <div class="lg:col-span-2 space-y-3">
+            
+            <!-- Pilih Semua Bar -->
+            <div class="flex items-center justify-between p-4 bg-white rounded-2xl mb-4" style="border: 1px solid #e5e7eb; box-shadow: 0 1px 4px rgba(0,0,0,0.04);">
+              <label class="flex items-center gap-3 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  v-model="isAllSelected"
+                  class="w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                />
+                <span class="text-sm font-semibold text-gray-700">Pilih Semua ({{ cartStore.items.length }} produk)</span>
+              </label>
+              
+              <button
+                v-if="selectedItemIds.length > 0"
+                @click="removeSelectedItems"
+                class="text-xs font-semibold text-red-500 hover:text-red-700 transition-colors"
+              >
+                Hapus Terpilih
+              </button>
+            </div>
+
             <TransitionGroup name="cart-item">
               <div
                 v-for="item in cartStore.items"
                 :key="item.id"
-                class="group flex gap-4 p-5 rounded-2xl bg-white transition-all duration-300"
+                class="group flex items-center gap-4 p-5 rounded-2xl bg-white transition-all duration-300"
                 style="border: 1px solid #e5e7eb; box-shadow: 0 1px 4px rgba(0,0,0,0.04);"
               >
+                <!-- Checkbox -->
+                <div class="flex-shrink-0">
+                  <input
+                    type="checkbox"
+                    v-model="selectedItemIds"
+                    :value="item.id"
+                    class="w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                  />
+                </div>
+
                 <!-- Product Image -->
-                <div class="w-24 h-24 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center" style="background: #f1f5f9;">
+                <div class="w-24 h-24 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center bg-gray-50" style="border: 1px solid #f3f4f6;">
                   <img :src="item.image" :alt="item.name" class="w-full h-full object-contain p-2" />
                 </div>
 
@@ -119,8 +150,8 @@
               <!-- Summary Body -->
               <div class="px-6 py-5 space-y-4">
                 <div class="flex justify-between text-sm">
-                  <span style="color: #6b7280;">Subtotal ({{ cartStore.totalItems }} item)</span>
-                  <span class="font-semibold" style="color: #111827;">{{ formatPrice(cartStore.totalPrice) }}</span>
+                  <span style="color: #6b7280;">Subtotal ({{ selectedTotalItems }} item terpilih)</span>
+                  <span class="font-semibold" style="color: #111827;">{{ formatPrice(selectedTotalPrice) }}</span>
                 </div>
                 <div class="flex justify-between text-sm">
                   <span style="color: #6b7280;">Ongkos Kirim</span>
@@ -128,13 +159,13 @@
                 </div>
                 <div class="flex justify-between text-sm">
                   <span style="color: #6b7280;">Pajak (11%)</span>
-                  <span class="font-semibold" style="color: #111827;">{{ formatPrice(cartStore.totalPrice * 0.11) }}</span>
+                  <span class="font-semibold" style="color: #111827;">{{ formatPrice(selectedTotalPrice * 0.11) }}</span>
                 </div>
 
                 <div class="pt-4" style="border-top: 1px solid #f3f4f6;">
                   <div class="flex justify-between items-center">
                     <span class="font-bold" style="color: #111827;">Total</span>
-                    <span class="font-black text-xl" style="color: #4f46e5;">{{ formatPrice(cartStore.totalPrice * 1.11) }}</span>
+                    <span class="font-black text-xl" style="color: #4f46e5;">{{ formatPrice(selectedTotalPrice * 1.11) }}</span>
                   </div>
                 </div>
 
@@ -160,17 +191,21 @@
 
               <!-- Checkout CTA -->
               <div class="px-6 pb-6">
-                <RouterLink
+                <button
                   id="checkout-btn"
-                  to="/checkout"
-                  class="w-full py-4 rounded-2xl text-white font-black text-base transition-all duration-300 hover:-translate-y-1 flex items-center justify-center gap-2"
-                  style="background: linear-gradient(135deg, #4f46e5, #7c3aed); box-shadow: 0 8px 32px rgba(79,70,229,0.3); display: flex;"
+                  :disabled="selectedItemIds.length === 0"
+                  @click="goToCheckout"
+                  class="w-full py-4 rounded-2xl text-white font-black text-base transition-all duration-300 flex items-center justify-center gap-2"
+                  :class="selectedItemIds.length > 0 ? 'hover:-translate-y-1' : ''"
+                  :style="selectedItemIds.length > 0
+                    ? 'background: linear-gradient(135deg, #4f46e5, #7c3aed); box-shadow: 0 8px 32px rgba(79,70,229,0.3); cursor: pointer;'
+                    : 'background: #d1d5db; cursor: not-allowed; box-shadow: none;'"
                 >
                   <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                   </svg>
-                  Checkout Sekarang
-                </RouterLink>
+                  Checkout ({{ selectedTotalItems }} Item)
+                </button>
 
                 <!-- Trust Badges -->
                 <div class="flex justify-center gap-4 mt-4">
@@ -227,7 +262,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import ProductCard from '../components/ProductCard.vue'
 import { cartStore, productStore, formatPrice } from '../store.js'
@@ -235,6 +270,59 @@ import { cartStore, productStore, formatPrice } from '../store.js'
 const router = useRouter()
 
 defineEmits(['add-to-cart'])
+
+const selectedItemIds = ref([])
+
+// Sync selected items when cart changes (auto-select new items)
+watch(() => cartStore.items, (newItems) => {
+  if (selectedItemIds.value.length === 0 && newItems.length > 0) {
+    selectedItemIds.value = newItems.map(item => item.id)
+  } else {
+    // Keep only selections that still exist in the cart
+    const currentIds = new Set(newItems.map(item => item.id))
+    selectedItemIds.value = selectedItemIds.value.filter(id => currentIds.has(id))
+  }
+}, { immediate: true, deep: true })
+
+const selectedItems = computed(() => {
+  return cartStore.items.filter(item => selectedItemIds.value.includes(item.id))
+})
+
+const selectedTotalItems = computed(() => {
+  return selectedItems.value.reduce((sum, item) => sum + item.quantity, 0)
+})
+
+const selectedTotalPrice = computed(() => {
+  return selectedItems.value.reduce((sum, item) => sum + item.price * item.quantity, 0)
+})
+
+const isAllSelected = computed({
+  get() {
+    return cartStore.items.length > 0 && selectedItemIds.value.length === cartStore.items.length
+  },
+  set(value) {
+    if (value) {
+      selectedItemIds.value = cartStore.items.map(item => item.id)
+    } else {
+      selectedItemIds.value = []
+    }
+  }
+})
+
+async function removeSelectedItems() {
+  if (confirm("Hapus produk yang dipilih dari keranjang?")) {
+    for (const id of selectedItemIds.value) {
+      await cartStore.removeItem(id)
+    }
+    selectedItemIds.value = []
+  }
+}
+
+function goToCheckout() {
+  if (selectedItemIds.value.length === 0) return
+  localStorage.setItem('selected_checkout_items', JSON.stringify(selectedItemIds.value))
+  router.push('/checkout')
+}
 
 onMounted(() => {
   // Sync the authoritative server cart (for logged-in users) and the catalog.

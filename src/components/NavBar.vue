@@ -88,33 +88,6 @@
         <!-- Right: Account + Cart + Hamburger — hampir menyentuh tepi kanan -->
         <div class="flex items-center gap-1 flex-shrink-0 ml-auto md:ml-0">
 
-          <!-- Account / Login Link -->
-          <RouterLink
-            v-if="!userStore.isLoggedIn"
-            id="account-btn"
-            to="/login"
-            title="Login / Akun Saya"
-            class="flex items-center gap-1.5 px-3 h-9 rounded-lg text-gray-400 hover:text-white hover:bg-white/8 transition-all duration-150 text-sm font-medium"
-          >
-            <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-            <span class="hidden sm:inline">Login</span>
-          </RouterLink>
-
-          <!-- User Profile / Logout Button -->
-          <div v-else class="flex items-center gap-2">
-            <span class="text-xs text-gray-300 hidden lg:inline">Halo, <strong class="text-white">{{ userStore.user.name }}</strong></span>
-            <button
-              @click="handleLogout"
-              id="logout-btn"
-              title="Logout"
-              class="flex items-center gap-1.5 px-3 h-9 rounded-lg text-rose-400 hover:text-rose-300 hover:bg-rose-950/20 border border-rose-500/20 transition-all duration-150 text-xs font-semibold"
-            >
-              🚪 <span class="hidden sm:inline">Keluar</span>
-            </button>
-          </div>
-
           <!-- Cart Icon -->
           <RouterLink
             to="/cart"
@@ -134,6 +107,37 @@
               >{{ cartCount > 9 ? '9+' : cartCount }}</span>
             </Transition>
           </RouterLink>
+
+          <!-- Account / Login Link -->
+          <RouterLink
+            v-if="!userStore.isLoggedIn"
+            id="account-btn"
+            to="/login"
+            title="Login / Akun Saya"
+            class="flex items-center gap-1.5 px-3 h-9 rounded-lg text-gray-400 hover:text-white hover:bg-white/8 transition-all duration-150 text-sm font-medium"
+          >
+            <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+            <span class="hidden sm:inline">Login</span>
+          </RouterLink>
+
+          <!-- User Profile -->
+          <div v-else class="flex items-center gap-2">
+            <RouterLink v-if="userStore.isAdmin" to="/admin" class="flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors">
+              Admin
+            </RouterLink>
+            
+            <RouterLink to="/profile" class="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-white/5 transition-all duration-200" title="Profil Saya">
+              <img v-if="userStore.user.avatar_url" :src="assetUrl(userStore.user.avatar_url)" class="w-8 h-8 rounded-full object-cover border border-gray-600" />
+              <div v-else class="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-gray-300 border border-gray-600">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                </svg>
+              </div>
+              <span class="text-xs font-bold text-white hidden sm:inline">{{ userStore.user.name }}</span>
+            </RouterLink>
+          </div>
 
           <!-- Mobile hamburger -->
           <button
@@ -173,6 +177,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { userStore, productStore, formatPrice } from '../store.js'
+import { assetUrl } from '../api/index.js'
 
 const props = defineProps({ cartCount: { type: Number, default: 0 } })
 const router = useRouter()
