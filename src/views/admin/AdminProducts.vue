@@ -8,9 +8,15 @@
           <p class="admin-user">Halo, {{ userStore.user?.name || 'Admin' }}</p>
         </div>
 
-        <button @click="loadProducts" class="primary-btn">
-          Refresh Data
-        </button>
+        <div class="flex gap-3">
+          <button @click="loadProducts" class="secondary-btn">
+            Refresh Data
+          </button>
+
+          <button @click="openCreateModal" class="primary-btn">
+            + Tambah Produk
+          </button>
+        </div>
       </div>
 
       <div
@@ -18,6 +24,13 @@
         class="mb-5 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-200 px-4 py-3"
       >
         {{ errorMessage }}
+      </div>
+
+      <div
+        v-if="successMessage"
+        class="mb-5 rounded-xl border border-green-500/30 bg-green-500/10 text-green-200 px-4 py-3"
+      >
+        {{ successMessage }}
       </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
@@ -128,12 +141,19 @@
 
                 <td class="px-5 py-3">
                   <span class="px-2 py-1 rounded-full bg-white/5 text-gray-300 text-xs">
-                    {{ product.badge }}
+                    {{ product.badge || '-' }}
                   </span>
                 </td>
 
                 <td class="px-5 py-3">
-                  <div class="flex justify-end">
+                  <div class="flex justify-end gap-2">
+                    <button
+                      @click="openEditModal(product)"
+                      class="edit-btn"
+                    >
+                      Edit
+                    </button>
+
                     <button
                       @click="deleteProduct(product.id)"
                       class="danger-btn"
@@ -154,6 +174,212 @@
         </div>
       </section>
     </section>
+
+    <Transition name="modal-fade">
+      <div
+        v-if="showModal"
+        class="fixed inset-0 z-[100] flex items-center justify-center px-4 py-8 bg-black/70 backdrop-blur-sm"
+      >
+        <div class="modal-card w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+          <div class="flex items-start justify-between gap-4 mb-5">
+            <div>
+              <p class="admin-kicker">
+                {{ isEditing ? 'Edit Produk' : 'Tambah Produk' }}
+              </p>
+
+              <h2 class="text-2xl font-black text-white mt-1">
+                {{ isEditing ? form.product_name : 'Produk Baru' }}
+              </h2>
+
+              <p class="text-sm text-gray-400 mt-1">
+                Upload gambar baru hanya jika ingin mengganti gambar lama.
+              </p>
+            </div>
+
+            <button @click="closeModal" class="close-btn">
+              ✕
+            </button>
+          </div>
+
+          <form @submit.prevent="submitProduct" class="space-y-5">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="form-label">Nama Produk</label>
+                <input
+                  v-model="form.product_name"
+                  type="text"
+                  class="admin-input"
+                  required
+                  placeholder="Contoh: ASUS ROG Swift OLED"
+                />
+              </div>
+
+              <div>
+                <label class="form-label">Kategori</label>
+                <select
+                  v-model="form.category_id"
+                  class="admin-input"
+                  required
+                >
+                  <option value="">Pilih kategori</option>
+                  <option
+                    v-for="category in categoryOptions"
+                    :key="category.category_id"
+                    :value="category.category_id"
+                  >
+                    {{ category.category_name }}
+                  </option>
+                </select>
+              </div>
+
+              <div>
+                <label class="form-label">Harga</label>
+                <input
+                  v-model="form.price"
+                  type="number"
+                  min="1"
+                  class="admin-input"
+                  required
+                  placeholder="14500000"
+                />
+              </div>
+
+              <div>
+                <label class="form-label">Harga Asli</label>
+                <input
+                  v-model="form.original_price"
+                  type="number"
+                  min="1"
+                  class="admin-input"
+                  required
+                  placeholder="15000000"
+                />
+              </div>
+
+              <div>
+                <label class="form-label">Stok</label>
+                <input
+                  v-model="form.stock"
+                  type="number"
+                  min="0"
+                  class="admin-input"
+                  required
+                  placeholder="10"
+                />
+              </div>
+
+              <div>
+                <label class="form-label">Badge</label>
+                <select v-model="selectedBadgeId" class="admin-input">
+                  <option value="">Tanpa badge</option>
+                  <option
+                    v-for="badge in badgeOptions"
+                    :key="badge.badge_id || badge.id"
+                    :value="badge.badge_id || badge.id"
+                  >
+                    {{ badge.badge_name || badge.name }}
+                  </option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label class="form-label">Deskripsi</label>
+              <textarea
+                v-model="form.description"
+                rows="3"
+                class="admin-input resize-none"
+                placeholder="Deskripsi singkat produk..."
+              ></textarea>
+            </div>
+
+            <div>
+              <label class="form-label">Spesifikasi</label>
+              <textarea
+                v-model="specsText"
+                rows="5"
+                class="admin-input resize-none font-mono text-xs"
+                placeholder='Contoh:
+{
+  "Panel": "OLED",
+  "Refresh Rate": "240Hz"
+}'
+              ></textarea>
+
+              <p class="text-xs text-gray-500 mt-1">
+                Format JSON. Boleh kosong, nanti otomatis menjadi {}.
+              </p>
+            </div>
+
+            <div>
+              <label class="form-label">Gambar Produk</label>
+
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                class="admin-input"
+                @change="handleImageChange"
+              />
+
+              <p class="text-xs text-gray-500 mt-1">
+                Maksimal 5 gambar. Untuk edit, upload gambar baru akan mengganti gambar lama.
+              </p>
+
+              <div
+                v-if="existingImages.length > 0"
+                class="mt-3"
+              >
+                <p class="text-xs text-gray-400 mb-2">Gambar saat ini:</p>
+
+                <div class="flex flex-wrap gap-3">
+                  <img
+                    v-for="image in existingImages"
+                    :key="image"
+                    :src="getImageUrl({ image })"
+                    class="preview-img"
+                    @error="handleImageError"
+                  />
+                </div>
+              </div>
+
+              <div
+                v-if="previewImages.length > 0"
+                class="mt-3"
+              >
+                <p class="text-xs text-gray-400 mb-2">Preview gambar baru:</p>
+
+                <div class="flex flex-wrap gap-3">
+                  <img
+                    v-for="image in previewImages"
+                    :key="image"
+                    :src="image"
+                    class="preview-img"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div
+              v-if="modalError"
+              class="rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-200 px-4 py-3 text-sm"
+            >
+              {{ modalError }}
+            </div>
+
+            <div class="flex justify-end gap-3 pt-2">
+              <button type="button" @click="closeModal" class="secondary-btn">
+                Batal
+              </button>
+
+              <button type="submit" class="primary-btn" :disabled="isSaving">
+                {{ isSaving ? 'Menyimpan...' : 'Simpan Produk' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </Transition>
   </main>
 </template>
 
@@ -161,24 +387,50 @@
 import { ref, computed, onMounted } from 'vue'
 import { formatPrice, userStore } from '../../store.js'
 
-const API_BASE_URL = 'http://localhost:3000'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+const FALLBACK_IMAGE = '/corsair_ram.png'
 
 const products = ref([])
+const categoryOptions = ref([])
+const badgeOptions = ref([])
+
 const searchQuery = ref('')
 const selectedCategory = ref('')
 const isLoading = ref(false)
+const isSaving = ref(false)
 const errorMessage = ref('')
+const successMessage = ref('')
+const modalError = ref('')
+
+const showModal = ref(false)
+const isEditing = ref(false)
+const editingId = ref(null)
+const selectedFiles = ref([])
+const previewImages = ref([])
+const existingImages = ref([])
+const selectedBadgeId = ref('')
+
+const form = ref({
+  category_id: '',
+  product_name: '',
+  description: '',
+  price: '',
+  original_price: '',
+  stock: '',
+})
+
+const specsText = ref('{}')
 
 const categories = computed(() => {
   return [...new Set(products.value.map(product => product.category).filter(Boolean))]
 })
 
 const totalStock = computed(() => {
-  return products.value.reduce((sum, product) => sum + product.stock, 0)
+  return products.value.reduce((sum, product) => sum + Number(product.stock || 0), 0)
 })
 
 const lowStockCount = computed(() => {
-  return products.value.filter(product => product.stock <= 10).length
+  return products.value.filter(product => Number(product.stock || 0) <= 10).length
 })
 
 const filteredProducts = computed(() => {
@@ -196,10 +448,10 @@ const filteredProducts = computed(() => {
 
 function extractArray(data) {
   if (Array.isArray(data)) return data
-  if (Array.isArray(data.products)) return data.products
-  if (Array.isArray(data.data)) return data.data
-  if (Array.isArray(data.result)) return data.result
-  if (Array.isArray(data.rows)) return data.rows
+  if (Array.isArray(data?.products)) return data.products
+  if (Array.isArray(data?.data)) return data.data
+  if (Array.isArray(data?.result)) return data.result
+  if (Array.isArray(data?.rows)) return data.rows
   return []
 }
 
@@ -212,11 +464,11 @@ function getImageUrl(product) {
     product.picture ||
     product.images
 
-  if (!image) return '/corsair_ram.png'
+  if (!image) return FALLBACK_IMAGE
 
   if (Array.isArray(image)) {
     const first = image[0]
-    if (!first) return '/corsair_ram.png'
+    if (!first) return FALLBACK_IMAGE
 
     if (typeof first === 'string') {
       return getImageUrl({ image: first })
@@ -227,7 +479,7 @@ function getImageUrl(product) {
     })
   }
 
-  if (typeof image !== 'string') return '/corsair_ram.png'
+  if (typeof image !== 'string') return FALLBACK_IMAGE
   if (image.startsWith('http')) return image
   if (image.startsWith('/uploads')) return `${API_BASE_URL}${image}`
   if (image.startsWith('uploads')) return `${API_BASE_URL}/${image}`
@@ -247,11 +499,19 @@ function normalizeProduct(product) {
       product.category?.name ??
       '-',
     price: Number(product.price ?? product.product_price ?? product.final_price ?? product.selling_price ?? 0),
+    originalPrice: Number(product.originalPrice ?? product.original_price ?? 0),
     stock: Number(product.stock ?? product.quantity ?? product.product_stock ?? 0),
     image: getImageUrl(product),
     badge: product.badge ?? product.badge_name ?? product.label ?? '-',
     rating: Number(product.rating ?? product.average_rating ?? product.avg_rating ?? 0),
     reviews: Number(product.reviews ?? product.review_count ?? product.total_reviews ?? 0),
+  }
+}
+
+function getAuthHeaders() {
+  const token = localStorage.getItem('token')
+  return {
+    Authorization: `Bearer ${token}`,
   }
 }
 
@@ -275,18 +535,178 @@ async function loadProducts() {
   }
 }
 
+async function loadCategories() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/categories`)
+    const data = await res.json()
+
+    categoryOptions.value = extractArray(data)
+  } catch (error) {
+    console.error('Gagal mengambil kategori:', error)
+  }
+}
+
+async function loadBadges() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/badges`)
+    const data = await res.json()
+
+    badgeOptions.value = extractArray(data)
+  } catch (error) {
+    console.error('Gagal mengambil badge:', error)
+  }
+}
+
+function resetForm() {
+  form.value = {
+    category_id: '',
+    product_name: '',
+    description: '',
+    price: '',
+    original_price: '',
+    stock: '',
+  }
+
+  specsText.value = '{}'
+  selectedBadgeId.value = ''
+  selectedFiles.value = []
+  previewImages.value = []
+  existingImages.value = []
+  modalError.value = ''
+  editingId.value = null
+  isEditing.value = false
+}
+
+function openCreateModal() {
+  resetForm()
+  showModal.value = true
+}
+
+async function openEditModal(product) {
+  resetForm()
+  isEditing.value = true
+  editingId.value = product.id
+  modalError.value = ''
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/products/${product.id}`)
+    const data = await res.json()
+
+    if (!res.ok) {
+      throw new Error(data.message || 'Gagal mengambil detail produk')
+    }
+
+    form.value = {
+      category_id: data.categoryId || '',
+      product_name: data.name || '',
+      description: data.description || '',
+      price: data.price || '',
+      original_price: data.originalPrice || data.price || '',
+      stock: data.stock || 0,
+    }
+
+    specsText.value = JSON.stringify(data.specs || {}, null, 2)
+    existingImages.value = Array.isArray(data.images) ? data.images : []
+
+    const firstBadge = Array.isArray(data.badges) ? data.badges[0] : null
+    selectedBadgeId.value = firstBadge?.id || ''
+    showModal.value = true
+  } catch (error) {
+    alert(error.message)
+  }
+}
+
+function closeModal() {
+  showModal.value = false
+  resetForm()
+}
+
+function handleImageChange(event) {
+  const files = Array.from(event.target.files || []).slice(0, 5)
+
+  selectedFiles.value = files
+  previewImages.value.forEach(url => URL.revokeObjectURL(url))
+  previewImages.value = files.map(file => URL.createObjectURL(file))
+}
+
+function buildFormData() {
+  let parsedSpecs = {}
+
+  if (specsText.value.trim()) {
+    try {
+      parsedSpecs = JSON.parse(specsText.value)
+    } catch {
+      throw new Error('Format spesifikasi harus JSON valid.')
+    }
+  }
+
+  const fd = new FormData()
+
+  fd.append('category_id', form.value.category_id)
+  fd.append('product_name', form.value.product_name)
+  fd.append('description', form.value.description || '')
+  fd.append('price', form.value.price)
+  fd.append('original_price', form.value.original_price || form.value.price)
+  fd.append('stock', form.value.stock)
+  fd.append('specs', JSON.stringify(parsedSpecs))
+
+  const badgeIds = selectedBadgeId.value ? [Number(selectedBadgeId.value)] : []
+  fd.append('badge_ids', JSON.stringify(badgeIds))
+
+  selectedFiles.value.forEach((file) => {
+    fd.append('images', file)
+  })
+
+  return fd
+}
+
+async function submitProduct() {
+  modalError.value = ''
+  successMessage.value = ''
+  isSaving.value = true
+
+  try {
+    const fd = buildFormData()
+
+    const url = isEditing.value
+      ? `${API_BASE_URL}/api/products/${editingId.value}`
+      : `${API_BASE_URL}/api/products`
+
+    const method = isEditing.value ? 'PUT' : 'POST'
+
+    const res = await fetch(url, {
+      method,
+      headers: getAuthHeaders(),
+      body: fd,
+    })
+
+    const data = await res.json().catch(() => ({}))
+
+    if (!res.ok) {
+      throw new Error(data.message || 'Gagal menyimpan produk')
+    }
+
+    successMessage.value = isEditing.value
+      ? 'Produk berhasil diperbarui.'
+      : 'Produk berhasil ditambahkan.'
+
+    closeModal()
+    await loadProducts()
+  } catch (error) {
+    modalError.value = error.message
+  } finally {
+    isSaving.value = false
+  }
+}
+
 async function deleteProduct(productId) {
   const confirmed = confirm('Yakin ingin menghapus produk ini?')
   if (!confirmed) return
 
   try {
-    const token = localStorage.getItem('token')
-
     const res = await fetch(`${API_BASE_URL}/api/products/${productId}`, {
       method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: getAuthHeaders(),
     })
 
     const data = await res.json().catch(() => ({}))
@@ -295,6 +715,7 @@ async function deleteProduct(productId) {
       throw new Error(data.message || 'Gagal menghapus produk')
     }
 
+    successMessage.value = 'Produk berhasil dihapus.'
     await loadProducts()
   } catch (error) {
     alert(error.message)
@@ -302,11 +723,15 @@ async function deleteProduct(productId) {
 }
 
 function handleImageError(event) {
-  event.target.src = '/corsair_ram.png'
+  event.target.src = FALLBACK_IMAGE
 }
 
-onMounted(() => {
-  loadProducts()
+onMounted(async () => {
+  await Promise.all([
+    loadProducts(),
+    loadCategories(),
+    loadBadges(),
+  ])
 })
 </script>
 
@@ -351,18 +776,37 @@ onMounted(() => {
   margin-top: 4px;
 }
 
-.primary-btn {
+.primary-btn,
+.secondary-btn {
   padding: 10px 16px;
   border-radius: 14px;
-  background: rgba(99,102,241,0.16);
-  border: 1px solid rgba(129,140,248,0.35);
-  color: #c7d2fe;
   font-size: 0.85rem;
   font-weight: 800;
   transition: 0.2s;
 }
 
+.primary-btn {
+  background: #4f46e5;
+  border: 1px solid rgba(129,140,248,0.6);
+  color: white;
+}
+
 .primary-btn:hover {
+  background: #6366f1;
+}
+
+.primary-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.secondary-btn {
+  background: rgba(99,102,241,0.16);
+  border: 1px solid rgba(129,140,248,0.35);
+  color: #c7d2fe;
+}
+
+.secondary-btn:hover {
   background: rgba(99,102,241,0.25);
   color: white;
 }
@@ -406,10 +850,16 @@ onMounted(() => {
   margin-top: 7px;
 }
 
-.panel {
+.panel,
+.modal-card {
   border: 1px solid rgba(255,255,255,0.08);
-  background: rgba(255,255,255,0.04);
+  background: #111827;
   border-radius: 22px;
+}
+
+.modal-card {
+  padding: 24px;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.45);
 }
 
 .admin-input {
@@ -426,23 +876,74 @@ onMounted(() => {
   border-color: rgba(129,140,248,0.7);
 }
 
-.danger-btn {
+.form-label {
+  display: block;
+  color: #cbd5e1;
+  font-size: 0.78rem;
+  font-weight: 800;
+  margin-bottom: 7px;
+}
+
+.edit-btn,
+.danger-btn,
+.close-btn {
   padding: 8px 11px;
   border-radius: 11px;
-  border: 1px solid rgba(244,63,94,0.25);
-  color: #fda4af;
   font-size: 0.75rem;
   font-weight: 800;
   transition: 0.2s;
+}
+
+.edit-btn {
+  border: 1px solid rgba(129,140,248,0.28);
+  color: #c7d2fe;
+}
+
+.edit-btn:hover {
+  background: rgba(99,102,241,0.16);
+}
+
+.danger-btn {
+  border: 1px solid rgba(244,63,94,0.25);
+  color: #fda4af;
 }
 
 .danger-btn:hover {
   background: rgba(244,63,94,0.12);
 }
 
+.close-btn {
+  color: #94a3b8;
+  background: rgba(255,255,255,0.05);
+}
+
+.close-btn:hover {
+  color: white;
+  background: rgba(255,255,255,0.1);
+}
+
 .empty-state {
   padding: 32px 10px;
   color: #64748b;
   text-align: center;
+}
+
+.preview-img {
+  width: 76px;
+  height: 76px;
+  border-radius: 14px;
+  object-fit: cover;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.modal-fade-enter-active,
+.modal-fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.modal-fade-enter-from,
+.modal-fade-leave-to {
+  opacity: 0;
 }
 </style>
