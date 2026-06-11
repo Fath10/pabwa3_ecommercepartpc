@@ -21,6 +21,7 @@ ATURAN UTAMA:
    Selalu pahami KONTEKS dan NIAT pengguna meskipun ada typo atau singkatan.
 7. Jika pengguna menyapa (halo, hai, dll), balas dengan ramah dan tawarkan bantuan.
 8. Jika pengguna bertanya siapa kamu, perkenalkan diri sebagai asisten e-BuildPC.
+9. KOMPARASI PRODUK: Jika pengguna meminta untuk "membandingkan", "apa bedanya", atau "vs" antara dua produk atau lebih, buatlah PERBANDINGAN DALAM BENTUK TABEL Markdown yang rapi (kolom berisi fitur/spesifikasi/harga, dan baris berisi nama produk). Berikan juga kesimpulan singkat mana yang lebih cocok untuk kebutuhan tertentu.
 
 LARANGAN MUTLAK — TOLAK SEMUA permintaan berikut tanpa terkecuali:
 - Membuat kode (HTML, CSS, JavaScript, Python, SQL, atau bahasa pemrograman apapun)
@@ -86,6 +87,108 @@ const GREETING_PATTERNS = [
   /^(terima\s+kasih|makasih|thanks?|thx|tq|mantap|keren|oke|ok|oks|sip|good|bagus)\b/i,
   /^(boleh\s+tanya|boleh\s+nanya|numpang\s+tanya|excuse\s+me)\b/i,
 ];
+
+// ══════════════════════════════════════════════
+// LAPIS 0.5: Deteksi intent navigasi — arahkan user ke halaman tertentu
+// ══════════════════════════════════════════════
+const NAVIGATE_INTENTS = [
+  {
+    // ── Checkout / Bayar ──
+    patterns: [
+      // Exact & semua variasi typo checkout
+      /\b(checkout|check\s*out|chekout|chekcout|chekot|checkut|chekoutt|cheout|checout|cekout|ceckout|chekaut|chekoud|chekout|chekouut|chekoout|cehckout|chcekout|chekotu|chekuot|checokut|checkotu)\b/i,
+      // Bahasa Indonesia: bayar, pesan, order
+      /\b(bayar|mau\s+bayar|lanjut\s+bayar|proses\s+pembayaran|selesaikan\s+pesanan|konfirmasi\s+pesanan)\b/i,
+      /\b(beli\s+sekarang|pesan\s+sekarang|lanjut\s+pesan|order\s+sekarang|mau\s+order|order\s+aja)\b/i,
+      /\b(mau\s+checkout|mau\s+chekout|mau\s+cekout|mau\s+pesan|mau\s+beli)\b/i,
+      /\b(lanjut\s+ke\s+pembayaran|ke\s+halaman\s+checkout|halaman\s+pembayaran|proses\s+pesanan)\b/i,
+      // Partikel informal Indonesia: "kan", "dong", "deh", "nih", "yuk", "aja", "kak"
+      /\b(checkout|chekout|cekout|checout)\s*(kan|dong|deh|nih|sekarang|yuk|aja|kak|kuy|donk|dongg|dunk|dungg)?\b/i,
+      // Pola: "...kan dong" setelah kata kunci
+      /\b(mau\s+)?(checkout|chekout|cekout|checout|bayar|pesan|beli)\s*(kan|dong|deh|nih|yuk|aja|kuy|kak)(\s+dong|\s+deh|\s+nih|\s+kak)?\b/i,
+    ],
+    url: "/checkout",
+    label: "halaman Checkout",
+    emoji: "💳",
+    reply: "Oke! Saya arahkan kamu ke halaman Checkout sekarang. Silakan lengkapi data pengirimanmu di sana ya! 💳",
+  },
+  {
+    // ── Keranjang / Cart ──
+    patterns: [
+      /\b(keranjang|keranjangg|kerajang|keranjag|karanjang|kerajangan|kernjang|keranjnag|cart|cartt|crat|crt)\b/i,
+      /\b(lihat\s+keranjang|buka\s+keranjang|ke\s+keranjang|halaman\s+keranjang|isi\s+keranjang|cek\s+keranjang)\b/i,
+      /\b(shopping\s+cart|mau\s+lihat\s+cart|cek\s+cart|buka\s+cart|mau\s+cart|ke\s+cart|lihat\s+cart)\b/i,
+      /\b(belanjaan|belanjaanku|barang\s+belanja|barang\s+di\s+cart|barang\s+di\s+keranjang)\b/i,
+      /\b(keranjang|cart)\s*(kan|dong|deh|nih|yuk|aja|kak|kuy)?\b/i,
+    ],
+    url: "/cart",
+    label: "halaman Keranjang",
+    emoji: "🛒",
+    reply: "Oke! Membuka keranjang belanjamu sekarang. Cek produk yang sudah kamu tambahkan ya! 🛒",
+  },
+  {
+    // ── Katalog / Produk ──
+    patterns: [
+      /\b(katalog|katalok|kataolog|katolog|kataloog|katalg|catalog|katalogue|catalogue)\b/i,
+      /\b(lihat\s+produk|semua\s+produk|daftar\s+produk|browse\s+produk|ke\s+katalog|halaman\s+produk|lihat\s+semua)\b/i,
+      /\b(tampilkan\s+semua|tampilkan\s+produk|show\s+all|ke\s+toko|buka\s+toko|produk\s+apa\s+saja)\b/i,
+      /\b(katalog|toko)\s*(kan|dong|deh|nih|yuk|aja|kak|kuy)?\b/i,
+    ],
+    url: "/katalog",
+    label: "halaman Katalog",
+    emoji: "🖥️",
+    reply: "Siap! Membuka katalog produk e-BuildPC untuk kamu. Temukan komponen PC impianmu di sana! 🖥️",
+  },
+  {
+    // ── Beranda / Home ──
+    patterns: [
+      /\b(beranda|berandaa|berannda|berandha|home|hoome|hom3|halaman\s+utama|halaman\s+awal)\b/i,
+      /\b(ke\s+beranda|ke\s+home|kembali\s+ke\s+beranda|back\s+to\s+home|balik\s+ke\s+home|balik\s+beranda)\b/i,
+      /\b(beranda|home)\s*(kan|dong|deh|nih|yuk|aja|kak|kuy)?\b/i,
+    ],
+    url: "/",
+    label: "Beranda",
+    emoji: "🏠",
+    reply: "Baik! Mengarahkanmu ke halaman Beranda e-BuildPC. Selamat berbelanja! 🏠",
+  },
+  {
+    // ── Profil / Pesanan ──
+    patterns: [
+      /\b(profil|profile|profl|profill|profle|porfile|profil|akun|acount|account)\b/i,
+      /\b(pesanan\s+saya|pesananku|riwayat\s+pesanan|order\s+saya|lihat\s+pesanan|riwayat\s+belanja|pesanan\s+ku)\b/i,
+      /\b(cek\s+pesanan|status\s+pesanan|my\s+order|my\s+account|my\s+profile|ke\s+profil|halaman\s+profil)\b/i,
+      /\b(pesanan|profil|akun)\s*(kan|dong|deh|nih|yuk|aja|kak|kuy|saya|ku)?\b/i,
+    ],
+    url: "/profile",
+    label: "halaman Profil",
+    emoji: "👤",
+    reply: "Oke! Membuka halaman Profil dan riwayat pesananmu sekarang. 👤",
+  },
+  {
+    // ── Artikel / Blog ──
+    patterns: [
+      /\b(artikel|articel|artkel|artilkel|artikle|blog|bloog|berita|brita|tips|tutorial)\b/i,
+      /\b(ke\s+artikel|halaman\s+artikel|baca\s+artikel|lihat\s+artikel|buka\s+artikel)\b/i,
+      /\b(artikel|blog)\s*(kan|dong|deh|nih|yuk|aja|kak|kuy)?\b/i,
+    ],
+    url: "/artikel",
+    label: "halaman Artikel",
+    emoji: "📰",
+    reply: "Siap! Membuka halaman Artikel — banyak tips dan tutorial seputar komponen PC yang bisa kamu baca! 📰",
+  },
+];
+
+function detectNavigationIntent(message) {
+  const lower = message.toLowerCase().trim();
+  for (const intent of NAVIGATE_INTENTS) {
+    for (const pattern of intent.patterns) {
+      if (pattern.test(lower)) {
+        return intent;
+      }
+    }
+  }
+  return null;
+}
 
 const GREETING_REPLIES = [
   "Halo! 👋 Saya **e-BuildPC AI**, asisten virtual toko komponen PC terlengkap. Ada komponen PC yang ingin Anda cari atau tanyakan?",
@@ -864,6 +967,19 @@ export const chat = async (req, res) => {
     if (greetingReply) {
       return res.status(200).json({
         reply: greetingReply,
+        productsFound: 0,
+        products: [],
+      });
+    }
+
+    // ── LAPIS 0.5: Navigasi → arahkan user ke halaman tertentu tanpa LLM ──
+    const navIntent = detectNavigationIntent(userMessage);
+    if (navIntent) {
+      return res.status(200).json({
+        reply: navIntent.reply,
+        action: "navigate",
+        url: navIntent.url,
+        label: navIntent.label,
         productsFound: 0,
         products: [],
       });
