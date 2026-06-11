@@ -1,45 +1,61 @@
 <template>
-  <main class="pt-24 pb-16 min-h-screen" style="background: #f9fafb;">
+  <main class="catalog-page pt-24 pb-16 min-h-screen">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <!-- Header -->
       <div class="text-center mb-12">
-        <h1 class="text-4xl font-black mb-3" style="color: #111827;">
-          Katalog <span class="text-indigo-600">Produk</span>
+        <h1 class="page-title text-4xl font-black mb-3">
+          Katalog <span class="gradient-text">Produk</span>
         </h1>
-        <p class="text-gray-500">Temukan komponen PC terbaik untuk kebutuhan Anda</p>
+        <p class="page-muted">
+          Temukan komponen PC terbaik untuk kebutuhan Anda
+        </p>
       </div>
 
       <!-- Filter Bar -->
       <div class="flex flex-col sm:flex-row gap-4 mb-8">
         <!-- Search -->
         <div class="relative flex-1">
-          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          <svg
+            class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 search-icon"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
           </svg>
+
           <input
             v-model="search"
             type="text"
             placeholder="Cari produk..."
             id="search-input"
-            class="w-full min-w-[320px] pl-10 pr-4 py-3 rounded-xl outline-none transition-all"
-            style="background: #fff; border: 1px solid #d1d5db; color: #111827;"
+            class="form-control w-full min-w-[320px] pl-10 pr-4 py-3 rounded-xl outline-none transition-all"
           />
         </div>
 
         <!-- Category Filter Button -->
         <button
           @click.stop="toggleCategoryDropdown"
-          class="relative px-4 py-3 rounded-xl outline-none transition-all cursor-pointer flex items-center gap-2"
-          style="background: #fff; border: 1px solid #d1d5db; color: #111827;"
+          class="dropdown-trigger relative px-4 py-3 rounded-xl outline-none transition-all cursor-pointer flex items-center gap-2"
           title="Filter Kategori"
         >
           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+            />
           </svg>
 
           <span
             v-if="selectedCategory"
-            class="px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700"
+            class="selected-badge px-2 py-0.5 rounded-full text-xs font-semibold"
           >
             {{ selectedCategory }}
           </span>
@@ -47,12 +63,12 @@
           <div
             v-if="showCategoryDropdown"
             @click.stop
-            class="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-lg z-20 min-w-48 py-2"
+            class="dropdown-menu absolute top-full left-0 mt-2 rounded-xl shadow-lg z-20 min-w-48 py-2"
           >
             <button
               @click="selectCategory(''); showCategoryDropdown = false"
-              class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50"
-              :class="selectedCategory === '' ? 'text-indigo-600 font-semibold' : 'text-gray-700'"
+              class="dropdown-item w-full text-left px-4 py-2 text-sm"
+              :class="selectedCategory === '' ? 'dropdown-active' : ''"
             >
               Semua Kategori
             </button>
@@ -61,8 +77,8 @@
               v-for="cat in categories"
               :key="cat"
               @click="selectCategory(cat); showCategoryDropdown = false"
-              class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50"
-              :class="selectedCategory === cat ? 'text-indigo-600 font-semibold' : 'text-gray-700'"
+              class="dropdown-item w-full text-left px-4 py-2 text-sm"
+              :class="selectedCategory === cat ? 'dropdown-active' : ''"
             >
               {{ cat }}
             </button>
@@ -72,47 +88,51 @@
         <!-- Sort Button -->
         <button
           @click.stop="toggleSortDropdown"
-          class="relative px-4 py-3 rounded-xl outline-none transition-all cursor-pointer flex items-center gap-2"
-          style="background: #fff; border: 1px solid #d1d5db; color: #111827;"
+          class="dropdown-trigger relative px-4 py-3 rounded-xl outline-none transition-all cursor-pointer flex items-center gap-2"
           title="Urutkan"
         >
           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"
+            />
           </svg>
 
           <div
             v-if="showSortDropdown"
             @click.stop
-            class="absolute top-full right-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-lg z-20 min-w-44 py-2"
+            class="dropdown-menu absolute top-full right-0 mt-2 rounded-xl shadow-lg z-20 min-w-44 py-2"
           >
             <button
               @click="selectSort('default')"
-              class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50"
-              :class="sortBy === 'default' ? 'text-indigo-600 font-semibold' : 'text-gray-700'"
+              class="dropdown-item w-full text-left px-4 py-2 text-sm"
+              :class="sortBy === 'default' ? 'dropdown-active' : ''"
             >
               Default
             </button>
 
             <button
               @click="selectSort('price-asc')"
-              class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50"
-              :class="sortBy === 'price-asc' ? 'text-indigo-600 font-semibold' : 'text-gray-700'"
+              class="dropdown-item w-full text-left px-4 py-2 text-sm"
+              :class="sortBy === 'price-asc' ? 'dropdown-active' : ''"
             >
               Harga Terendah
             </button>
 
             <button
               @click="selectSort('price-desc')"
-              class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50"
-              :class="sortBy === 'price-desc' ? 'text-indigo-600 font-semibold' : 'text-gray-700'"
+              class="dropdown-item w-full text-left px-4 py-2 text-sm"
+              :class="sortBy === 'price-desc' ? 'dropdown-active' : ''"
             >
               Harga Tertinggi
             </button>
 
             <button
               @click="selectSort('rating')"
-              class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50"
-              :class="sortBy === 'rating' ? 'text-indigo-600 font-semibold' : 'text-gray-700'"
+              class="dropdown-item w-full text-left px-4 py-2 text-sm"
+              :class="sortBy === 'rating' ? 'dropdown-active' : ''"
             >
               Rating Tertinggi
             </button>
@@ -121,10 +141,10 @@
       </div>
 
       <!-- Results count -->
-      <div class="flex items-center justify-between mb-6">
-        <p class="text-sm" style="color: #6b7280;">
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-6">
+        <p class="page-muted text-sm">
           Menampilkan
-          <span class="font-semibold" style="color: #111827;">
+          <span class="page-title font-semibold">
             {{ filteredProducts.length }}
           </span>
           produk
@@ -134,9 +154,8 @@
         <div class="flex flex-wrap gap-2">
           <button
             @click="selectCategory('')"
-            class="px-3 py-1 rounded-full text-xs font-medium transition-all"
-            :class="selectedCategory === '' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-100'"
-            style="border: 1px solid #e5e7eb;"
+            class="category-pill px-3 py-1 rounded-full text-xs font-medium transition-all"
+            :class="selectedCategory === '' ? 'category-pill-active' : ''"
           >
             Semua
           </button>
@@ -145,52 +164,18 @@
             v-for="cat in categories"
             :key="cat"
             @click="selectCategory(cat)"
-            class="px-3 py-1 rounded-full text-xs font-medium transition-all"
-            :class="selectedCategory === cat ? 'bg-indigo-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-100'"
-            style="border: 1px solid #e5e7eb;"
+            class="category-pill px-3 py-1 rounded-full text-xs font-medium transition-all"
+            :class="selectedCategory === cat ? 'category-pill-active' : ''"
           >
             {{ cat }}
           </button>
         </div>
       </div>
-      <!-- Loading skeleton -->
-      <div v-if="isLoading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        <div
-          v-for="i in 8"
-          :key="i"
-          class="rounded-xl overflow-hidden animate-pulse"
-          style="border: 1px solid #e5e7eb;"
-        >
-          <div class="h-44 bg-gray-200"></div>
-          <div class="p-3 space-y-2">
-            <div class="h-3 bg-gray-200 rounded w-3/4"></div>
-            <div class="h-3 bg-gray-200 rounded w-1/2"></div>
-            <div class="h-8 bg-gray-200 rounded mt-3"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Error state -->
-      <div v-else-if="isError" class="max-w-md mx-auto text-center py-12 px-6 bg-red-50/50 border border-red-100 rounded-2xl">
-        <div class="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 text-red-600">
-          <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
-        </div>
-        <h3 class="text-xl font-extrabold text-gray-900 mb-2">Koneksi Gagal</h3>
-        <p class="text-sm text-gray-500 mb-6">Gagal memuat produk dari server. Error: {{ loadError || 'Pastikan backend Anda berjalan.' }}</p>
-        <button
-          @click="productStore.fetchAll(true)"
-          class="inline-flex px-6 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-sm transition-all duration-200 shadow-md hover:shadow-lg"
-        >
-          Coba Lagi
-        </button>
-      </div>
 
       <!-- Product Grid -->
       <div
-        v-else-if="filteredProducts.length > 0"
-        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+        v-if="filteredProducts.length > 0"
+        class="product-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
       >
         <ProductCard
           v-for="product in paginatedProducts"
@@ -201,13 +186,17 @@
       </div>
 
       <!-- Empty state -->
-      <div v-else class="text-center py-20">
+      <div v-if="filteredProducts.length === 0" class="empty-state text-center py-20">
         <div class="text-6xl mb-4">😔</div>
-        <h3 class="text-xl font-bold mb-2" style="color: #111827;">Produk Tidak Ditemukan</h3>
-        <p class="text-gray-400 mb-6">Coba ubah filter atau kata kunci pencarian Anda.</p>
+        <h3 class="page-title text-xl font-bold mb-2">
+          Produk Tidak Ditemukan
+        </h3>
+        <p class="page-muted mb-6">
+          Coba ubah filter atau kata kunci pencarian Anda.
+        </p>
         <button
           @click="resetFilters"
-          class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition-all"
+          class="primary-btn px-6 py-3 rounded-xl text-white font-semibold transition-all"
         >
           Reset Filter
         </button>
@@ -218,11 +207,11 @@
         v-if="filteredProducts.length > 0 && totalPages > 1"
         class="mt-10 flex flex-col items-center gap-3"
       >
-        <p class="text-sm" style="color: #6b7280;">
+        <p class="page-muted text-sm">
           Halaman
-          <span class="font-semibold" style="color: #111827;">{{ currentPage }}</span>
+          <span class="page-title font-semibold">{{ currentPage }}</span>
           /
-          <span class="font-semibold" style="color: #111827;">{{ totalPages }}</span>
+          <span class="page-title font-semibold">{{ totalPages }}</span>
         </p>
 
         <div class="flex items-center gap-2">
@@ -231,10 +220,8 @@
             type="button"
             :disabled="currentPage === 1"
             @click="goToPage(currentPage - 1)"
-            class="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-semibold transition-all duration-200"
-            :style="currentPage === 1
-              ? 'border:1px solid #e5e7eb; color:#d1d5db; cursor:not-allowed; background:#fff;'
-              : 'border:1px solid #d1d5db; color:#374151; background:#fff; cursor:pointer;'"
+            class="pagination-btn w-9 h-9 rounded-xl flex items-center justify-center text-sm font-semibold transition-all duration-200"
+            :class="currentPage === 1 ? 'pagination-disabled' : ''"
           >
             ←
           </button>
@@ -245,10 +232,8 @@
             :id="`katalog-page-${page}`"
             type="button"
             @click="goToPage(page)"
-            class="w-9 h-9 rounded-xl text-sm font-semibold transition-all duration-200"
-            :style="page === currentPage
-              ? 'background:#4f46e5; color:#fff; border:1px solid #4f46e5;'
-              : 'background:#fff; color:#374151; border:1px solid #d1d5db; cursor:pointer;'"
+            class="pagination-btn w-9 h-9 rounded-xl text-sm font-semibold transition-all duration-200"
+            :class="page === currentPage ? 'pagination-active' : ''"
           >
             {{ page }}
           </button>
@@ -258,10 +243,8 @@
             type="button"
             :disabled="currentPage === totalPages"
             @click="goToPage(currentPage + 1)"
-            class="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-semibold transition-all duration-200"
-            :style="currentPage === totalPages
-              ? 'border:1px solid #e5e7eb; color:#d1d5db; cursor:not-allowed; background:#fff;'
-              : 'border:1px solid #d1d5db; color:#374151; background:#fff; cursor:pointer;'"
+            class="pagination-btn w-9 h-9 rounded-xl flex items-center justify-center text-sm font-semibold transition-all duration-200"
+            :class="currentPage === totalPages ? 'pagination-disabled' : ''"
           >
             →
           </button>
@@ -275,14 +258,13 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ProductCard from '../components/ProductCard.vue'
-import { productStore } from '../store.js'
+import { products } from '../store.js'
 
 const emit = defineEmits(['add-to-cart'])
 
 const route = useRoute()
 const router = useRouter()
 
-// ── State ──────────────────────────────────────
 const search = ref('')
 const selectedCategory = ref('')
 const sortBy = ref('default')
@@ -291,13 +273,7 @@ const showCategoryDropdown = ref(false)
 const showSortDropdown = ref(false)
 
 const PRODUCTS_PER_PAGE = 12
-
-// Catalog data comes from the backend via the shared product store.
-const products = computed(() => productStore.items)
-const categories = computed(() => productStore.categories)
-const isLoading = computed(() => productStore.loading)
-const isError = computed(() => !!productStore.error)
-const loadError = computed(() => productStore.error)
+const categories = [...new Set(products.map(p => p.category))]
 
 function closeDropdowns() {
   showCategoryDropdown.value = false
@@ -317,7 +293,7 @@ function toggleSortDropdown() {
 function normalizeCategory(category) {
   const value = String(category || '').trim()
 
-  const matchedCategory = categories.value.find(
+  const matchedCategory = categories.find(
     cat => String(cat).toLowerCase() === value.toLowerCase()
   )
 
@@ -357,23 +333,8 @@ watch(
   { immediate: true }
 )
 
-// Initialise / track the search term coming from the navbar (?q=...).
-watch(
-  () => route.query.q,
-  (q) => {
-    search.value = typeof q === 'string' ? q : ''
-    currentPage.value = 1
-  },
-  { immediate: true }
-)
-
-// Re-normalise the category once products (and therefore the category list) load.
-watch(categories, () => {
-  selectedCategory.value = normalizeCategory(route.query.category)
-})
-
 const filteredProducts = computed(() => {
-  let result = [...products.value]
+  let result = [...products]
 
   if (search.value) {
     result = result.filter(p =>
@@ -426,7 +387,6 @@ function resetFilters() {
 }
 
 onMounted(() => {
-  productStore.fetchAll()
   document.addEventListener('click', closeDropdowns)
 })
 
@@ -434,3 +394,201 @@ onBeforeUnmount(() => {
   document.removeEventListener('click', closeDropdowns)
 })
 </script>
+
+<style scoped>
+.catalog-page {
+  color: #e5e7eb;
+  background:
+    radial-gradient(circle at top left, rgba(79, 70, 229, 0.18), transparent 28%),
+    radial-gradient(circle at top right, rgba(124, 58, 237, 0.16), transparent 30%),
+    radial-gradient(circle at bottom right, rgba(59, 130, 246, 0.08), transparent 28%),
+    linear-gradient(180deg, #0b1020 0%, #080b14 48%, #05070d 100%);
+}
+
+.page-title {
+  color: #f8fafc;
+}
+
+.page-muted {
+  color: #94a3b8;
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #818cf8, #a855f7, #38bdf8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.search-icon {
+  color: #94a3b8;
+}
+
+.form-control,
+.dropdown-trigger {
+  color: #f8fafc;
+  background: rgba(15, 23, 42, 0.78);
+  border: 1px solid rgba(129, 140, 248, 0.28);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
+}
+
+.form-control::placeholder {
+  color: #64748b;
+}
+
+.form-control:focus,
+.dropdown-trigger:hover {
+  border-color: rgba(167, 139, 250, 0.65);
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.14);
+}
+
+.selected-badge {
+  color: #c4b5fd;
+  background: rgba(79, 70, 229, 0.2);
+}
+
+.dropdown-menu {
+  background:
+    linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(30, 27, 75, 0.94));
+  border: 1px solid rgba(129, 140, 248, 0.28);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.36);
+  overflow: hidden;
+}
+
+.dropdown-item {
+  color: #cbd5e1;
+  transition: all 0.2s ease;
+}
+
+.dropdown-item:hover {
+  color: #ffffff;
+  background: rgba(79, 70, 229, 0.24);
+}
+
+.dropdown-active {
+  color: #c4b5fd;
+  background: rgba(79, 70, 229, 0.18);
+  font-weight: 800;
+}
+
+.category-pill {
+  color: #cbd5e1;
+  background: rgba(15, 23, 42, 0.72);
+  border: 1px solid rgba(129, 140, 248, 0.22);
+}
+
+.category-pill:hover {
+  color: #ffffff;
+  background: rgba(79, 70, 229, 0.24);
+  border-color: rgba(167, 139, 250, 0.42);
+}
+
+.category-pill-active {
+  color: #ffffff;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  border-color: rgba(167, 139, 250, 0.55);
+}
+
+.empty-state {
+  background: rgba(15, 23, 42, 0.54);
+  border: 1px solid rgba(129, 140, 248, 0.18);
+  border-radius: 1.5rem;
+}
+
+.primary-btn {
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  box-shadow: 0 12px 28px rgba(79, 70, 229, 0.32);
+}
+
+.primary-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 38px rgba(124, 58, 237, 0.4);
+}
+
+.pagination-btn {
+  color: #cbd5e1;
+  background: rgba(15, 23, 42, 0.72);
+  border: 1px solid rgba(129, 140, 248, 0.24);
+}
+
+.pagination-btn:hover:not(:disabled) {
+  color: #ffffff;
+  background: rgba(79, 70, 229, 0.24);
+  border-color: rgba(167, 139, 250, 0.45);
+}
+
+.pagination-active {
+  color: #ffffff;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  border-color: rgba(167, 139, 250, 0.55);
+}
+
+.pagination-disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+/* Force ProductCard inside catalog to follow dark theme */
+.product-grid :deep(article),
+.product-grid :deep(.product-card),
+.product-grid :deep(.card),
+.product-grid :deep([class*="card"]) {
+  color: #f8fafc !important;
+  background:
+    linear-gradient(135deg, rgba(15, 23, 42, 0.94), rgba(30, 27, 75, 0.84)) !important;
+  border-color: rgba(129, 140, 248, 0.22) !important;
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.24) !important;
+}
+
+.product-grid :deep(article:hover),
+.product-grid :deep(.product-card:hover),
+.product-grid :deep(.card:hover),
+.product-grid :deep([class*="card"]:hover) {
+  border-color: rgba(167, 139, 250, 0.48) !important;
+  box-shadow: 0 24px 60px rgba(79, 70, 229, 0.18) !important;
+}
+
+.product-grid :deep([style*="background: #fff"]),
+.product-grid :deep([style*="background:#fff"]),
+.product-grid :deep([style*="background: #f8fafc"]),
+.product-grid :deep([style*="background:#f8fafc"]),
+.product-grid :deep([style*="background: #f1f5f9"]),
+.product-grid :deep([style*="background:#f1f5f9"]) {
+  background: rgba(226, 232, 240, 0.08) !important;
+}
+
+.product-grid :deep([style*="color: #0f172a"]),
+.product-grid :deep([style*="color:#0f172a"]),
+.product-grid :deep([style*="color: #111827"]),
+.product-grid :deep([style*="color:#111827"]),
+.product-grid :deep([style*="color: #1e293b"]),
+.product-grid :deep([style*="color:#1e293b"]),
+.product-grid :deep([style*="color: #334155"]),
+.product-grid :deep([style*="color:#334155"]),
+.product-grid :deep([style*="color: #374151"]),
+.product-grid :deep([style*="color:#374151"]) {
+  color: #f8fafc !important;
+}
+
+.product-grid :deep([style*="color: #64748b"]),
+.product-grid :deep([style*="color:#64748b"]),
+.product-grid :deep([style*="color: #94a3b8"]),
+.product-grid :deep([style*="color:#94a3b8"]),
+.product-grid :deep(.text-gray-500),
+.product-grid :deep(.text-slate-500) {
+  color: #94a3b8 !important;
+}
+
+.product-grid :deep([style*="color: #4f46e5"]),
+.product-grid :deep([style*="color:#4f46e5"]) {
+  color: #a78bfa !important;
+}
+
+.product-grid :deep(button) {
+  color: #ffffff !important;
+}
+
+.product-grid :deep(img) {
+  background: transparent !important;
+}
+</style>
