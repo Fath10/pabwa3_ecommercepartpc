@@ -16,7 +16,7 @@
       </div>
 
       <!-- Empty Cart Guard -->
-      <div v-if="cartStore.items.length === 0" class="text-center py-24">
+      <div v-if="checkoutItems.length === 0" class="text-center py-24">
         <div class="w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-6" style="background: rgba(79,70,229,0.08); border: 2px dashed rgba(79,70,229,0.2);">
           <svg class="w-10 h-10" style="color: #4f46e5;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -44,12 +44,12 @@
                 </svg>
               </div>
               <h2 class="font-black text-base" style="color: #111827;">Detail Barang</h2>
-              <span class="ml-auto text-xs px-2 py-0.5 rounded-full font-semibold" style="background: #ede9fe; color: #4f46e5;">{{ cartStore.totalItems }} item</span>
+              <span class="ml-auto text-xs px-2 py-0.5 rounded-full font-semibold" style="background: #ede9fe; color: #4f46e5;">{{ checkoutTotalItems }} item</span>
             </div>
 
             <div class="divide-y" style="border-color: #f9fafb;">
               <div
-                v-for="item in cartStore.items"
+                v-for="item in checkoutItems"
                 :key="item.id"
                 class="flex gap-4 px-6 py-4 hover:bg-gray-50 transition-colors duration-150"
               >
@@ -212,8 +212,8 @@
               </div>
               <div class="px-6 py-5 space-y-3">
                 <div class="flex justify-between text-sm">
-                  <span style="color: #6b7280;">Subtotal ({{ cartStore.totalItems }} item)</span>
-                  <span class="font-semibold" style="color: #111827;">{{ formatPrice(cartStore.totalPrice) }}</span>
+                  <span style="color: #6b7280;">Subtotal ({{ checkoutTotalItems }} item)</span>
+                  <span class="font-semibold" style="color: #111827;">{{ formatPrice(checkoutTotalPrice) }}</span>
                 </div>
                 <div class="flex justify-between text-sm">
                   <span style="color: #6b7280;">Ongkos Kirim</span>
@@ -223,7 +223,7 @@
                 </div>
                 <div class="flex justify-between text-sm">
                   <span style="color: #6b7280;">Pajak (11%)</span>
-                  <span class="font-semibold" style="color: #111827;">{{ formatPrice(cartStore.totalPrice * 0.11) }}</span>
+                  <span class="font-semibold" style="color: #111827;">{{ formatPrice(checkoutTotalPrice * 0.11) }}</span>
                 </div>
                 <div class="pt-3" style="border-top: 1px solid #f3f4f6;">
                   <div class="flex justify-between items-center">
@@ -350,7 +350,34 @@ import { ref, computed, onMounted } from 'vue'
 import { cartStore, formatPrice } from '../store.js'
 import { orderApi } from '../api/index.js'
 
-onMounted(() => cartStore.fetch())
+const selectedCheckoutIds = ref([])
+
+const checkoutItems = computed(() => {
+  if (selectedCheckoutIds.value.length === 0) {
+    return cartStore.items
+  }
+  return cartStore.items.filter(item => selectedCheckoutIds.value.includes(item.id))
+})
+
+const checkoutTotalItems = computed(() => {
+  return checkoutItems.value.reduce((sum, item) => sum + item.quantity, 0)
+})
+
+const checkoutTotalPrice = computed(() => {
+  return checkoutItems.value.reduce((sum, item) => sum + item.price * item.quantity, 0)
+})
+
+onMounted(() => {
+  const saved = localStorage.getItem('selected_checkout_items')
+  if (saved) {
+    try {
+      selectedCheckoutIds.value = JSON.parse(saved)
+    } catch {
+      selectedCheckoutIds.value = []
+    }
+  }
+  cartStore.fetch()
+})
 
 // ─── Kurir dengan SVG logo ───
 const couriers = [
@@ -535,7 +562,7 @@ const selectedPaymentData = computed(() => paymentMethods.find(m => m.id === sel
 
 const grandTotal = computed(() => {
   const shippingCost = selectedCourierData.value?.price ?? 0
-  return cartStore.totalPrice * 1.11 + shippingCost
+  return checkoutTotalPrice.value * 1.11 + shippingCost
 })
 
 const canCheckout = computed(
@@ -549,9 +576,10 @@ async function handleConfirmCheckout() {
   try {
     // Server creates the order from the authenticated user's cart,
     // decrements stock, and clears the server-side cart.
-    const result = await orderApi.checkout()
+    const result = await orderApi.checkout(selectedCheckoutIds.value)
     placedOrder.value = result?.order || null
-    await cartStore.fetch() // cart is now empty on the server
+    localStorage.removeItem('selected_checkout_items')
+    await cartStore.fetch() // cart has now removed these items on the server
     showSuccess.value = true
   } catch (err) {
     checkoutError.value =

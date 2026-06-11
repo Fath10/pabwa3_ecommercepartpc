@@ -16,6 +16,11 @@ import CheckoutPage from './views/CheckoutPage.vue'
 import LoginPage from './views/LoginPage.vue'
 import RegisterPage from './views/RegisterPage.vue'
 import ProductDetailPage from './views/ProductDetailPage.vue'
+import ProfilePage from './views/ProfilePage.vue'
+import OrderDetailPage from './views/OrderDetailPage.vue'
+import ForgotPasswordPage from './views/ForgotPasswordPage.vue'
+import ResetPasswordPage from './views/ResetPasswordPage.vue'
+import NotFoundPage from './views/NotFoundPage.vue'
 
 import AdminDashboard from './views/admin/AdminDashboard.vue'
 import AdminProducts from './views/admin/AdminProducts.vue'
@@ -97,10 +102,44 @@ const router = createRouter({
       },
     },
     {
+      path: '/forgot-password',
+      component: ForgotPasswordPage,
+      meta: {
+        title: 'e-BuildPC | Lupa Password',
+      },
+    },
+    {
+      path: '/reset-password/:token',
+      component: ResetPasswordPage,
+      meta: {
+        title: 'e-BuildPC | Reset Password',
+      },
+    },
+    {
       path: '/produk/:id',
       component: ProductDetailPage,
       meta: {
         title: 'e-BuildPC | Detail Produk',
+      },
+    },
+    {
+      path: '/profile',
+      component: ProfilePage,
+      meta: {
+        title: 'e-BuildPC | Profil Saya',
+        requiresAuth: true,
+      },
+    },
+    {
+      path: '/orders',
+      redirect: '/profile',
+    },
+    {
+      path: '/orders/:id',
+      component: OrderDetailPage,
+      meta: {
+        title: 'e-BuildPC | Detail Pesanan',
+        requiresAuth: true,
       },
     },
 
@@ -138,6 +177,14 @@ const router = createRouter({
         title: 'e-BuildPC | Kelola Pengguna',
         requiresAuth: true,
         adminOnly: true,
+      },
+    },
+
+    {
+      path: '/:pathMatch(.*)*',
+      component: NotFoundPage,
+      meta: {
+        title: 'e-BuildPC | Halaman Tidak Ditemukan',
       },
     },
   ],

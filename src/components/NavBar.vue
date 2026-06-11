@@ -126,55 +126,6 @@
 
         <div class="flex items-center gap-1 flex-shrink-0 ml-auto md:ml-0">
           <RouterLink
-            v-if="!userStore.isLoggedIn"
-            id="account-btn"
-            to="/login"
-            title="Login / Akun Saya"
-            class="flex items-center gap-1.5 px-3 h-9 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-all duration-150 text-sm font-medium"
-          >
-            <svg
-              class="w-4 h-4 flex-shrink-0"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              stroke-width="1.8"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-              />
-            </svg>
-
-            <span class="hidden sm:inline">Login</span>
-          </RouterLink>
-
-          <div v-else class="flex items-center gap-2">
-            <span class="text-xs text-gray-300 hidden lg:inline">
-              Halo,
-              <strong class="text-white">
-                {{ userStore.user?.name }}
-              </strong>
-            </span>
-
-            <span
-              v-if="isAdmin"
-              class="hidden lg:inline px-2 py-1 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30"
-            >
-              ADMIN
-            </span>
-
-            <button
-              @click="handleLogout"
-              id="logout-btn"
-              title="Logout"
-              class="flex items-center gap-1.5 px-3 h-9 rounded-lg text-rose-400 hover:text-rose-300 hover:bg-rose-950/20 border border-rose-500/20 transition-all duration-150 text-xs font-semibold"
-            >
-              🚪 <span class="hidden sm:inline">Keluar</span>
-            </button>
-          </div>
-
-          <RouterLink
             v-if="!isAdmin"
             to="/cart"
             id="cart-btn"
@@ -205,6 +156,78 @@
               </span>
             </Transition>
           </RouterLink>
+
+          <RouterLink
+            v-if="!userStore.isLoggedIn"
+            id="account-btn"
+            to="/login"
+            title="Login / Akun Saya"
+            class="flex items-center gap-1.5 px-3 h-9 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-all duration-150 text-sm font-medium"
+          >
+            <svg
+              class="w-4 h-4 flex-shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="1.8"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+              />
+            </svg>
+
+            <span class="hidden sm:inline">Login</span>
+          </RouterLink>
+
+          <div v-else class="flex items-center gap-2">
+            <RouterLink
+              to="/profile"
+              class="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-white/5 transition-all duration-200"
+              title="Profil Saya"
+            >
+              <img
+                v-if="userStore.user?.avatar_url"
+                :src="assetUrl(userStore.user.avatar_url)"
+                :alt="userStore.user?.name || 'User'"
+                class="w-8 h-8 rounded-full object-cover border border-gray-600"
+              />
+
+              <div
+                v-else
+                class="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-gray-300 border border-gray-600"
+              >
+                <svg
+                  class="w-4 h-4"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                </svg>
+              </div>
+
+              <span class="text-xs font-bold text-white hidden sm:inline max-w-28 truncate">
+                {{ userStore.user?.name }}
+              </span>
+            </RouterLink>
+
+            <span
+              v-if="isAdmin"
+              class="hidden lg:inline px-2 py-1 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30"
+            >
+              ADMIN
+            </span>
+
+            <button
+              @click="handleLogout"
+              id="logout-btn"
+              title="Logout"
+              class="flex items-center gap-1.5 px-3 h-9 rounded-lg text-rose-400 hover:text-rose-300 hover:bg-rose-950/20 border border-rose-500/20 transition-all duration-150 text-xs font-semibold"
+            >
+              🚪 <span class="hidden sm:inline">Keluar</span>
+            </button>
+          </div>
 
           <button
             @click="mobileMenuOpen = !mobileMenuOpen"
@@ -261,6 +284,32 @@
           >
             {{ link.label }}
           </RouterLink>
+
+          <RouterLink
+            v-if="userStore.isLoggedIn"
+            to="/profile"
+            @click="mobileMenuOpen = false"
+            class="block px-3 py-2.5 text-sm font-medium rounded-lg mb-0.5 text-gray-400 hover:text-white hover:bg-white/5 transition-all"
+          >
+            Profil Saya
+          </RouterLink>
+
+          <RouterLink
+            v-if="!userStore.isLoggedIn"
+            to="/login"
+            @click="mobileMenuOpen = false"
+            class="block px-3 py-2.5 text-sm font-medium rounded-lg mb-0.5 text-gray-400 hover:text-white hover:bg-white/5 transition-all"
+          >
+            Login
+          </RouterLink>
+
+          <button
+            v-if="userStore.isLoggedIn"
+            @click="handleLogout"
+            class="w-full text-left block px-3 py-2.5 text-sm font-medium rounded-lg mb-0.5 text-rose-400 hover:text-rose-300 hover:bg-rose-950/20 transition-all"
+          >
+            Keluar
+          </button>
         </div>
       </Transition>
     </div>
@@ -271,6 +320,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { userStore, productStore, formatPrice } from '../store.js'
+import { assetUrl } from '../api/index.js'
 
 defineProps({
   cartCount: {
@@ -384,7 +434,7 @@ onUnmounted(() => {
 
 <style scoped>
 .badge-enter-active {
-  animation: badgeIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  animation: badgeIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .badge-leave-active {

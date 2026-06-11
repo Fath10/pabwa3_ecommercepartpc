@@ -90,12 +90,12 @@
                   Password
                 </label>
 
-                <a
-                  href="#"
+                <RouterLink
+                  to="/forgot-password"
                   class="text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
                 >
                   Lupa password?
-                </a>
+                </RouterLink>
               </div>
 
               <div class="relative">
@@ -229,6 +229,14 @@
 
           <div class="flex items-center gap-3 my-6">
             <div class="flex-1 h-px" style="background: rgba(255,255,255,0.08);"></div>
+            <span class="text-xs text-gray-500">Atau masuk dengan</span>
+            <div class="flex-1 h-px" style="background: rgba(255,255,255,0.08);"></div>
+          </div>
+
+          <div id="google-button-div" class="w-full flex justify-center mb-6"></div>
+
+          <div class="flex items-center gap-3 my-6">
+            <div class="flex-1 h-px" style="background: rgba(255,255,255,0.08);"></div>
             <span class="text-xs text-gray-500">Belum punya akun?</span>
             <div class="flex-1 h-px" style="background: rgba(255,255,255,0.08);"></div>
           </div>
@@ -248,7 +256,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { userStore } from '../store.js'
 import { authApi } from '../api/index.js'
@@ -264,6 +272,93 @@ const form = ref({
 const showPassword = ref(false)
 const isLoading = ref(false)
 const errorMsg = ref('')
+
+function getSafeRedirect(user) {
+  const redirectPath = typeof route.query.redirect === 'string'
+    ? route.query.redirect
+    : ''
+
+  if (user?.role === 'admin') {
+    return '/admin'
+  }
+
+  if (redirectPath && !redirectPath.startsWith('/admin')) {
+    return redirectPath
+  }
+
+  return '/'
+}
+
+onMounted(() => {
+  if (window.google?.accounts?.id) {
+    renderGoogleButton()
+    return
+  }
+
+  const existingScript = document.querySelector('script[src="https://accounts.google.com/gsi/client"]')
+
+  if (existingScript) {
+    existingScript.addEventListener('load', renderGoogleButton, { once: true })
+    return
+  }
+
+  const script = document.createElement('script')
+  script.src = 'https://accounts.google.com/gsi/client'
+  script.async = true
+  script.defer = true
+  script.onload = renderGoogleButton
+  document.head.appendChild(script)
+})
+
+function renderGoogleButton() {
+  if (!window.google?.accounts?.id) return
+
+  const clientId =
+    import.meta.env.VITE_GOOGLE_CLIENT_ID ||
+    '1021469795034-uop92vjk1i4cdmb21rsmttbplsh9rscu.apps.googleusercontent.com'
+
+  window.google.accounts.id.initialize({
+    client_id: clientId,
+    callback: handleGoogleCallback,
+  })
+
+  const btnContainer = document.getElementById('google-button-div')
+
+  if (btnContainer) {
+    btnContainer.innerHTML = ''
+    window.google.accounts.id.renderButton(btnContainer, {
+      theme: 'filled_black',
+      size: 'large',
+      width: 320,
+      shape: 'rectangular',
+    })
+  }
+}
+
+async function handleGoogleCallback(response) {
+  try {
+    isLoading.value = true
+    errorMsg.value = ''
+
+    const data = await authApi.googleLogin(response.credential)
+
+    if (!data?.token || !data?.user) {
+      throw new Error('Respons login Google tidak valid.')
+    }
+
+    await userStore.login(data.user, data.token)
+
+    router.push(getSafeRedirect(data.user))
+  } catch (err) {
+    console.error('Error saat login Google:', err)
+    errorMsg.value =
+      err.data?.message ||
+      err.message ||
+      'Login dengan Google gagal.'
+  } finally {
+    isLoading.value = false
+  }
+}
 
 async function handleLogin() {
   errorMsg.value = ''
@@ -281,17 +376,7 @@ async function handleLogin() {
 
     await userStore.login(data.user, data.token)
 
-    const redirectPath = typeof route.query.redirect === 'string'
-      ? route.query.redirect
-      : ''
-
-    if (data.user?.role === 'admin') {
-      router.push('/admin')
-    } else if (redirectPath && !redirectPath.startsWith('/admin')) {
-      router.push(redirectPath)
-    } else {
-      router.push('/')
-    }
+    router.push(getSafeRedirect(data.user))
   } catch (error) {
     console.error('Error saat login:', error)
 

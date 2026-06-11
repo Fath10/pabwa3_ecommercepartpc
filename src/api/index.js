@@ -68,7 +68,11 @@ export function normalizeProductDetail(p) {
 export const authApi = {
   register: (payload) => http.post('/api/auth/register', payload),
   login: (payload) => http.post('/api/auth/login', payload),
+  googleLogin: (token) => http.post('/api/auth/google', { token }),
   me: () => http.get('/api/auth/me', { auth: true }),
+  updateProfile: (formData) => http.put('/api/auth/profile', formData, { auth: true }),
+  forgotPassword: (payload) => http.post('/api/auth/forgot-password', payload),
+  resetPassword: (payload) => http.post('/api/auth/reset-password', payload),
 }
 
 // ── Products ──────────────────────────────────────────
@@ -121,7 +125,7 @@ export const cartApi = {
 
 // ── Orders ────────────────────────────────────────────
 export const orderApi = {
-  checkout: () => http.post('/api/orders/checkout', {}, { auth: true }),
+  checkout: (productIds) => http.post('/api/orders/checkout', { product_ids: productIds }, { auth: true }),
   list: () => http.get('/api/orders', { auth: true }),
   get: (id) => http.get(`/api/orders/${id}`, { auth: true }),
   // Admin order status transitions.

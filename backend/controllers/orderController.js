@@ -5,37 +5,39 @@ export const checkout = async (req, res) => {
 
   try {
     const user_id = req.user.user_id;
+    const { product_ids } = req.body;
 
     await client.query("BEGIN");
 
-    const cartResult = await client.query(
-      `
+    let cartQuery = `
       SELECT
         c.cart_id,
         c.quantity,
-
         p.product_id,
         p.product_name,
         p.price,
         p.stock
-
       FROM carts c
-
       JOIN products p
       ON c.product_id = p.product_id
-
       WHERE c.user_id = $1
-      `,
-      [user_id]
-    );
+    `;
 
+    const queryParams = [user_id];
+
+    if (product_ids && Array.isArray(product_ids) && product_ids.length > 0) {
+      cartQuery += ` AND p.product_id = ANY($2::int[])`;
+      queryParams.push(product_ids.map(Number));
+    }
+
+    const cartResult = await client.query(cartQuery, queryParams);
     const cartItems = cartResult.rows;
 
     if (cartItems.length === 0) {
       await client.query("ROLLBACK");
 
       return res.status(400).json({
-        message: "Keranjang kosong",
+        message: "Keranjang kosong atau item yang dipilih tidak valid",
       });
     }
 
@@ -78,10 +80,7 @@ export const checkout = async (req, res) => {
       )
       RETURNING *
       `,
-      [
-        user_id,
-        totalAmount,
-      ]
+      [user_id, totalAmount]
     );
 
     const order = orderResult.rows[0];
@@ -125,13 +124,24 @@ export const checkout = async (req, res) => {
       );
     }
 
-    await client.query(
-      `
-      DELETE FROM carts
-      WHERE user_id = $1
-      `,
-      [user_id]
-    );
+    if (product_ids && Array.isArray(product_ids) && product_ids.length > 0) {
+      await client.query(
+        `
+        DELETE FROM carts
+        WHERE user_id = $1
+        AND product_id = ANY($2::int[])
+        `,
+        [user_id, product_ids.map(Number)]
+      );
+    } else {
+      await client.query(
+        `
+        DELETE FROM carts
+        WHERE user_id = $1
+        `,
+        [user_id]
+      );
+    }
 
     await client.query("COMMIT");
 
@@ -288,10 +298,7 @@ export const getOrders = async (req, res) => {
       ? []
       : [req.user.user_id];
 
-    const result = await pool.query(
-      query,
-      values
-    );
+    const result = await pool.query(query, values);
 
     return res.json(result.rows);
   } catch (error) {
@@ -335,10 +342,7 @@ export const getOrderById = async (req, res) => {
       ? [id]
       : [id, req.user.user_id];
 
-    const order = await pool.query(
-      orderQuery,
-      orderValues
-    );
+    const order = await pool.query(orderQuery, orderValues);
 
     if (order.rows.length === 0) {
       return res.status(404).json({
