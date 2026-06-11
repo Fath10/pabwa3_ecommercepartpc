@@ -1,81 +1,122 @@
 <template>
-  <main class="pt-20 pb-16 min-h-screen" style="background: #f9fafb;">
+  <main class="checkout-page pt-20 pb-16 min-h-screen">
     <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-
       <!-- Page Header -->
       <div class="mb-10">
-        <RouterLink to="/cart" class="inline-flex items-center gap-2 text-sm mb-6 transition-all duration-200 hover:-translate-x-1" style="color: #6b7280;">
+        <RouterLink
+          to="/cart"
+          class="back-link inline-flex items-center gap-2 text-sm mb-6 transition-all duration-200 hover:-translate-x-1"
+        >
           ← Kembali ke Keranjang
         </RouterLink>
+
         <div>
-          <h1 class="text-3xl font-black mb-1" style="color: #111827;">
-            Konfirmasi <span style="background: linear-gradient(135deg, #4f46e5, #7c3aed); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Pesanan</span>
+          <h1 class="page-title text-3xl font-black mb-1">
+            Konfirmasi <span class="gradient-text">Pesanan</span>
           </h1>
-          <p class="text-sm" style="color: #6b7280;">Lengkapi informasi pengiriman dan pembayaran Anda</p>
+          <p class="page-muted text-sm">
+            Lengkapi informasi pengiriman dan pembayaran Anda
+          </p>
         </div>
       </div>
 
       <!-- Empty Cart Guard -->
-      <div v-if="checkoutItems.length === 0" class="text-center py-24">
-        <div class="w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-6" style="background: rgba(79,70,229,0.08); border: 2px dashed rgba(79,70,229,0.2);">
-          <svg class="w-10 h-10" style="color: #4f46e5;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+      <div v-if="checkoutItems.length === 0" class="empty-state text-center py-24">
+        <div class="empty-icon w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-6">
+          <svg class="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+            />
           </svg>
         </div>
-        <h2 class="text-xl font-black mb-3" style="color: #111827;">Keranjang Anda Kosong</h2>
-        <p class="text-sm mb-6" style="color: #6b7280;">Tidak ada produk yang bisa di-checkout.</p>
-        <RouterLink to="/katalog" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-white font-bold" style="background: linear-gradient(135deg, #4f46e5, #7c3aed);">
+
+        <h2 class="page-title text-xl font-black mb-3">
+          Keranjang Anda Kosong
+        </h2>
+
+        <p class="page-muted text-sm mb-6">
+          Tidak ada produk yang bisa di-checkout.
+        </p>
+
+        <RouterLink
+          to="/katalog"
+          class="primary-btn inline-flex items-center gap-2 px-6 py-3 rounded-xl text-white font-bold"
+        >
           Belanja Sekarang
         </RouterLink>
       </div>
 
       <!-- Checkout Content -->
       <div v-else class="grid lg:grid-cols-5 gap-8">
-
         <!-- LEFT COLUMN -->
         <div class="lg:col-span-3 space-y-6">
-
-          <!-- ─── DETAIL BARANG ─── -->
-          <section class="rounded-2xl bg-white overflow-hidden" style="border: 1px solid #e5e7eb; box-shadow: 0 2px 12px rgba(0,0,0,0.05);">
-            <div class="px-6 py-4 flex items-center gap-3" style="border-bottom: 1px solid #f3f4f6;">
-              <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: rgba(79,70,229,0.1);">
-                <svg class="w-4 h-4" style="color: #4f46e5;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <!-- Detail Barang -->
+          <section class="panel-card rounded-2xl overflow-hidden">
+            <div class="panel-header px-6 py-4 flex items-center gap-3">
+              <div class="icon-box icon-purple w-8 h-8 rounded-lg flex items-center justify-center">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                 </svg>
               </div>
-              <h2 class="font-black text-base" style="color: #111827;">Detail Barang</h2>
-              <span class="ml-auto text-xs px-2 py-0.5 rounded-full font-semibold" style="background: #ede9fe; color: #4f46e5;">{{ checkoutTotalItems }} item</span>
+
+              <h2 class="page-title font-black text-base">
+                Detail Barang
+              </h2>
+
+              <span class="status-pill status-purple ml-auto text-xs px-2 py-0.5 rounded-full font-semibold">
+                {{ checkoutTotalItems }} item
+              </span>
             </div>
 
-            <div class="divide-y" style="border-color: #f9fafb;">
+            <div class="divide-y checkout-divide">
               <div
                 v-for="item in checkoutItems"
                 :key="item.id"
-                class="flex gap-4 px-6 py-4 hover:bg-gray-50 transition-colors duration-150"
+                class="checkout-item flex gap-4 px-6 py-4 transition-colors duration-150"
               >
-                <div class="w-20 h-20 rounded-xl flex-shrink-0 flex items-center justify-center" style="background: #f1f5f9;">
+                <div class="item-image w-20 h-20 rounded-xl flex-shrink-0 flex items-center justify-center">
                   <img :src="item.image" :alt="item.name" class="w-full h-full object-contain p-2" />
                 </div>
+
                 <div class="flex-1 min-w-0">
-                  <span class="inline-block text-xs font-semibold px-2 py-0.5 rounded-full mb-1.5" style="background: #ede9fe; color: #6366f1;">{{ item.category }}</span>
-                  <h3 class="font-bold text-sm line-clamp-2 leading-snug mb-1" style="color: #111827;">{{ item.name }}</h3>
+                  <span class="status-pill status-purple inline-block text-xs font-semibold px-2 py-0.5 rounded-full mb-1.5">
+                    {{ item.category }}
+                  </span>
+
+                  <h3 class="page-title font-bold text-sm line-clamp-2 leading-snug mb-1">
+                    {{ item.name }}
+                  </h3>
+
                   <div v-if="item.specs && item.specs.length" class="flex flex-wrap gap-1 mb-2">
-                    <span v-for="spec in item.specs.slice(0, 2)" :key="spec" class="text-xs px-1.5 py-0.5 rounded" style="background: #f1f5f9; color: #6b7280;">{{ spec }}</span>
+                    <span
+                      v-for="spec in item.specs.slice(0, 2)"
+                      :key="spec"
+                      class="spec-chip text-xs px-1.5 py-0.5 rounded"
+                    >
+                      {{ spec }}
+                    </span>
                   </div>
+
                   <div class="flex items-center gap-3 flex-wrap">
                     <div>
-                      <p class="text-xs" style="color: #9ca3af;">Harga Satuan</p>
-                      <p class="font-bold text-sm" style="color: #4f46e5;">{{ formatPrice(item.price) }}</p>
+                      <p class="page-muted text-xs">Harga Satuan</p>
+                      <p class="price-text font-bold text-sm">{{ formatPrice(item.price) }}</p>
                     </div>
-                    <div class="w-px h-8" style="background: #e5e7eb;"></div>
+
+                    <div class="mini-divider w-px h-8"></div>
+
                     <div>
-                      <p class="text-xs" style="color: #9ca3af;">Jumlah</p>
-                      <p class="font-bold text-sm" style="color: #111827;">{{ item.quantity }} pcs</p>
+                      <p class="page-muted text-xs">Jumlah</p>
+                      <p class="page-title font-bold text-sm">{{ item.quantity }} pcs</p>
                     </div>
-                    <div class="w-px h-8" style="background: #e5e7eb;"></div>
+
+                    <div class="mini-divider w-px h-8"></div>
+
                     <div>
-                      <p class="text-xs" style="color: #9ca3af;">Subtotal</p>
-                      <p class="font-bold text-sm" style="color: #111827;">{{ formatPrice(item.price * item.quantity) }}</p>
+                      <p class="page-muted text-xs">Subtotal</p>
+                      <p class="page-title font-bold text-sm">{{ formatPrice(item.price * item.quantity) }}</p>
                     </div>
                   </div>
                 </div>
@@ -83,17 +124,36 @@
             </div>
           </section>
 
-          <!-- ─── PILIHAN KURIR ─── -->
-          <section class="rounded-2xl bg-white overflow-hidden" style="border: 1px solid #e5e7eb; box-shadow: 0 2px 12px rgba(0,0,0,0.05);">
-            <div class="px-6 py-4 flex items-center gap-3" style="border-bottom: 1px solid #f3f4f6;">
-              <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: rgba(16,185,129,0.1);">
-                <svg class="w-4 h-4" style="color: #10b981;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
+          <!-- Pilihan Kurir -->
+          <section class="panel-card rounded-2xl overflow-hidden">
+            <div class="panel-header px-6 py-4 flex items-center gap-3">
+              <div class="icon-box icon-green w-8 h-8 rounded-lg flex items-center justify-center">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"
+                  />
                 </svg>
               </div>
-              <h2 class="font-black text-base" style="color: #111827;">Pilihan Kurir</h2>
-              <span v-if="!selectedCourier" class="ml-auto text-xs px-2 py-0.5 rounded-full font-semibold" style="background: #fef3c7; color: #d97706;">Wajib dipilih</span>
-              <span v-else class="ml-auto text-xs px-2 py-0.5 rounded-full font-semibold" style="background: #d1fae5; color: #059669;">Terpilih</span>
+
+              <h2 class="page-title font-black text-base">
+                Pilihan Kurir
+              </h2>
+
+              <span
+                v-if="!selectedCourier"
+                class="status-pill status-warning ml-auto text-xs px-2 py-0.5 rounded-full font-semibold"
+              >
+                Wajib dipilih
+              </span>
+
+              <span
+                v-else
+                class="status-pill status-success ml-auto text-xs px-2 py-0.5 rounded-full font-semibold"
+              >
+                Terpilih
+              </span>
             </div>
 
             <div class="p-5 grid grid-cols-2 gap-3">
@@ -101,33 +161,30 @@
                 v-for="courier in couriers"
                 :key="courier.id"
                 :id="`courier-${courier.id}`"
-                class="relative flex flex-col rounded-xl cursor-pointer transition-all duration-200 select-none overflow-hidden"
-                :style="selectedCourier === courier.id
-                  ? 'border: 2px solid #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,0.12);'
-                  : 'border: 1.5px solid #e5e7eb;'"
+                class="option-card relative flex flex-col rounded-xl cursor-pointer transition-all duration-200 select-none overflow-hidden"
+                :class="selectedCourier === courier.id ? 'option-selected' : ''"
               >
                 <input type="radio" v-model="selectedCourier" :value="courier.id" class="hidden" />
 
-                <!-- Logo Header -->
-                <div class="flex items-center justify-between px-4 py-3" :style="`background: ${courier.headerBg};`">
-                  <!-- SVG Logo -->
+                <div class="flex items-center justify-between px-4 py-3 courier-logo-area" :style="`background: ${courier.headerBg};`">
                   <div class="h-7 flex items-center" v-html="courier.svgLogo"></div>
-                  <!-- Selected checkmark -->
-                  <div v-if="selectedCourier === courier.id"
-                    class="w-5 h-5 rounded-full flex items-center justify-center"
-                    style="background: #4f46e5;">
+
+                  <div
+                    v-if="selectedCourier === courier.id"
+                    class="selected-dot w-5 h-5 rounded-full flex items-center justify-center"
+                  >
                     <svg class="w-3 h-3" fill="none" stroke="white" stroke-width="3" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
                     </svg>
                   </div>
-                  <div v-else class="w-5 h-5 rounded-full border-2" style="border-color: #d1d5db;"></div>
+
+                  <div v-else class="empty-dot w-5 h-5 rounded-full border-2"></div>
                 </div>
 
-                <!-- Info Footer -->
-                <div class="px-4 py-2.5" style="background: #fff;">
+                <div class="option-footer px-4 py-2.5">
                   <div class="flex items-center justify-between">
-                    <p class="text-xs font-semibold" style="color: #4f46e5;">{{ courier.eta }}</p>
-                    <p class="font-black text-sm" :style="courier.price === 0 ? 'color: #10b981;' : 'color: #111827;'">
+                    <p class="text-xs font-semibold option-subtitle">{{ courier.eta }}</p>
+                    <p class="font-black text-sm" :class="courier.price === 0 ? 'success-text' : 'page-title'">
                       {{ courier.price === 0 ? 'Gratis' : formatPrice(courier.price) }}
                     </p>
                   </div>
@@ -136,30 +193,42 @@
             </div>
           </section>
 
-          <!-- ─── METODE PEMBAYARAN ─── -->
-          <section class="rounded-2xl bg-white overflow-hidden" style="border: 1px solid #e5e7eb; box-shadow: 0 2px 12px rgba(0,0,0,0.05);">
-            <div class="px-6 py-4 flex items-center gap-3" style="border-bottom: 1px solid #f3f4f6;">
-              <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: rgba(245,158,11,0.1);">
-                <svg class="w-4 h-4" style="color: #f59e0b;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <!-- Metode Pembayaran -->
+          <section class="panel-card rounded-2xl overflow-hidden">
+            <div class="panel-header px-6 py-4 flex items-center gap-3">
+              <div class="icon-box icon-orange w-8 h-8 rounded-lg flex items-center justify-center">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                 </svg>
               </div>
-              <h2 class="font-black text-base" style="color: #111827;">Metode Pembayaran</h2>
-              <span v-if="!selectedPayment" class="ml-auto text-xs px-2 py-0.5 rounded-full font-semibold" style="background: #fef3c7; color: #d97706;">Wajib dipilih</span>
-              <span v-else class="ml-auto text-xs px-2 py-0.5 rounded-full font-semibold" style="background: #d1fae5; color: #059669;">Terpilih</span>
+
+              <h2 class="page-title font-black text-base">
+                Metode Pembayaran
+              </h2>
+
+              <span
+                v-if="!selectedPayment"
+                class="status-pill status-warning ml-auto text-xs px-2 py-0.5 rounded-full font-semibold"
+              >
+                Wajib dipilih
+              </span>
+
+              <span
+                v-else
+                class="status-pill status-success ml-auto text-xs px-2 py-0.5 rounded-full font-semibold"
+              >
+                Terpilih
+              </span>
             </div>
 
-            <!-- Payment Tabs -->
             <div class="px-5 pt-4">
               <div class="flex gap-2 mb-4 overflow-x-auto pb-1">
                 <button
                   v-for="tab in paymentTabs"
                   :key="tab.id"
                   @click="activePaymentTab = tab.id"
-                  class="px-4 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all duration-200 flex-shrink-0"
-                  :style="activePaymentTab === tab.id
-                    ? 'background: #4f46e5; color: #fff;'
-                    : 'background: #f3f4f6; color: #6b7280;'"
+                  class="payment-tab px-4 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all duration-200 flex-shrink-0"
+                  :class="activePaymentTab === tab.id ? 'payment-tab-active' : ''"
                 >
                   {{ tab.label }}
                 </button>
@@ -170,100 +239,117 @@
                   v-for="method in filteredPaymentMethods"
                   :key="method.id"
                   :id="`pay-${method.id}`"
-                  class="relative flex flex-col items-center rounded-xl cursor-pointer transition-all duration-200 select-none overflow-hidden"
-                  :style="selectedPayment === method.id
-                    ? 'border: 2px solid #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,0.12);'
-                    : 'border: 1.5px solid #e5e7eb;'"
+                  class="option-card relative flex flex-col items-center rounded-xl cursor-pointer transition-all duration-200 select-none overflow-hidden"
+                  :class="selectedPayment === method.id ? 'option-selected' : ''"
                 >
                   <input type="radio" v-model="selectedPayment" :value="method.id" class="hidden" />
 
-                  <!-- Selected badge -->
-                  <div v-if="selectedPayment === method.id"
-                    class="absolute top-1.5 right-1.5 w-4 h-4 rounded-full flex items-center justify-center z-10"
-                    style="background: #4f46e5;">
+                  <div
+                    v-if="selectedPayment === method.id"
+                    class="selected-dot absolute top-1.5 right-1.5 w-4 h-4 rounded-full flex items-center justify-center z-10"
+                  >
                     <svg class="w-2.5 h-2.5" fill="none" stroke="white" stroke-width="3" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
                     </svg>
                   </div>
 
-                  <!-- Logo area -->
-                  <div class="w-full flex items-center justify-center py-3 px-2" :style="`background: ${method.bg}; min-height: 60px;`" v-html="method.svgLogo">
-                  </div>
+                  <div
+                    class="w-full flex items-center justify-center py-3 px-2 payment-logo-area"
+                    :style="`background: ${method.bg}; min-height: 60px;`"
+                    v-html="method.svgLogo"
+                  ></div>
 
-                  <!-- Name -->
-                  <div class="w-full px-2 py-2 text-center" style="background: #fff;">
-                    <p class="text-xs font-bold leading-tight" style="color: #374151;">{{ method.name }}</p>
+                  <div class="option-footer w-full px-2 py-2 text-center">
+                    <p class="page-title text-xs font-bold leading-tight">
+                      {{ method.name }}
+                    </p>
                   </div>
                 </label>
               </div>
             </div>
           </section>
-
         </div>
 
-        <!-- RIGHT COLUMN — Order Summary Sticky -->
+        <!-- RIGHT COLUMN -->
         <div class="lg:col-span-2">
           <div class="sticky top-24 space-y-4">
-
-            <!-- Order Summary Card -->
-            <div class="rounded-2xl bg-white overflow-hidden" style="border: 1px solid #e5e7eb; box-shadow: 0 2px 12px rgba(0,0,0,0.06);">
-              <div class="px-6 py-4" style="border-bottom: 1px solid #f3f4f6;">
-                <h2 class="font-black text-base" style="color: #111827;">Ringkasan Pembayaran</h2>
+            <!-- Order Summary -->
+            <div class="panel-card rounded-2xl overflow-hidden">
+              <div class="panel-header px-6 py-4">
+                <h2 class="page-title font-black text-base">
+                  Ringkasan Pembayaran
+                </h2>
               </div>
+
               <div class="px-6 py-5 space-y-3">
                 <div class="flex justify-between text-sm">
-                  <span style="color: #6b7280;">Subtotal ({{ checkoutTotalItems }} item)</span>
-                  <span class="font-semibold" style="color: #111827;">{{ formatPrice(checkoutTotalPrice) }}</span>
+                  <span class="page-muted">Subtotal ({{ checkoutTotalItems }} item)</span>
+                  <span class="page-title font-semibold">{{ formatPrice(checkoutTotalPrice) }}</span>
                 </div>
+
                 <div class="flex justify-between text-sm">
-                  <span style="color: #6b7280;">Ongkos Kirim</span>
-                  <span class="font-bold" :style="selectedCourierData?.price === 0 ? 'color: #10b981;' : 'color: #111827;'">
+                  <span class="page-muted">Ongkos Kirim</span>
+                  <span class="font-bold" :class="selectedCourierData?.price === 0 ? 'success-text' : 'page-title'">
                     {{ selectedCourierData ? (selectedCourierData.price === 0 ? 'Gratis' : formatPrice(selectedCourierData.price)) : '—' }}
                   </span>
                 </div>
+
                 <div class="flex justify-between text-sm">
-                  <span style="color: #6b7280;">Pajak (11%)</span>
-                  <span class="font-semibold" style="color: #111827;">{{ formatPrice(checkoutTotalPrice * 0.11) }}</span>
+                  <span class="page-muted">Pajak (11%)</span>
+                  <span class="page-title font-semibold">{{ formatPrice(checkoutTotalPrice * 0.11) }}</span>
                 </div>
-                <div class="pt-3" style="border-top: 1px solid #f3f4f6;">
+
+                <div class="summary-divider pt-3">
                   <div class="flex justify-between items-center">
-                    <span class="font-bold" style="color: #111827;">Total</span>
-                    <span class="font-black text-xl" style="color: #4f46e5;">{{ formatPrice(grandTotal) }}</span>
+                    <span class="page-title font-bold">Total</span>
+                    <span class="price-text font-black text-xl">{{ formatPrice(grandTotal) }}</span>
                   </div>
                 </div>
               </div>
             </div>
 
             <!-- Checklist Status -->
-            <div class="rounded-2xl bg-white px-6 py-4 space-y-3" style="border: 1px solid #e5e7eb;">
-              <p class="text-xs font-bold" style="color: #6b7280;">STATUS KELENGKAPAN</p>
+            <div class="panel-card rounded-2xl px-6 py-4 space-y-3">
+              <p class="page-muted text-xs font-bold">
+                STATUS KELENGKAPAN
+              </p>
+
               <div class="flex items-center gap-3">
-                <div class="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-300"
-                  :style="selectedCourier ? 'background: #10b981;' : 'background: #e5e7eb;'">
+                <div
+                  class="check-dot w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-300"
+                  :class="selectedCourier ? 'check-dot-active' : ''"
+                >
                   <svg class="w-3 h-3" fill="none" stroke="white" stroke-width="3" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <span class="text-sm" :style="selectedCourier ? 'color: #111827; font-weight: 600;' : 'color: #9ca3af;'">Kurir pengiriman</span>
+
+                <span class="text-sm" :class="selectedCourier ? 'page-title font-semibold' : 'page-muted'">
+                  Kurir pengiriman
+                </span>
               </div>
+
               <div class="flex items-center gap-3">
-                <div class="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-300"
-                  :style="selectedPayment ? 'background: #10b981;' : 'background: #e5e7eb;'">
+                <div
+                  class="check-dot w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-300"
+                  :class="selectedPayment ? 'check-dot-active' : ''"
+                >
                   <svg class="w-3 h-3" fill="none" stroke="white" stroke-width="3" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <span class="text-sm" :style="selectedPayment ? 'color: #111827; font-weight: 600;' : 'color: #9ca3af;'">Metode pembayaran</span>
+
+                <span class="text-sm" :class="selectedPayment ? 'page-title font-semibold' : 'page-muted'">
+                  Metode pembayaran
+                </span>
               </div>
             </div>
 
             <!-- Checkout Button -->
             <div>
-              <!-- Error banner -->
               <div
                 v-if="checkoutError"
-                class="mb-3 px-4 py-3 rounded-xl text-sm font-semibold"
-                style="background: #fef2f2; color: #dc2626; border: 1px solid #fecaca;"
+                class="error-alert mb-3 px-4 py-3 rounded-xl text-sm font-semibold"
               >
                 {{ checkoutError }}
               </div>
@@ -272,69 +358,94 @@
                 id="confirm-checkout-btn"
                 :disabled="!canCheckout"
                 @click="handleConfirmCheckout"
-                class="w-full py-4 rounded-2xl text-white font-black text-base transition-all duration-300 flex items-center justify-center gap-2"
-                :class="canCheckout ? 'hover:-translate-y-1' : ''"
-                :style="canCheckout
-                  ? 'background: linear-gradient(135deg, #4f46e5, #7c3aed); box-shadow: 0 8px 32px rgba(79,70,229,0.3); cursor: pointer;'
-                  : 'background: #d1d5db; cursor: not-allowed; box-shadow: none;'"
+                class="confirm-btn w-full py-4 rounded-2xl text-white font-black text-base transition-all duration-300 flex items-center justify-center gap-2"
+                :class="canCheckout ? 'hover:-translate-y-1' : 'confirm-disabled'"
               >
                 <svg v-if="isProcessing" class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
                   <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                   <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
                 </svg>
+
                 <svg v-else class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
+
                 {{ isProcessing
                   ? 'Memproses Pesanan…'
                   : (selectedCourier && selectedPayment ? 'Konfirmasi Pesanan' : 'Lengkapi Pilihan Terlebih Dahulu') }}
               </button>
-              <p v-if="!selectedCourier || !selectedPayment" class="text-center text-xs mt-2" style="color: #9ca3af;">
+
+              <p v-if="!selectedCourier || !selectedPayment" class="page-muted text-center text-xs mt-2">
                 Pilih kurir dan metode pembayaran untuk melanjutkan
               </p>
             </div>
 
             <!-- Trust badges -->
             <div class="flex justify-center gap-6">
-              <div class="flex items-center gap-1.5 text-xs" style="color: #9ca3af;">
-                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+              <div class="trust-badge flex items-center gap-1.5 text-xs">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
                 Aman & Terenkripsi
               </div>
-              <div class="flex items-center gap-1.5 text-xs" style="color: #9ca3af;">
-                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+
+              <div class="trust-badge flex items-center gap-1.5 text-xs">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
                 Garansi Resmi
               </div>
             </div>
-
           </div>
         </div>
-
       </div>
     </div>
 
-    <!-- ─── SUCCESS MODAL ─── -->
+    <!-- Success Modal -->
     <Teleport to="body">
       <Transition name="modal">
-        <div v-if="showSuccess" class="fixed inset-0 z-[9999] flex items-center justify-center p-4" style="background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);">
-          <div class="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl" style="border: 1px solid #e5e7eb;">
-            <div class="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-5" style="background: linear-gradient(135deg, #10b981, #059669);">
+        <div v-if="showSuccess" class="modal-backdrop fixed inset-0 z-[9999] flex items-center justify-center p-4">
+          <div class="modal-card rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl">
+            <div class="success-icon w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-5">
               <svg class="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h2 class="text-2xl font-black mb-2" style="color: #111827;">Pesanan Dikonfirmasi!</h2>
-            <p class="text-sm mb-2" style="color: #6b7280;">Terima kasih telah berbelanja di e-BuildPC.</p>
-            <p class="text-sm mb-6" style="color: #6b7280;">Pesanan Anda akan segera diproses dan dikirim melalui <strong style="color: #111827;">{{ selectedCourierData?.name }}</strong> menggunakan <strong style="color: #111827;">{{ selectedPaymentData?.name }}</strong>.</p>
-            <div class="p-4 rounded-2xl mb-6" style="background: #f0fdf4; border: 1px solid #bbf7d0;">
-              <p v-if="placedOrder" class="text-xs mb-1" style="color: #6b7280;">
-                Nomor Pesanan: <strong style="color: #111827;">#{{ placedOrder.order_id }}</strong>
+
+            <h2 class="page-title text-2xl font-black mb-2">
+              Pesanan Dikonfirmasi!
+            </h2>
+
+            <p class="page-muted text-sm mb-2">
+              Terima kasih telah berbelanja di e-BuildPC.
+            </p>
+
+            <p class="page-muted text-sm mb-6">
+              Pesanan Anda akan segera diproses dan dikirim melalui
+              <strong class="page-title">{{ selectedCourierData?.name }}</strong>
+              menggunakan
+              <strong class="page-title">{{ selectedPaymentData?.name }}</strong>.
+            </p>
+
+            <div class="success-summary p-4 rounded-2xl mb-6">
+              <p v-if="placedOrder" class="page-muted text-xs mb-1">
+                Nomor Pesanan:
+                <strong class="page-title">#{{ placedOrder.order_id }}</strong>
               </p>
-              <p class="text-xs" style="color: #6b7280;">Total Pembayaran</p>
-              <p class="text-2xl font-black" style="color: #10b981;">{{ formatPrice(grandTotal) }}</p>
+
+              <p class="page-muted text-xs">
+                Total Pembayaran
+              </p>
+
+              <p class="success-text text-2xl font-black">
+                {{ formatPrice(grandTotal) }}
+              </p>
             </div>
-            <RouterLink to="/" @click="handleSuccessClose"
-              class="block w-full py-3 rounded-xl text-white font-bold transition-all duration-200 hover:opacity-90"
-              style="background: linear-gradient(135deg, #4f46e5, #7c3aed);"
+
+            <RouterLink
+              to="/"
+              @click="handleSuccessClose"
+              class="primary-btn block w-full py-3 rounded-xl text-white font-bold transition-all duration-200"
             >
               Kembali ke Beranda
             </RouterLink>
@@ -356,6 +467,7 @@ const checkoutItems = computed(() => {
   if (selectedCheckoutIds.value.length === 0) {
     return cartStore.items
   }
+
   return cartStore.items.filter(item => selectedCheckoutIds.value.includes(item.id))
 })
 
@@ -369,6 +481,7 @@ const checkoutTotalPrice = computed(() => {
 
 onMounted(() => {
   const saved = localStorage.getItem('selected_checkout_items')
+
   if (saved) {
     try {
       selectedCheckoutIds.value = JSON.parse(saved)
@@ -376,10 +489,10 @@ onMounted(() => {
       selectedCheckoutIds.value = []
     }
   }
+
   cartStore.fetch()
 })
 
-// ─── Kurir dengan SVG logo ───
 const couriers = [
   {
     id: 'jne',
@@ -433,7 +546,6 @@ const couriers = [
   },
 ]
 
-// ─── Metode Pembayaran dengan SVG logo ───
 const paymentTabs = [
   { id: 'all', label: 'Semua' },
   { id: 'transfer', label: 'Transfer Bank' },
@@ -554,6 +666,7 @@ const placedOrder = ref(null)
 
 const filteredPaymentMethods = computed(() => {
   if (activePaymentTab.value === 'all') return paymentMethods
+
   return paymentMethods.filter(m => m.tab === activePaymentTab.value)
 })
 
@@ -562,6 +675,7 @@ const selectedPaymentData = computed(() => paymentMethods.find(m => m.id === sel
 
 const grandTotal = computed(() => {
   const shippingCost = selectedCourierData.value?.price ?? 0
+
   return checkoutTotalPrice.value * 1.11 + shippingCost
 })
 
@@ -571,19 +685,18 @@ const canCheckout = computed(
 
 async function handleConfirmCheckout() {
   if (!canCheckout.value) return
+
   checkoutError.value = ''
   isProcessing.value = true
+
   try {
-    // Server creates the order from the authenticated user's cart,
-    // decrements stock, and clears the server-side cart.
     const result = await orderApi.checkout(selectedCheckoutIds.value)
     placedOrder.value = result?.order || null
     localStorage.removeItem('selected_checkout_items')
-    await cartStore.fetch() // cart has now removed these items on the server
+    await cartStore.fetch()
     showSuccess.value = true
   } catch (err) {
-    checkoutError.value =
-      err.message || 'Checkout gagal. Silakan coba lagi.'
+    checkoutError.value = err.message || 'Checkout gagal. Silakan coba lagi.'
   } finally {
     isProcessing.value = false
   }
@@ -595,10 +708,241 @@ function handleSuccessClose() {
 </script>
 
 <style scoped>
+.checkout-page {
+  color: #e5e7eb;
+  background:
+    radial-gradient(circle at top left, rgba(79, 70, 229, 0.18), transparent 28%),
+    radial-gradient(circle at top right, rgba(124, 58, 237, 0.16), transparent 30%),
+    radial-gradient(circle at bottom right, rgba(59, 130, 246, 0.08), transparent 28%),
+    linear-gradient(180deg, #0b1020 0%, #080b14 48%, #05070d 100%);
+}
+
+.back-link,
+.page-muted,
+.trust-badge,
+.option-subtitle {
+  color: #94a3b8;
+}
+
+.back-link:hover {
+  color: #c4b5fd;
+}
+
+.page-title {
+  color: #f8fafc;
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #818cf8, #a855f7, #38bdf8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.panel-card,
+.modal-card {
+  background:
+    linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 27, 75, 0.86));
+  border: 1px solid rgba(129, 140, 248, 0.22);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.24),
+    0 18px 48px rgba(0, 0, 0, 0.24);
+}
+
+.panel-header {
+  border-bottom: 1px solid rgba(129, 140, 248, 0.16);
+}
+
+.icon-box {
+  border: 1px solid rgba(129, 140, 248, 0.18);
+}
+
+.icon-purple {
+  color: #c4b5fd;
+  background: rgba(79, 70, 229, 0.18);
+}
+
+.icon-green {
+  color: #6ee7b7;
+  background: rgba(16, 185, 129, 0.14);
+}
+
+.icon-orange {
+  color: #fdba74;
+  background: rgba(249, 115, 22, 0.14);
+}
+
+.status-pill {
+  border: 1px solid;
+}
+
+.status-purple {
+  color: #c4b5fd;
+  background: rgba(79, 70, 229, 0.18);
+  border-color: rgba(167, 139, 250, 0.34);
+}
+
+.status-warning {
+  color: #fde68a;
+  background: rgba(234, 179, 8, 0.14);
+  border-color: rgba(234, 179, 8, 0.36);
+}
+
+.status-success {
+  color: #6ee7b7;
+  background: rgba(16, 185, 129, 0.14);
+  border-color: rgba(16, 185, 129, 0.36);
+}
+
+.checkout-divide > :not([hidden]) ~ :not([hidden]) {
+  border-color: rgba(129, 140, 248, 0.14);
+}
+
+.checkout-item:hover {
+  background: rgba(79, 70, 229, 0.08);
+}
+
+.item-image,
+.spec-chip {
+  background: rgba(226, 232, 240, 0.08);
+  border: 1px solid rgba(129, 140, 248, 0.14);
+}
+
+.spec-chip {
+  color: #94a3b8;
+}
+
+.price-text {
+  color: #a78bfa;
+}
+
+.success-text {
+  color: #6ee7b7;
+}
+
+.mini-divider {
+  background: rgba(129, 140, 248, 0.18);
+}
+
+.option-card {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1.5px solid rgba(129, 140, 248, 0.2);
+}
+
+.option-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(167, 139, 250, 0.45);
+}
+
+.option-selected {
+  border: 2px solid #7c3aed;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.16);
+}
+
+.option-footer {
+  background: rgba(15, 23, 42, 0.88);
+  border-top: 1px solid rgba(129, 140, 248, 0.14);
+}
+
+.courier-logo-area,
+.payment-logo-area {
+  min-height: 56px;
+}
+
+.selected-dot {
+  background: #7c3aed;
+}
+
+.empty-dot {
+  border-color: rgba(203, 213, 225, 0.45);
+}
+
+.payment-tab {
+  color: #cbd5e1;
+  background: rgba(15, 23, 42, 0.72);
+  border: 1px solid rgba(129, 140, 248, 0.18);
+}
+
+.payment-tab:hover {
+  color: #ffffff;
+  background: rgba(79, 70, 229, 0.22);
+}
+
+.payment-tab-active {
+  color: #ffffff;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  border-color: rgba(167, 139, 250, 0.5);
+}
+
+.summary-divider {
+  border-top: 1px solid rgba(129, 140, 248, 0.16);
+}
+
+.check-dot {
+  background: rgba(148, 163, 184, 0.26);
+}
+
+.check-dot-active {
+  background: #10b981;
+}
+
+.error-alert {
+  color: #fda4af;
+  background: rgba(127, 29, 29, 0.35);
+  border: 1px solid rgba(251, 113, 133, 0.35);
+}
+
+.primary-btn,
+.confirm-btn {
+  color: #ffffff;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  box-shadow: 0 12px 28px rgba(79, 70, 229, 0.32);
+}
+
+.primary-btn:hover,
+.confirm-btn:hover:not(:disabled) {
+  box-shadow: 0 16px 38px rgba(124, 58, 237, 0.4);
+}
+
+.confirm-disabled {
+  cursor: not-allowed;
+  color: #e2e8f0;
+  background: rgba(100, 116, 139, 0.55);
+  box-shadow: none;
+}
+
+.empty-state {
+  background: rgba(15, 23, 42, 0.52);
+  border: 1px solid rgba(129, 140, 248, 0.16);
+  border-radius: 1.5rem;
+}
+
+.empty-icon {
+  color: #a78bfa;
+  background: rgba(79, 70, 229, 0.12);
+  border: 2px dashed rgba(129, 140, 248, 0.32);
+}
+
+.modal-backdrop {
+  background: rgba(2, 6, 23, 0.72);
+  backdrop-filter: blur(5px);
+}
+
+.success-icon {
+  background: linear-gradient(135deg, #10b981, #059669);
+  box-shadow: 0 16px 38px rgba(16, 185, 129, 0.24);
+}
+
+.success-summary {
+  background: rgba(6, 78, 59, 0.32);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
 .modal-enter-active,
 .modal-leave-active {
   transition: all 0.3s ease;
 }
+
 .modal-enter-from,
 .modal-leave-to {
   opacity: 0;
