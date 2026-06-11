@@ -246,7 +246,7 @@
 
           <button
             @click="mobileMenuOpen = !mobileMenuOpen"
-            class="nav-icon-btn md:hidden"
+            class="nav-icon-btn md:!hidden"
             aria-label="Buka menu navigasi"
           >
             <svg
@@ -332,6 +332,42 @@
       <Transition name="dropdown">
         <AdminChatPanel v-if="adminChatOpen" @close="adminChatOpen = false" />
       </Transition>
+
+      <!-- Logout Confirmation Modal -->
+      <Transition name="fade">
+        <div
+          v-if="showLogoutConfirm"
+          class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          @click="showLogoutConfirm = false"
+        >
+          <div
+            class="w-full max-w-sm rounded-2xl p-6 shadow-2xl transition-all border transform scale-100"
+            style="background: #1a1f2e; border-color: rgba(255, 255, 255, 0.08);"
+            @click.stop
+          >
+            <div class="flex flex-col items-center text-center">
+              <h3 class="text-lg font-bold text-white mb-2">Konfirmasi Keluar</h3>
+              <p class="text-sm text-gray-400 mb-6">
+                Apakah Anda yakin ingin keluar dari akun e-BuildPC Anda?
+              </p>
+              <div class="flex items-center gap-3 w-full">
+                <button
+                  @click="showLogoutConfirm = false"
+                  class="flex-1 py-2.5 text-sm font-medium text-gray-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all duration-150"
+                >
+                  Batal
+                </button>
+                <button
+                  @click="confirmLogout"
+                  class="flex-1 py-2.5 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-500 rounded-xl transition-all duration-150 shadow-lg shadow-rose-900/30"
+                >
+                  Ya, Keluar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Transition>
     </div>
   </nav>
 </template>
@@ -358,6 +394,7 @@ const searchQuery = ref('')
 const showSuggestions = ref(false)
 const searchContainer = ref(null)
 const adminChatOpen = ref(false)
+const showLogoutConfirm = ref(false)
 
 const isAdmin = computed(() => userStore.isAdmin)
 
@@ -438,8 +475,13 @@ function handleScroll() {
 }
 
 function handleLogout() {
-  userStore.logout()
   mobileMenuOpen.value = false
+  showLogoutConfirm.value = true
+}
+
+function confirmLogout() {
+  showLogoutConfirm.value = false
+  userStore.logout()
   router.push('/login')
 }
 
@@ -552,6 +594,16 @@ onUnmounted(() => {
 .dropdown-leave-to {
   opacity: 0;
   transform: translateY(-6px);
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 
 @media (max-width: 420px) {
