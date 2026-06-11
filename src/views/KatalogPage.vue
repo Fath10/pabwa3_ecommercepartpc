@@ -39,33 +39,37 @@
         </div>
 
         <!-- Category Filter Button -->
-        <button
-          @click.stop="toggleCategoryDropdown"
-          class="dropdown-trigger relative px-4 py-3 rounded-xl outline-none transition-all cursor-pointer flex items-center gap-2"
-          title="Filter Kategori"
-        >
-          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
-            />
-          </svg>
-
-          <span
-            v-if="selectedCategory"
-            class="selected-badge px-2 py-0.5 rounded-full text-xs font-semibold"
+        <div class="relative">
+          <button
+            type="button"
+            @click.stop="toggleCategoryDropdown"
+            class="dropdown-trigger px-4 py-3 rounded-xl outline-none transition-all cursor-pointer flex items-center gap-2"
+            title="Filter Kategori"
           >
-            {{ selectedCategory }}
-          </span>
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+              />
+            </svg>
+
+            <span
+              v-if="selectedCategory"
+              class="selected-badge px-2 py-0.5 rounded-full text-xs font-semibold"
+            >
+              {{ selectedCategory }}
+            </span>
+          </button>
 
           <div
             v-if="showCategoryDropdown"
             @click.stop
-            class="dropdown-menu absolute top-full left-0 mt-2 rounded-xl shadow-lg z-20 min-w-48 py-2"
+            class="dropdown-menu category-dropdown absolute top-full left-0 mt-2 rounded-xl shadow-lg z-50 min-w-52 py-2"
           >
             <button
+              type="button"
               @click="selectCategory(''); showCategoryDropdown = false"
               class="dropdown-item w-full text-left px-4 py-2 text-sm"
               :class="selectedCategory === '' ? 'dropdown-active' : ''"
@@ -76,6 +80,7 @@
             <button
               v-for="cat in categories"
               :key="cat"
+              type="button"
               @click="selectCategory(cat); showCategoryDropdown = false"
               class="dropdown-item w-full text-left px-4 py-2 text-sm"
               :class="selectedCategory === cat ? 'dropdown-active' : ''"
@@ -83,29 +88,33 @@
               {{ cat }}
             </button>
           </div>
-        </button>
+        </div>
 
         <!-- Sort Button -->
-        <button
-          @click.stop="toggleSortDropdown"
-          class="dropdown-trigger relative px-4 py-3 rounded-xl outline-none transition-all cursor-pointer flex items-center gap-2"
-          title="Urutkan"
-        >
-          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"
-            />
-          </svg>
+        <div class="relative">
+          <button
+            type="button"
+            @click.stop="toggleSortDropdown"
+            class="dropdown-trigger px-4 py-3 rounded-xl outline-none transition-all cursor-pointer flex items-center gap-2"
+            title="Urutkan"
+          >
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"
+              />
+            </svg>
+          </button>
 
           <div
             v-if="showSortDropdown"
             @click.stop
-            class="dropdown-menu absolute top-full right-0 mt-2 rounded-xl shadow-lg z-20 min-w-44 py-2"
+            class="dropdown-menu sort-dropdown absolute top-full right-0 mt-2 rounded-xl shadow-lg z-50 min-w-44 py-2"
           >
             <button
+              type="button"
               @click="selectSort('default')"
               class="dropdown-item w-full text-left px-4 py-2 text-sm"
               :class="sortBy === 'default' ? 'dropdown-active' : ''"
@@ -114,6 +123,7 @@
             </button>
 
             <button
+              type="button"
               @click="selectSort('price-asc')"
               class="dropdown-item w-full text-left px-4 py-2 text-sm"
               :class="sortBy === 'price-asc' ? 'dropdown-active' : ''"
@@ -122,6 +132,7 @@
             </button>
 
             <button
+              type="button"
               @click="selectSort('price-desc')"
               class="dropdown-item w-full text-left px-4 py-2 text-sm"
               :class="sortBy === 'price-desc' ? 'dropdown-active' : ''"
@@ -130,6 +141,7 @@
             </button>
 
             <button
+              type="button"
               @click="selectSort('rating')"
               class="dropdown-item w-full text-left px-4 py-2 text-sm"
               :class="sortBy === 'rating' ? 'dropdown-active' : ''"
@@ -137,12 +149,12 @@
               Rating Tertinggi
             </button>
           </div>
-        </button>
+        </div>
       </div>
 
-      <!-- Results count -->
-      <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-6">
-        <p class="page-muted text-sm">
+      <!-- Results + Category Navigation -->
+      <div class="catalog-toolbar flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-6">
+        <p class="page-muted text-sm shrink-0">
           Menampilkan
           <span class="page-title font-semibold">
             {{ filteredProducts.length }}
@@ -150,9 +162,10 @@
           produk
         </p>
 
-        <!-- Category pills -->
-        <div class="flex flex-wrap gap-2">
+        <!-- Kategori dibuat sama seperti footer -->
+        <div class="category-nav">
           <button
+            type="button"
             @click="selectCategory('')"
             class="category-pill px-3 py-1 rounded-full text-xs font-medium transition-all"
             :class="selectedCategory === '' ? 'category-pill-active' : ''"
@@ -163,6 +176,7 @@
           <button
             v-for="cat in categories"
             :key="cat"
+            type="button"
             @click="selectCategory(cat)"
             class="category-pill px-3 py-1 rounded-full text-xs font-medium transition-all"
             :class="selectedCategory === cat ? 'category-pill-active' : ''"
@@ -172,21 +186,45 @@
         </div>
       </div>
 
+      <!-- Loading State -->
+      <div v-if="loading" class="text-center py-20">
+        <div class="loader inline-block w-10 h-10 rounded-full"></div>
+        <p class="page-muted mt-4 text-sm">Memuat produk...</p>
+      </div>
+
+      <!-- Error State -->
+      <div v-else-if="loadError" class="empty-state text-center py-20">
+        <div class="text-6xl mb-4">⚠️</div>
+        <h3 class="page-title text-xl font-bold mb-2">
+          Gagal Memuat Produk
+        </h3>
+        <p class="page-muted mb-6">
+          {{ loadError }}
+        </p>
+        <button
+          type="button"
+          @click="productStore.fetchAll(true)"
+          class="primary-btn px-6 py-3 rounded-xl text-white font-semibold transition-all"
+        >
+          Coba Lagi
+        </button>
+      </div>
+
       <!-- Product Grid -->
       <div
-        v-if="filteredProducts.length > 0"
+        v-else-if="filteredProducts.length > 0"
         class="product-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
       >
         <ProductCard
           v-for="product in paginatedProducts"
           :key="product.id"
           :product="product"
-          @add-to-cart="(product, event) => $emit('add-to-cart', product, event)"
+          @add-to-cart="handleAddToCart"
         />
       </div>
 
-      <!-- Empty state -->
-      <div v-if="filteredProducts.length === 0" class="empty-state text-center py-20">
+      <!-- Empty State -->
+      <div v-else class="empty-state text-center py-20">
         <div class="text-6xl mb-4">😔</div>
         <h3 class="page-title text-xl font-bold mb-2">
           Produk Tidak Ditemukan
@@ -195,6 +233,7 @@
           Coba ubah filter atau kata kunci pencarian Anda.
         </p>
         <button
+          type="button"
           @click="resetFilters"
           class="primary-btn px-6 py-3 rounded-xl text-white font-semibold transition-all"
         >
@@ -204,7 +243,7 @@
 
       <!-- Pagination -->
       <div
-        v-if="filteredProducts.length > 0 && totalPages > 1"
+        v-if="!loading && !loadError && filteredProducts.length > 0 && totalPages > 1"
         class="mt-10 flex flex-col items-center gap-3"
       >
         <p class="page-muted text-sm">
@@ -258,7 +297,7 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ProductCard from '../components/ProductCard.vue'
-import { products } from '../store.js'
+import { productStore } from '../store.js'
 
 const emit = defineEmits(['add-to-cart'])
 
@@ -273,7 +312,33 @@ const showCategoryDropdown = ref(false)
 const showSortDropdown = ref(false)
 
 const PRODUCTS_PER_PAGE = 12
-const categories = [...new Set(products.map(p => p.category))]
+
+// Kategori dibuat sama seperti footer
+const FOOTER_CATEGORIES = [
+  'Laptop',
+  'Processor',
+  'GPU',
+  'RAM',
+  'Storage',
+  'Cooling',
+  'PSU',
+  'Casing',
+  'Motherboard',
+  'Monitor'
+]
+
+// Ambil data produk dari database/store
+const products = computed(() => {
+  return Array.isArray(productStore.items) ? productStore.items : []
+})
+
+// Kategori yang tampil hanya kategori footer
+const categories = computed(() => {
+  return FOOTER_CATEGORIES
+})
+
+const loading = computed(() => productStore.loading)
+const loadError = computed(() => productStore.error)
 
 function closeDropdowns() {
   showCategoryDropdown.value = false
@@ -290,10 +355,65 @@ function toggleSortDropdown() {
   showCategoryDropdown.value = false
 }
 
+// Mapping kategori dari database agar sesuai dengan footer
+function displayCategory(category) {
+  const value = String(category || '').trim().toLowerCase()
+
+  const aliases = {
+    laptop: 'Laptop',
+    laptops: 'Laptop',
+
+    processor: 'Processor',
+    processors: 'Processor',
+    cpu: 'Processor',
+    cpus: 'Processor',
+
+    gpu: 'GPU',
+    gpus: 'GPU',
+    vga: 'GPU',
+    graphics: 'GPU',
+    graphic: 'GPU',
+    kartu_grafis: 'GPU',
+    'kartu grafis': 'GPU',
+
+    ram: 'RAM',
+    memory: 'RAM',
+    memori: 'RAM',
+
+    storage: 'Storage',
+    ssd: 'Storage',
+    hdd: 'Storage',
+    harddisk: 'Storage',
+    hardisk: 'Storage',
+
+    cooling: 'Cooling',
+    cooler: 'Cooling',
+    fan: 'Cooling',
+    kipas: 'Cooling',
+
+    psu: 'PSU',
+    power: 'PSU',
+    power_supply: 'PSU',
+    'power supply': 'PSU',
+
+    casing: 'Casing',
+    case: 'Casing',
+
+    motherboard: 'Motherboard',
+    mainboard: 'Motherboard',
+    mobo: 'Motherboard',
+
+    monitor: 'Monitor',
+    monitors: 'Monitor'
+  }
+
+  return aliases[value] || ''
+}
+
 function normalizeCategory(category) {
   const value = String(category || '').trim()
 
-  const matchedCategory = categories.find(
+  const matchedCategory = categories.value.find(
     cat => String(cat).toLowerCase() === value.toLowerCase()
   )
 
@@ -324,36 +444,52 @@ function selectSort(value) {
   showCategoryDropdown.value = false
 }
 
+function handleAddToCart(product, event) {
+  emit('add-to-cart', product, event)
+}
+
 watch(
   () => route.query.category,
-  (category) => {
+  category => {
     selectedCategory.value = normalizeCategory(category)
     currentPage.value = 1
   },
   { immediate: true }
 )
 
+watch(
+  () => route.query.q,
+  q => {
+    search.value = typeof q === 'string' ? q : ''
+    currentPage.value = 1
+  },
+  { immediate: true }
+)
+
 const filteredProducts = computed(() => {
-  let result = [...products]
+  let result = [...products.value]
 
   if (search.value) {
-    result = result.filter(p =>
-      p.name.toLowerCase().includes(search.value.toLowerCase())
+    const keyword = search.value.toLowerCase()
+
+    result = result.filter(product =>
+      String(product.name || '').toLowerCase().includes(keyword) ||
+      displayCategory(product.category).toLowerCase().includes(keyword)
     )
   }
 
   if (selectedCategory.value) {
-    result = result.filter(
-      p => String(p.category).toLowerCase() === String(selectedCategory.value).toLowerCase()
+    result = result.filter(product =>
+      displayCategory(product.category) === selectedCategory.value
     )
   }
 
   if (sortBy.value === 'price-asc') {
-    result.sort((a, b) => a.price - b.price)
+    result.sort((a, b) => Number(a.price || 0) - Number(b.price || 0))
   } else if (sortBy.value === 'price-desc') {
-    result.sort((a, b) => b.price - a.price)
+    result.sort((a, b) => Number(b.price || 0) - Number(a.price || 0))
   } else if (sortBy.value === 'rating') {
-    result.sort((a, b) => b.rating - a.rating)
+    result.sort((a, b) => Number(b.rating || 0) - Number(a.rating || 0))
   }
 
   return result
@@ -366,6 +502,12 @@ watch([search, selectedCategory, sortBy], () => {
 const totalPages = computed(() =>
   Math.max(1, Math.ceil(filteredProducts.value.length / PRODUCTS_PER_PAGE))
 )
+
+watch(totalPages, pages => {
+  if (currentPage.value > pages) {
+    currentPage.value = pages
+  }
+})
 
 const paginatedProducts = computed(() => {
   const start = (currentPage.value - 1) * PRODUCTS_PER_PAGE
@@ -387,6 +529,7 @@ function resetFilters() {
 }
 
 onMounted(() => {
+  productStore.fetchAll()
   document.addEventListener('click', closeDropdowns)
 })
 
@@ -455,6 +598,14 @@ onBeforeUnmount(() => {
   overflow: hidden;
 }
 
+.category-dropdown {
+  left: 0;
+}
+
+.sort-dropdown {
+  right: 0;
+}
+
 .dropdown-item {
   color: #cbd5e1;
   transition: all 0.2s ease;
@@ -471,10 +622,30 @@ onBeforeUnmount(() => {
   font-weight: 800;
 }
 
+.catalog-toolbar {
+  width: 100%;
+}
+
+.category-nav {
+  max-width: 760px;
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  gap: 8px;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+
+.category-nav::-webkit-scrollbar {
+  display: none;
+}
+
 .category-pill {
+  flex: 0 0 auto;
   color: #cbd5e1;
   background: rgba(15, 23, 42, 0.72);
   border: 1px solid rgba(129, 140, 248, 0.22);
+  white-space: nowrap;
 }
 
 .category-pill:hover {
@@ -505,6 +676,18 @@ onBeforeUnmount(() => {
   box-shadow: 0 16px 38px rgba(124, 58, 237, 0.4);
 }
 
+.loader {
+  border: 4px solid rgba(129, 140, 248, 0.22);
+  border-top-color: #818cf8;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .pagination-btn {
   color: #cbd5e1;
   background: rgba(15, 23, 42, 0.72);
@@ -528,7 +711,7 @@ onBeforeUnmount(() => {
   opacity: 0.45;
 }
 
-/* Force ProductCard inside catalog to follow dark theme */
+/* Paksa ProductCard ikut tema dark */
 .product-grid :deep(article),
 .product-grid :deep(.product-card),
 .product-grid :deep(.card),
@@ -548,47 +731,27 @@ onBeforeUnmount(() => {
   box-shadow: 0 24px 60px rgba(79, 70, 229, 0.18) !important;
 }
 
-.product-grid :deep([style*="background: #fff"]),
-.product-grid :deep([style*="background:#fff"]),
-.product-grid :deep([style*="background: #f8fafc"]),
-.product-grid :deep([style*="background:#f8fafc"]),
-.product-grid :deep([style*="background: #f1f5f9"]),
-.product-grid :deep([style*="background:#f1f5f9"]) {
-  background: rgba(226, 232, 240, 0.08) !important;
-}
-
-.product-grid :deep([style*="color: #0f172a"]),
-.product-grid :deep([style*="color:#0f172a"]),
-.product-grid :deep([style*="color: #111827"]),
-.product-grid :deep([style*="color:#111827"]),
-.product-grid :deep([style*="color: #1e293b"]),
-.product-grid :deep([style*="color:#1e293b"]),
-.product-grid :deep([style*="color: #334155"]),
-.product-grid :deep([style*="color:#334155"]),
-.product-grid :deep([style*="color: #374151"]),
-.product-grid :deep([style*="color:#374151"]) {
-  color: #f8fafc !important;
-}
-
-.product-grid :deep([style*="color: #64748b"]),
-.product-grid :deep([style*="color:#64748b"]),
-.product-grid :deep([style*="color: #94a3b8"]),
-.product-grid :deep([style*="color:#94a3b8"]),
-.product-grid :deep(.text-gray-500),
-.product-grid :deep(.text-slate-500) {
-  color: #94a3b8 !important;
-}
-
-.product-grid :deep([style*="color: #4f46e5"]),
-.product-grid :deep([style*="color:#4f46e5"]) {
-  color: #a78bfa !important;
-}
-
 .product-grid :deep(button) {
   color: #ffffff !important;
 }
 
 .product-grid :deep(img) {
   background: transparent !important;
+}
+
+@media (max-width: 1024px) {
+  .category-nav {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .form-control {
+    min-width: 100%;
+  }
+
+  .category-nav {
+    justify-content: flex-start;
+  }
 }
 </style>

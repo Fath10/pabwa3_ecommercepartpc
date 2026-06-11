@@ -800,4 +800,3 @@ export const deleteProductPermanent = async (
 
   }
 };
-
