@@ -801,6 +801,7 @@ function formatBuildContext(parts, totalBudget) {
 async function callOllamaStream(messages, res) {
   const baseUrl = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
   const model = process.env.OLLAMA_MODEL || "llama3.2";
+  console.log(`Connecting to Ollama at ${baseUrl}/api/chat with model: "${model}"`);
 
   const response = await fetch(`${baseUrl}/api/chat`, {
     method: "POST",

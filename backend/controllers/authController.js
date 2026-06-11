@@ -325,20 +325,36 @@ export const forgotPassword = async (req, res) => {
     const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
     const resetLink = `${clientUrl}/reset-password/${resetToken}`;
 
-    const testAccount = await nodemailer.createTestAccount();
+    let transporter;
+    const isSmtpConfigured = process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS;
 
-    const transporter = nodemailer.createTransport({
-      host: "smtp.ethereal.email",
-      port: 587,
-      secure: false,
-      auth: {
-        user: testAccount.user,
-        pass: testAccount.pass,
-      },
-    });
+    if (isSmtpConfigured) {
+      transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: parseInt(process.env.SMTP_PORT || "587"),
+        secure: process.env.SMTP_SECURE === "true",
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS,
+        },
+      });
+    } else {
+      const testAccount = await nodemailer.createTestAccount();
+      transporter = nodemailer.createTransport({
+        host: "smtp.ethereal.email",
+        port: 587,
+        secure: false,
+        auth: {
+          user: testAccount.user,
+          pass: testAccount.pass,
+        },
+      });
+    }
+
+    const fromEmail = process.env.SMTP_FROM || '"e-BuildPC Support" <no-reply@ebuildpc.com>';
 
     const info = await transporter.sendMail({
-      from: '"e-BuildPC Support" <no-reply@ebuildpc.com>',
+      from: fromEmail,
       to: email,
       subject: "Reset Password Anda",
       text: `Halo, klik link berikut untuk mereset password Anda: ${resetLink}. Link ini berlaku selama 15 menit.`,
@@ -351,10 +367,14 @@ export const forgotPassword = async (req, res) => {
     });
 
     console.log("Reset password email dikirim ke:", email);
-    console.log("Preview URL Email (Ethereal):", nodemailer.getTestMessageUrl(info));
+    if (!isSmtpConfigured) {
+      console.log("Preview URL Email (Ethereal):", nodemailer.getTestMessageUrl(info));
+    }
 
     return res.status(200).json({
-      message: "Jika email terdaftar, link reset telah dikirim. Cek console backend untuk URL Ethereal.",
+      message: isSmtpConfigured
+        ? "Jika email terdaftar, link reset telah dikirim."
+        : "Jika email terdaftar, link reset telah dikirim. Cek console backend untuk URL Ethereal.",
     });
   } catch (error) {
     console.error("Forgot password error:", error);
