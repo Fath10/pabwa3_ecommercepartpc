@@ -122,6 +122,7 @@
                     />
                   </div>
                 </div>
+
               </template>
 
               <div v-if="isTyping" class="ai-message ai-message-bot">
@@ -226,12 +227,17 @@ const isTyping = ref(false)
 const hasNotification = ref(true)
 const messagesContainer = ref(null)
 
+const confirmingEmptyCart = ref(false)
+
 const messages = ref([
   {
     role: 'bot',
     content: 'Halo! 👋 Saya e-BuildPC AI. Saya bisa membantu Anda memilih komponen PC yang tepat. Ada yang ingin ditanyakan?',
   },
 ])
+
+// Simpan produk terakhir yang direkomendasikan AI
+const lastRecommendedProducts = ref([])
 
 const quickReplies = [
   '🖥️ Rakit PC Gaming 10 Juta',
@@ -240,10 +246,403 @@ const quickReplies = [
   '💰 Budget 5 Jutaan',
 ]
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Pola intent "tambah ke keranjang" atau "checkout + rekomendasi"
+// Dideteksi di CLIENT sebelum request ke backend
+// ─────────────────────────────────────────────────────────────────────────────
+const ADD_TO_CART_PATTERNS = [
+
+    // Masukkan / tambahkan ke keranjang (kata kunci keranjang atau ekivalen)
+    /\b(masukkan|masukin|tambahkan|tambahin|add|masukin\s+ke|masuk\s+ke)\b.{0,20}\b(keranjang|cart|troli)\b/i,
+    /\b(ke\s+keranjang|ke\s+cart|ke\s+troli)\b/i,
+    /\b(bawa\s+ke\s+keranjang|bawa\s+ke\s+cart)\b/i,
+    // Bisa juga hanya: "masukkan ke keranjang" tanpa menyebut produk apapun
+    /\b(masukkan|masukin|tambahkan|tambahin)\b\s*\bke\s*(keranjang|cart|troli)\b/i,
+    // Checkout + rekomendasi (jika ada produk terakhir)
+    /\b(checkout|chekout|cekout|bayar|pesan)\s*(kan|dong|deh|nih|yuk|aja|sekarang|semua|semuanya)?\b/i,
+    // Checklist: beli semua yang direkomendasikan
+    /\b(beli\s+semua|beli\s+semuanya|beli\s+semua\s+yang\s+direkomendasikan|order\s+semua|pesan\s+semua)\b/i,
+  ]
+
+
+function isAddToCartIntent(message) {
+  const lower = message.toLowerCase().trim()
+  return ADD_TO_CART_PATTERNS.some(p => p.test(lower))
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Deteksi pilih SATU produk spesifik dari rekomendasi
+// ─────────────────────────────────────────────────────────────────────────────
+// Trigger: pesan harus mengandung kata "tambah/masukkan/beli/order"
+const SINGLE_ADD_TRIGGER = /\b(masukkan|masukin|tambahkan|tambahin|beli|add|order|pesan|ambil|mau)\b/i
+
+// Ordinal → index
+const ORDINAL_MAP = [
+  { pattern: /\b(pertama|pertma|prtama|1\s*st|no\.?\s*1|nomor\s*1|yang\s+1|ke[- ]?1|#1)\b/i, index: 0 },
+  { pattern: /\b(kedua|kdua|2\s*nd|no\.?\s*2|nomor\s*2|yang\s+2|ke[- ]?2|#2)\b/i, index: 1 },
+  { pattern: /\b(ketiga|ktiga|3\s*rd|no\.?\s*3|nomor\s*3|yang\s+3|ke[- ]?3|#3)\b/i, index: 2 },
+  { pattern: /\b(keempat|4\s*th|no\.?\s*4|nomor\s*4|yang\s+4|ke[- ]?4|#4)\b/i, index: 3 },
+  { pattern: /\b(kelima|5\s*th|no\.?\s*5|nomor\s*5|yang\s+5|ke[- ]?5|#5)\b/i, index: 4 },
+  { pattern: /\b(keenam|6\s*th|no\.?\s*6|nomor\s*6|yang\s+6|ke[- ]?6|#6)\b/i, index: 5 },
+]
+
+// Stop words yang diabaikan saat pencarian keyword
+const STOP_WORDS = new Set([
+  'yang', 'ke', 'di', 'dari', 'untuk', 'dengan', 'dan', 'atau',
+  'masukkan', 'masukin', 'tambahkan', 'tambahin', 'beli', 'add',
+  'order', 'pesan', 'ambil', 'mau', 'keranjang', 'cart', 'troli',
+  'saja', 'aja', 'dong', 'deh', 'nih', 'nya', 'ini', 'itu', 'ada',
+  'produk', 'barang', 'item', 'pilih', 'pilihan', 'rekomendasi',
+])
+
+function detectSelectedProducts(message, products) {
+  if (!products || products.length === 0) return []
+  const lower = message.toLowerCase().trim()
+
+  // Harus ada kata trigger "tambah/masukkan/beli/..."
+  if (!SINGLE_ADD_TRIGGER.test(lower)) return []
+
+  const selected = new Set()
+
+  // 1. Cek berdasarkan ordinal (pertama, kedua, nomor 1, ...)
+  for (const { pattern, index } of ORDINAL_MAP) {
+    if (pattern.test(lower) && products[index]) {
+      selected.add(products[index])
+    }
+  }
+
+  // Sinonim untuk komponen PC yang umum
+  const SYNONYMS = {
+    'case': ['casing', 'chassis', 'kesing'],
+    'vga': ['gpu', 'grafis', 'graphic', 'rtx', 'gtx', 'rx', 'radeon', 'geforce'],
+    'mobo': ['motherboard', 'mainboard', 'papan'],
+    'ram': ['memory', 'memori'],
+    'cpu': ['processor', 'prosesor', 'intel', 'amd', 'ryzen', 'core'],
+    'psu': ['power supply', 'power'],
+    'cooler': ['pendingin', 'heatsink', 'fan', 'aio', 'liquid'],
+    'hdd': ['harddisk', 'hardisk', 'storage'],
+    'ssd': ['nvme', 'sata', 'storage']
+  }
+
+  // 2. Cek berdasarkan keyword yang cocok dengan nama, kategori, atau deskripsi
+  const words = lower.split(/\s+/).filter(w => !STOP_WORDS.has(w) && w.length >= 2)
+  if (words.length > 0) {
+    for (const product of products) {
+      const name = (product.name || '').toLowerCase()
+      const category = (product.category || '').toLowerCase()
+      const desc = (product.description || '').toLowerCase()
+      const brand = (product.brand || '').toLowerCase()
+      
+      let score = 0
+      for (let word of words) {
+        // Hapus akhiran -nya, -ku, -mu agar "ramnya" jadi "ram"
+        word = word.replace(/(nya|ku|mu)$/i, '')
+        
+        // Kumpulkan semua sinonim untuk kata ini
+        let searchTerms = [word]
+        for (const [key, aliases] of Object.entries(SYNONYMS)) {
+          if (word === key || aliases.includes(word)) {
+            searchTerms.push(key, ...aliases)
+          }
+        }
+        
+        // Cek ke nama, kategori, deskripsi, atau brand dengan sinonim
+        let wordMatched = false
+        for (const term of searchTerms) {
+          // Pengecualian khusus: Cegah "cpu" cocok dengan "cpu cooler" jika user tidak meminta cooler
+          if (['cpu', 'processor', 'prosesor'].includes(term)) {
+            const isCoolerProduct = name.includes('cooler') || category.includes('cooler') || desc.includes('cooler') || category.includes('cooling')
+            const userWantsCooler = words.some(w => ['cooler', 'fan', 'heatsink', 'aio', 'liquid', 'pendingin'].includes(w.replace(/(nya|ku|mu)$/i, '')))
+            if (isCoolerProduct && !userWantsCooler) {
+              continue // Lewati produk ini
+            }
+          }
+
+          if (name.includes(term) || category.includes(term) || desc.includes(term) || (brand && brand.includes(term))) {
+            wordMatched = true
+            break
+          }
+        }
+        if (wordMatched) score++
+      }
+      if (score > 0) {
+        selected.add(product)
+      }
+    }
+  }
+
+  return Array.from(selected)
+}
+
 async function sendMessage() {
   if (!userInput.value.trim() || isTyping.value) return
 
   const userMsg = userInput.value.trim()
+  const lowerMsg = userMsg.toLowerCase()
+
+  // ── Konfirmasi Kosongkan Keranjang ──
+  if (confirmingEmptyCart.value) {
+    userInput.value = ''
+    messages.value.push({ role: 'user', content: userMsg })
+    
+    confirmingEmptyCart.value = false
+    if (/\b(ya|iya|iyah|y|yes|yoi|benar|betul|ok|oke|setuju)\b/i.test(lowerMsg)) {
+      cartStore.clearCart()
+      messages.value.push({ role: 'bot', content: '✅ Keranjang belanjamu telah dikosongkan.', products: [] })
+    } else {
+      messages.value.push({ role: 'bot', content: 'Baik, keranjangmu tidak jadi dikosongkan. 😊', products: [] })
+    }
+    await nextTick()
+    await scrollToBottom()
+    return
+  }
+
+  // ── Kosongkan Keranjang Intent ──
+  if (/\b(kosongkan|hapus\s+semua|bersihkan)\b.{0,20}\b(keranjang|cart|troli)\b/i.test(lowerMsg)) {
+    userInput.value = ''
+    messages.value.push({ role: 'user', content: userMsg })
+    
+    if (cartStore.items.length === 0) {
+      messages.value.push({ role: 'bot', content: 'Keranjang kamu memang sudah kosong kok. 😊', products: [] })
+    } else {
+      confirmingEmptyCart.value = true
+      messages.value.push({ role: 'bot', content: '⚠️ Apakah kamu yakin ingin mengosongkan semua barang di keranjang? (Ketik "Ya" atau "Tidak")', products: [] })
+    }
+    await nextTick()
+    await scrollToBottom()
+    return
+  }
+
+  // ── Cek Status Keranjang Intent ──
+  if (/\b(cek|lihat|apa\s+isi|berapa\s+total|total)\b.{0,20}\b(keranjang|cart|troli|belanjaanku|belanjaan)\b/i.test(lowerMsg)) {
+    userInput.value = ''
+    messages.value.push({ role: 'user', content: userMsg })
+
+    if (cartStore.items.length === 0) {
+      messages.value.push({ role: 'bot', content: 'Keranjang belanjamu saat ini kosong. Mau lihat katalog produk?', products: [] })
+    } else {
+      const itemsList = cartStore.items.map(item => `- ${item.name} (${item.quantity}x)`).join('\n')
+      const totalFormatted = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(cartStore.totalPrice)
+      messages.value.push({
+        role: 'bot',
+        content: `🛒 **Isi Keranjangmu Saat Ini:**\n${itemsList}\n\n**Total: ${totalFormatted}**\n\nMau lanjut ke halaman checkout sekarang?`,
+        products: []
+      })
+    }
+    await nextTick()
+    await scrollToBottom()
+    return
+  }
+
+  // ── Hapus Produk Spesifik dari Keranjang ──
+  if (/\b(hapus|buang|remove|keluarkan)\b/i.test(lowerMsg) && !/\b(semua|kosongkan)\b/i.test(lowerMsg)) {
+    const words = lowerMsg.split(/\s+/).filter(w => !STOP_WORDS.has(w) && !['hapus', 'buang', 'remove', 'keluarkan'].includes(w) && w.length > 2)
+    if (words.length > 0 && cartStore.items.length > 0) {
+      let bestItem = null
+      let bestScore = 0
+
+      for (const item of cartStore.items) {
+        const name = item.name.toLowerCase()
+        let score = 0
+        for (const word of words) {
+          if (name.includes(word)) score++
+        }
+        if (score > bestScore) {
+          bestScore = score
+          bestItem = item
+        }
+      }
+
+      if (bestItem) {
+        userInput.value = ''
+        messages.value.push({ role: 'user', content: userMsg })
+        
+        cartStore.removeItem(bestItem.id)
+        messages.value.push({ role: 'bot', content: `🗑️ **${bestItem.name}** berhasil dihapus dari keranjang.`, products: [] })
+        
+        await nextTick()
+        await scrollToBottom()
+        return
+      }
+    }
+  }
+
+  // ── Prioritas 1: Pilih BEBERAPA produk spesifik dari rekomendasi ──
+  if (lastRecommendedProducts.value.length > 0) {
+    const pickedProducts = detectSelectedProducts(userMsg, lastRecommendedProducts.value)
+    if (pickedProducts.length > 0) {
+      userInput.value = ''
+      messages.value.push({ role: 'user', content: userMsg })
+
+      isTyping.value = true
+      await scrollToBottom(true)
+      await new Promise(r => setTimeout(r, 400))
+      isTyping.value = false
+
+      // 1. Bubble awal — loading state
+      const streamMsg = {
+        role: 'bot',
+        content: 'Sedang menambahkan produk ke keranjang... 🛒',
+        products: [],
+      }
+      messages.value.push(streamMsg)
+      await nextTick()
+      await scrollToBottom(true)
+
+      // 2. Tambahkan tiap produk yang dipilih
+      const addedNames = []
+      const failedNames = []
+
+      for (const product of pickedProducts) {
+        const dots = ['⏳', '⌛']
+        let dotIdx = 0
+        const dotInterval = setInterval(() => {
+          const checklist = addedNames.map(n => `✅ ${n}`).join('\n')
+          const failed = failedNames.map(n => `❌ ${n}`).join('\n')
+          const current = `${dots[dotIdx % 2]} Menambahkan ${product.name}...`
+          streamMsg.content = `Sedang menambahkan produk ke keranjang... 🛒\n\n${[checklist, failed, current].filter(Boolean).join('\n')}`
+          dotIdx++
+        }, 300)
+
+        try {
+          await cartStore.addItem(product)
+          clearInterval(dotInterval)
+          addedNames.push(product.name)
+        } catch {
+          clearInterval(dotInterval)
+          failedNames.push(product.name)
+        }
+
+        const checklist = addedNames.map(n => `✅ ${n}`).join('\n')
+        const failed = failedNames.map(n => `❌ ${n} (gagal)`).join('\n')
+        streamMsg.content = `Sedang menambahkan produk ke keranjang... 🛒\n\n${[checklist, failed].filter(Boolean).join('\n')}`
+        await nextTick()
+        await scrollToBottom()
+        await new Promise(r => setTimeout(r, 150))
+      }
+
+      const isCheckoutIntent = /\b(checkout|chekout|cekout|bayar|pesan)\b/i.test(lowerMsg)
+      const targetUrl = isCheckoutIntent ? '/checkout' : '/cart'
+      const targetLabel = isCheckoutIntent ? 'halaman Checkout' : 'halaman Keranjang'
+
+      // 3. Pesan akhir
+      const total = addedNames.length
+      const checklist = addedNames.map(n => `✅ ${n}`).join('\n')
+      const failed = failedNames.map(n => `❌ ${n} (stok habis)`).join('\n')
+
+      streamMsg.content = `${[checklist, failed].filter(Boolean).join('\n')}\n\n${
+        total > 0
+          ? `🎉 ${total} produk berhasil ditambahkan!\n\n⏳ Mengarahkan ke ${targetLabel}...`
+          : '⚠️ Tidak ada produk yang berhasil ditambahkan.'
+      }`
+
+      await nextTick()
+      await scrollToBottom()
+      
+      if (total > 0) {
+        await new Promise(r => setTimeout(r, 2000))
+        chatOpen.value = false
+        await router.push(targetUrl)
+      }
+      return
+    }
+  }
+
+  // ── Prioritas 2: Tambah SEMUA produk rekomendasi ke keranjang ──
+  if (lastRecommendedProducts.value.length > 0 && isAddToCartIntent(userMsg)) {
+    userInput.value = ''
+
+    messages.value.push({ role: 'user', content: userMsg })
+
+    const eligible = lastRecommendedProducts.value.filter(p => p.stock > 0)
+
+    isTyping.value = true
+    await scrollToBottom(true)
+    await new Promise(r => setTimeout(r, 400))
+    isTyping.value = false
+
+    // 1. Bubble awal — loading state
+    const streamMsg = {
+      role: 'bot',
+      content: 'Sedang menambahkan produk ke keranjang... 🛒',
+      products: [],
+    }
+
+    if (eligible.length === 0) {
+      streamMsg.content = 'Maaf, semua produk yang saya rekomendasikan sedang habis stok. Coba cari produk lain ya! 😊'
+      messages.value.push(streamMsg)
+      await nextTick()
+      await scrollToBottom()
+      lastRecommendedProducts.value = []
+      return
+    }
+
+    messages.value.push(streamMsg)
+    await nextTick()
+    await scrollToBottom(true)
+
+    // 2. Tambahkan tiap produk satu per satu & update bubble secara live
+    const addedNames = []
+    const failedNames = []
+
+    for (const product of eligible) {
+      // Animasi loading dots saat menambahkan produk ini
+      const dots = ['⏳', '⌛']
+      let dotIdx = 0
+      const dotInterval = setInterval(() => {
+        const checklist = addedNames.map(n => `✅ ${n}`).join('\n')
+        const failed = failedNames.map(n => `❌ ${n}`).join('\n')
+        const current = `${dots[dotIdx % 2]} Menambahkan ${product.name}...`
+        streamMsg.content = `Sedang menambahkan produk ke keranjang... 🛒\n\n${[checklist, failed, current].filter(Boolean).join('\n')}`
+        dotIdx++
+      }, 300)
+
+      try {
+        await cartStore.addItem(product)
+        clearInterval(dotInterval)
+        addedNames.push(product.name)
+      } catch {
+        clearInterval(dotInterval)
+        failedNames.push(product.name)
+      }
+
+      // Update bubble setelah produk ini selesai
+      const checklist = addedNames.map(n => `✅ ${n}`).join('\n')
+      const failed = failedNames.map(n => `❌ ${n} (gagal)`).join('\n')
+      streamMsg.content = `Sedang menambahkan produk ke keranjang... 🛒\n\n${[checklist, failed].filter(Boolean).join('\n')}`
+      await nextTick()
+      await scrollToBottom()
+      await new Promise(r => setTimeout(r, 150))
+    }
+
+    // 3. Pesan akhir — ringkasan hasil
+    const isCheckoutIntent = /\b(checkout|chekout|cekout|bayar|pesan)\b/i.test(lowerMsg)
+    const targetUrl = isCheckoutIntent ? '/checkout' : '/cart'
+    const targetLabel = isCheckoutIntent ? 'halaman Checkout' : 'halaman Keranjang'
+
+    const total = addedNames.length
+    const checklist = addedNames.map(n => `✅ ${n}`).join('\n')
+    const failed = failedNames.map(n => `❌ ${n} (stok habis)`).join('\n')
+
+    streamMsg.content = `${[checklist, failed].filter(Boolean).join('\n')}\n\n${
+      total > 0
+        ? `🎉 ${total} produk berhasil ditambahkan!\n\n⏳ Mengarahkan ke ${targetLabel}...`
+        : '⚠️ Tidak ada produk yang berhasil ditambahkan.'
+    }`
+
+    await nextTick()
+    await scrollToBottom()
+    lastRecommendedProducts.value = []
+
+    if (total > 0) {
+      await new Promise(r => setTimeout(r, 2000))
+      chatOpen.value = false
+      await router.push(targetUrl)
+    }
+
+    return
+  }
+
   userInput.value = ''
 
   messages.value.push({
@@ -278,6 +677,36 @@ async function sendMessage() {
       throw new Error('Gagal menghubungi server AI.')
     }
 
+    // ── Deteksi response non-streaming (JSON) — greeting, navigate, blocked ──
+    const contentType = response.headers.get('content-type') || ''
+    if (contentType.includes('application/json')) {
+      const json = await response.json()
+      isTyping.value = false
+
+      aiMsg = {
+        role: 'bot',
+        content: json.reply || '⚠️ Tidak ada respons.',
+        isStreaming: false,
+        products: [],
+        isNavigating: json.action === 'navigate',
+      }
+      messages.value.push(aiMsg)
+      await scrollToBottom()
+
+      // Jika ada action navigate, tampilkan pesan dulu → tunggu user baca → redirect
+      if (json.action === 'navigate' && json.url) {
+        // Pastikan Vue render pesan dulu
+        await nextTick()
+        await scrollToBottom()
+        // Tunggu user baca (4 detik), baru redirect
+        await new Promise(r => setTimeout(r, 4000))
+        chatOpen.value = false
+        await router.push(json.url)
+      }
+      return
+    }
+
+    // ── Streaming SSE response (Ollama) ──
     if (!response.body) {
       throw new Error('Browser tidak mendukung stream response.')
     }
@@ -336,6 +765,7 @@ async function sendMessage() {
     await scrollToBottom()
 
     if (productsBuffer && productsBuffer.length > 0) {
+      lastRecommendedProducts.value = productsBuffer
       setTimeout(async () => {
         const lastMsg = messages.value[messages.value.length - 1]
 
@@ -365,6 +795,34 @@ async function sendMessage() {
   } finally {
     isTyping.value = false
     await scrollToBottom()
+  }
+}
+
+
+async function addAllToCart(products) {
+  // Cari pesan yang punya produk ini dan set loading state
+  const targetMsg = messages.value.find(m => m.products === products)
+  if (targetMsg) targetMsg._addingAll = true
+
+  const eligible = products.filter(p => p.stock > 0)
+  let addedCount = 0
+
+  for (const product of eligible) {
+    try {
+      await cartStore.addItem(product)
+      addedCount++
+    } catch (err) {
+      // skip produk yang gagal
+    }
+  }
+
+  if (targetMsg) targetMsg._addingAll = false
+
+  if (addedCount > 0) {
+    showToast(`${addedCount} produk berhasil ditambahkan ke keranjang 🛒`, 'success')
+    lastRecommendedProducts.value = []
+  } else {
+    showToast('Gagal menambahkan produk ke keranjang', 'error')
   }
 }
 
@@ -922,3 +1380,4 @@ async function handleAddToCart(product, event) {
   }
 }
 </style>
+
