@@ -119,13 +119,25 @@
         <span v-if="product.stock === 0">Habis</span>
         <span v-else>+ Tambah</span>
       </button>
+
+      <button
+        v-if="!mini && !userStore.isAdmin"
+        @click.prevent.stop="openAdminChat"
+        class="admin-chat-btn w-full mt-2 py-2 rounded-lg font-semibold flex items-center justify-center gap-1.5 transition-all duration-150"
+      >
+        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M7 18.5 3.5 21v-4.6A8 8 0 1 1 7 18.5Z" />
+        </svg>
+        Chat Admin e-BuildPC
+      </button>
     </div>
   </RouterLink>
 </template>
 
 <script setup>
 import { computed } from 'vue'
-import { formatPrice } from '../store.js'
+import { useRouter } from 'vue-router'
+import { adminChatStore, formatPrice, userStore } from '../store.js'
 import { PLACEHOLDER_IMAGE } from '../api/index.js'
 
 const props = defineProps({
@@ -140,9 +152,20 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['add-to-cart'])
+const router = useRouter()
 
 function handleAddToCart(event) {
   emit('add-to-cart', props.product, event)
+}
+
+async function openAdminChat() {
+  if (!userStore.isLoggedIn) {
+    router.push({ path: '/login', query: { redirect: `/produk/${props.product.id}` } })
+    return
+  }
+
+  await adminChatStore.startProductChat(props.product)
+  window.dispatchEvent(new CustomEvent('admin-chat:open'))
 }
 
 const API_BASE = 'http://localhost:3000'
@@ -300,6 +323,19 @@ const stockTextClass = computed(() => {
 .add-cart-btn:disabled {
   background: rgba(100, 116, 139, 0.55);
   border-color: rgba(148, 163, 184, 0.2);
+}
+
+.admin-chat-btn {
+  color: #c7d2fe;
+  background: rgba(15, 23, 42, 0.72);
+  border: 1px solid rgba(129, 140, 248, 0.28);
+  font-size: 0.7rem;
+}
+
+.admin-chat-btn:hover {
+  color: #ffffff;
+  background: rgba(79, 70, 229, 0.22);
+  border-color: rgba(167, 139, 250, 0.48);
 }
 
 .add-cart-normal {

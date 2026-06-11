@@ -149,4 +149,14 @@ export const chatApi = {
   send: (message, history) => http.post('/api/chat-ai', { message, history }),
 }
 
+// ── Admin Chat ───────────────────────────────────────────────────────────────
+export const adminChatApi = {
+  list: () => http.get('/api/admin-chats', { auth: true }),
+  create: (productId) => http.post('/api/admin-chats', { product_id: productId }, { auth: true }),
+  get: (threadId) => http.get(`/api/admin-chats/${threadId}`, { auth: true }),
+  send: (threadId, message) =>
+    http.post(`/api/admin-chats/${threadId}/messages`, { message }, { auth: true }),
+  remove: (threadId) => http.delete(`/api/admin-chats/${threadId}`, { auth: true }),
+}
+
 export { assetUrl }

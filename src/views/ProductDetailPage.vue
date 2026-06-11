@@ -192,6 +192,17 @@
               {{ product.stock === 0 ? 'Stok Habis' : 'Tambahkan ke Keranjang' }}
             </button>
 
+            <button
+              v-if="!userStore.isAdmin"
+              @click="openAdminChat"
+              class="secondary-btn w-full py-3.5 rounded-2xl text-sm font-semibold text-center flex items-center justify-center gap-2 transition-all hover:-translate-y-0.5"
+            >
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M7 18.5 3.5 21v-4.6A8 8 0 1 1 7 18.5Z" />
+              </svg>
+              Chat Admin e-BuildPC
+            </button>
+
             <RouterLink
               to="/katalog"
               class="secondary-btn w-full py-3.5 rounded-2xl text-sm font-semibold text-center transition-all hover:-translate-y-0.5"
@@ -240,18 +251,29 @@
 
 <script setup>
 import { computed, ref, watch, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import ProductCard from '../components/ProductCard.vue'
 import ReviewSection from '../components/ReviewSection.vue'
-import { productStore, formatPrice } from '../store.js'
+import { adminChatStore, productStore, formatPrice, userStore } from '../store.js'
 import { productApi } from '../api/index.js'
 
 const emit = defineEmits(['add-to-cart'])
 const route = useRoute()
+const router = useRouter()
 
 const product = ref(null)
 const loading = ref(true)
 const error = ref(null)
+
+async function openAdminChat() {
+  if (!userStore.isLoggedIn) {
+    router.push({ path: '/login', query: { redirect: route.fullPath } })
+    return
+  }
+
+  await adminChatStore.startProductChat(product.value)
+  window.dispatchEvent(new CustomEvent('admin-chat:open'))
+}
 
 async function loadProduct(id) {
   loading.value = true

@@ -124,16 +124,31 @@
 
         <div v-else class="hidden md:flex flex-1"></div>
 
-        <div class="flex items-center gap-1 flex-shrink-0 ml-auto md:ml-0">
+        <div class="navbar-actions flex items-center gap-1 flex-shrink-0 ml-auto md:ml-0">
+          <button
+            v-if="!isAdmin || userStore.isLoggedIn"
+            @click="openAdminChat"
+            title="Chat Admin e-BuildPC"
+            class="nav-icon-btn"
+            :class="{ 'nav-icon-active': adminChatOpen }"
+            aria-label="Chat Admin e-BuildPC"
+            :aria-expanded="adminChatOpen"
+          >
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M7 18.5 3.5 21v-4.6A8 8 0 1 1 7 18.5Z" />
+              <path stroke-linecap="round" d="M8 10h.01M12 10h.01M16 10h.01" stroke-width="2.4" />
+            </svg>
+          </button>
+
           <RouterLink
             v-if="!isAdmin"
             to="/cart"
             id="cart-btn"
             title="Keranjang"
-            class="relative w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-all duration-150"
+            class="nav-icon-btn"
+            aria-label="Keranjang"
           >
             <svg
-              class="w-5 h-5"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -231,7 +246,8 @@
 
           <button
             @click="mobileMenuOpen = !mobileMenuOpen"
-            class="md:hidden w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-all"
+            class="nav-icon-btn md:hidden"
+            aria-label="Buka menu navigasi"
           >
             <svg
               v-if="!mobileMenuOpen"
@@ -312,6 +328,10 @@
           </button>
         </div>
       </Transition>
+
+      <Transition name="dropdown">
+        <AdminChatPanel v-if="adminChatOpen" @close="adminChatOpen = false" />
+      </Transition>
     </div>
   </nav>
 </template>
@@ -321,6 +341,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { userStore, productStore, formatPrice } from '../store.js'
 import { assetUrl } from '../api/index.js'
+import AdminChatPanel from './AdminChatPanel.vue'
 
 defineProps({
   cartCount: {
@@ -336,6 +357,7 @@ const isScrolled = ref(false)
 const searchQuery = ref('')
 const showSuggestions = ref(false)
 const searchContainer = ref(null)
+const adminChatOpen = ref(false)
 
 const isAdmin = computed(() => userStore.isAdmin)
 
@@ -421,18 +443,67 @@ function handleLogout() {
   router.push('/login')
 }
 
+function openAdminChat() {
+  if (!userStore.isLoggedIn) {
+    router.push('/login')
+    return
+  }
+
+  adminChatOpen.value = !adminChatOpen.value
+}
+
+function handleOpenAdminChat() {
+  adminChatOpen.value = true
+}
+
 onMounted(() => {
   window.addEventListener('scroll', handleScroll)
   document.addEventListener('click', handleClickOutside)
+  window.addEventListener('admin-chat:open', handleOpenAdminChat)
 })
 
 onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll)
   document.removeEventListener('click', handleClickOutside)
+  window.removeEventListener('admin-chat:open', handleOpenAdminChat)
 })
 </script>
 
 <style scoped>
+.navbar-actions {
+  min-height: 36px;
+}
+
+.nav-icon-btn {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  color: #9ca3af;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 36px;
+  line-height: 1;
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.nav-icon-btn > svg {
+  display: block;
+  width: 19px;
+  height: 19px;
+  flex-shrink: 0;
+}
+
+.nav-icon-btn:hover,
+.nav-icon-active {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
 .badge-enter-active {
   animation: badgeIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -481,5 +552,17 @@ onUnmounted(() => {
 .dropdown-leave-to {
   opacity: 0;
   transform: translateY(-6px);
+}
+
+@media (max-width: 420px) {
+  .navbar-actions {
+    gap: 0;
+  }
+
+  .nav-icon-btn {
+    width: 34px;
+    height: 34px;
+    flex-basis: 34px;
+  }
 }
 </style>

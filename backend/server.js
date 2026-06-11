@@ -10,6 +10,7 @@ import chatRoutes from "./routes/chat.js";
 import badgeRoutes from "./routes/badge.js";
 import reviewRoutes from "./routes/reviews.js";
 import orderRoutes from "./routes/orders.js";
+import adminChatRoutes from "./routes/adminChats.js";
 
 dotenv.config();
 
@@ -99,6 +100,11 @@ app.use(
 app.use(
   "/api/orders",
   orderRoutes
+);
+
+app.use(
+  "/api/admin-chats",
+  adminChatRoutes
 );
 
 const PORT =

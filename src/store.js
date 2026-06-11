@@ -1,5 +1,5 @@
 import { reactive } from 'vue'
-import { authApi, productApi, cartApi, assetUrl, PLACEHOLDER_IMAGE } from './api/index.js'
+import { authApi, productApi, cartApi, adminChatApi, assetUrl, PLACEHOLDER_IMAGE } from './api/index.js'
 
 // ════════════════════════════════════════════════════════════
 // PRODUCT STORE — fetched from the backend (GET /api/products)
@@ -74,6 +74,7 @@ export const userStore = reactive({
     localStorage.removeItem('token')
 
     cartStore.reset()
+    adminChatStore.reset()
   },
 
   async init() {
@@ -320,6 +321,86 @@ export const cartStore = reactive({
     }
 
     await this.fetch()
+  },
+})
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ADMIN CHAT STORE
+// ═══════════════════════════════════════════════════════════════════════════════
+export const adminChatStore = reactive({
+  threads: [],
+  messages: [],
+  activeThread: null,
+  loading: false,
+  sending: false,
+  error: null,
+
+  async fetchThreads() {
+    if (!userStore.isLoggedIn) return
+
+    try {
+      const rows = await adminChatApi.list()
+      this.threads.splice(0, this.threads.length, ...(rows || []).map((thread) => ({
+        ...thread,
+        product_image: assetUrl(thread.product_image),
+      })))
+    } catch (err) {
+      this.error = err.message
+    }
+  },
+
+  async startProductChat(product) {
+    const thread = await adminChatApi.create(product.id)
+    await this.fetchThreads()
+    await this.openThread(thread.thread_id)
+    return thread
+  },
+
+  async openThread(threadId) {
+    this.loading = true
+    this.error = null
+
+    try {
+      const data = await adminChatApi.get(threadId)
+      this.activeThread = {
+        ...data.thread,
+        product_image: assetUrl(data.thread.product_image),
+      }
+      this.messages.splice(0, this.messages.length, ...(data.messages || []))
+    } catch (err) {
+      this.error = err.message
+    } finally {
+      this.loading = false
+    }
+  },
+
+  async sendMessage(message) {
+    if (!this.activeThread || !message.trim()) return
+    this.sending = true
+
+    try {
+      await adminChatApi.send(this.activeThread.thread_id, message.trim())
+      await this.openThread(this.activeThread.thread_id)
+      await this.fetchThreads()
+    } finally {
+      this.sending = false
+    }
+  },
+
+  async deleteThread(threadId) {
+    await adminChatApi.remove(threadId)
+    if (this.activeThread?.thread_id === threadId) {
+      this.activeThread = null
+      this.messages.splice(0)
+    }
+    await this.fetchThreads()
+  },
+
+  reset() {
+    this.threads.splice(0)
+    this.messages.splice(0)
+    this.activeThread = null
+    this.error = null
   },
 })
 
