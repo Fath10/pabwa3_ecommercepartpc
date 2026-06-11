@@ -22,6 +22,7 @@ JWT_SECRET= isi_rahasia_jwt_anda
 DATABASE_URL= ''
 ```
 
+
 3. DATABASE_URL Minta/Ada diGroup
 
 Langkah 2 — Install dependensi

@@ -946,4 +946,39 @@ onMounted(async () => {
 .modal-fade-leave-to {
   opacity: 0;
 }
+/* FIX SELECT DROPDOWN ADMIN - DARK MODE */
+select.admin-input,
+select.action-select {
+  color-scheme: dark;
+  background-color: rgba(17, 24, 39, 0.98) !important;
+  color: #f8fafc !important;
+  border-color: rgba(129, 140, 248, 0.45) !important;
+}
+
+select.admin-input:focus,
+select.action-select:focus {
+  border-color: rgba(129, 140, 248, 0.85) !important;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.18) !important;
+}
+
+select.admin-input option,
+select.admin-input optgroup,
+select.action-select option,
+select.action-select optgroup {
+  background-color: #111827 !important;
+  color: #f8fafc !important;
+}
+
+select.admin-input option:checked,
+select.action-select option:checked {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+}
+
+select.admin-input option:hover,
+select.action-select option:hover {
+  background-color: #1d4ed8 !important;
+  color: #ffffff !important;
+}
+
 </style>
