@@ -59,12 +59,13 @@
           >
             <!-- Badge -->
             <span
+              v-if="product.badge"
               class="absolute top-4 left-4 px-3 py-1 rounded-full text-white font-bold text-xs z-10"
               :class="badgeClass"
             >{{ product.badge }}</span>
 
             <img
-              :src="product.image"
+              :src="productImage"
               :alt="product.name"
               class="h-72 w-full object-contain p-8 transition-transform duration-500 hover:scale-105"
             />
@@ -151,11 +152,11 @@
           </div>
 
           <!-- Specs -->
-          <div class="mb-8">
+          <div v-if="productSpecs.length > 0" class="mb-8">
             <h2 class="text-sm font-bold uppercase tracking-wider mb-3" style="color: #94a3b8;">Spesifikasi Utama</h2>
             <div class="grid grid-cols-2 gap-2">
               <div
-                v-for="(spec, i) in product.specs"
+                v-for="(spec, i) in productSpecs"
                 :key="i"
                 class="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium"
                 style="background: #f8fafc; border: 1px solid #e2e8f0; color: #1e293b;"
@@ -264,7 +265,9 @@ async function loadProduct(id) {
 
 watch(
   () => route.params.id,
-  (id) => loadProduct(id),
+  (id) => {
+    if (id) loadProduct(id)
+  },
   { immediate: true }
 )
 
@@ -281,6 +284,28 @@ const suggestedProducts = computed(() => {
     p => p.id !== product.value.id && p.category !== product.value.category
   )
   return [...sameCategory, ...others].slice(0, 4)
+})
+
+// ── Computed: Gambar produk ─────────────────────────────
+const productImage = computed(() => {
+  if (!product.value) return ''
+  const img = product.value.image
+  if (!img) return '/placeholder.jpg'
+  // Jika URL relatif dari backend (/uploads/...), tambahkan base URL
+  if (img.startsWith('/uploads')) return `http://localhost:3000${img}`
+  return img
+})
+
+// ── Computed: Specs (dari object atau array) ────────────
+const productSpecs = computed(() => {
+  if (!product.value?.specs) return []
+  const s = product.value.specs
+  if (Array.isArray(s)) return s
+  // Jika object, ubah jadi array "key: value"
+  if (typeof s === 'object') {
+    return Object.entries(s).map(([k, v]) => `${k}: ${v}`)
+  }
+  return []
 })
 
 // ── Stock helpers ──────────────────────────────────────

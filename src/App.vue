@@ -99,19 +99,21 @@
                     class="ai-bubble"
                     :class="msg.role === 'user' ? 'ai-bubble-user' : 'ai-bubble-bot'"
                   >
-                    {{ msg.content }}
+                    {{ msg.role === 'bot' ? stripMarkdown(msg.content) : msg.content }}
                   </div>
                 </div>
 
                 <div
                   v-if="msg.products && msg.products.length > 0"
-                  class="flex gap-2 overflow-x-auto py-2 px-1 w-full snap-x snap-mandatory scrollbar-hide flex-shrink-0"
+                  class="flex items-stretch gap-2 overflow-x-auto py-2 px-1 w-full snap-x snap-mandatory scrollbar-hide flex-shrink-0"
                   style="max-width: 100%;"
                 >
                   <div
-                    v-for="prod in msg.products"
+                    v-for="(prod, idx) in msg.products"
                     :key="prod.id"
-                    class="flex-shrink-0 w-44 snap-center"
+                    class="flex-shrink-0 snap-center product-card-animate"
+                    style="width: 176px;"
+                    :style="{ '--card-delay': `${idx * 80}ms` }"
                   >
                     <ProductCard
                       :product="prod"
@@ -188,7 +190,7 @@ import NavBar from './components/NavBar.vue'
 import FooterSection from './components/FooterSection.vue'
 import ProductCard from './components/ProductCard.vue'
 import { cartStore } from './store.js'
-import { chatApi } from './api/index.js'
+import { API_BASE } from './api/client.js'
 
 const router = useRouter()
 const route = useRoute()
@@ -197,6 +199,23 @@ const isAdminRoute = computed(() => route.path.startsWith('/admin'))
 
 const toasts = ref([])
 let toastId = 0
+
+function stripMarkdown(text) {
+  if (!text) return ''
+
+  return text
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/__(.+?)__/g, '$1')
+    .replace(/\*(.+?)\*/g, '$1')
+    .replace(/_(.+?)_/g, '$1')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/^\s*[-*]\s+/gm, '• ')
+    .replace(/^[-*]{3,}\s*$/gm, '')
+    .replace(/`[^`]+`/g, '')
+    .replace(/```[\s\S]*?```/g, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
 
 const flyParticles = ref([])
 let particleId = 0
@@ -215,50 +234,134 @@ const messages = ref([
 ])
 
 const quickReplies = [
+  '🖥️ Rakit PC Gaming 10 Juta',
+  '🖥️ Rakit PC Gaming 20 Juta',
   '💻 Rekomendasi PC Gaming',
-  '🔧 Tips Merakit PC',
-  '💰 Budget 10 Jutaan',
-  '❓ Cara Order',
+  '💰 Budget 5 Jutaan',
 ]
 
 async function sendMessage() {
   if (!userInput.value.trim() || isTyping.value) return
 
-  const text = userInput.value.trim()
+  const userMsg = userInput.value.trim()
   userInput.value = ''
 
   messages.value.push({
     role: 'user',
-    content: text,
+    content: userMsg,
   })
 
+  let aiMsg = null
+
   isTyping.value = true
-  await scrollToBottom()
+  await scrollToBottom(true)
 
   try {
-    const historyToSend = messages.value
-      .slice(-10)
-      .filter((_, i) => i < messages.value.length - 1)
-      .map(m => ({
-        role: m.role,
-        text: m.content,
-      }))
-
-    const data = await chatApi.send(text, historyToSend)
-
-    messages.value.push({
-      role: 'bot',
-      content: data.reply || '⚠️ Tidak ada respons dari server.',
-      products: data.products || [],
+    const response = await fetch(`${API_BASE}/api/chat-ai`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        message: userMsg,
+        history: messages.value
+          .slice(-6)
+          .filter((_, i) => i < messages.value.length - 1)
+          .map((msg) => ({
+            role: msg.role,
+            text: msg.content,
+          })),
+      }),
     })
+
+    if (!response.ok) {
+      throw new Error('Gagal menghubungi server AI.')
+    }
+
+    if (!response.body) {
+      throw new Error('Browser tidak mendukung stream response.')
+    }
+
+    const reader = response.body.getReader()
+    const decoder = new TextDecoder()
+
+    let buffer = ''
+    let fullTextBuffer = ''
+    let productsBuffer = []
+
+    while (true) {
+      const { done, value } = await reader.read()
+
+      if (done) break
+
+      buffer += decoder.decode(value, {
+        stream: true,
+      })
+
+      const lines = buffer.split('\n\n')
+      buffer = lines.pop()
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue
+
+        let json
+
+        try {
+          json = JSON.parse(line.slice(6))
+        } catch {
+          continue
+        }
+
+        if (json.token) {
+          fullTextBuffer += json.token
+        } else if (json.type === 'products') {
+          productsBuffer = json.products || []
+        } else if (json.reply) {
+          fullTextBuffer += json.reply
+        }
+      }
+    }
+
+    isTyping.value = false
+
+    aiMsg = {
+      role: 'bot',
+      content: fullTextBuffer || '⚠️ Tidak ada respons dari server.',
+      isStreaming: false,
+      products: [],
+    }
+
+    messages.value.push(aiMsg)
+
+    await scrollToBottom()
+
+    if (productsBuffer && productsBuffer.length > 0) {
+      setTimeout(async () => {
+        const lastMsg = messages.value[messages.value.length - 1]
+
+        if (lastMsg && lastMsg.role === 'bot') {
+          lastMsg.products = productsBuffer
+          await nextTick()
+          await scrollToBottom()
+        }
+      }, 700)
+    }
   } catch (err) {
-    messages.value.push({
-      role: 'bot',
-      content:
-        err.data?.reply ||
-        err.message ||
-        '⚠️ Maaf, terjadi kesalahan saat menghubungi server. Pastikan backend sudah berjalan.',
-    })
+    console.error('Stream error:', err)
+
+    if (!aiMsg) {
+      messages.value.push({
+        role: 'bot',
+        content:
+          err.message ||
+          '⚠️ Gagal menghubungi server.',
+        isStreaming: false,
+        products: [],
+      })
+    } else {
+      aiMsg.content = '⚠️ Gagal menghubungi server.'
+      aiMsg.isStreaming = false
+    }
   } finally {
     isTyping.value = false
     await scrollToBottom()
@@ -270,11 +373,19 @@ async function sendQuickReply(text) {
   await sendMessage()
 }
 
-async function scrollToBottom() {
+async function scrollToBottom(force = false) {
   await nextTick()
 
   if (messagesContainer.value) {
-    messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+    const element = messagesContainer.value
+    const distanceFromBottom =
+      element.scrollHeight -
+      element.scrollTop -
+      element.clientHeight
+
+    if (force || distanceFromBottom < 50) {
+      element.scrollTop = element.scrollHeight
+    }
   }
 }
 
@@ -283,7 +394,7 @@ function toggleChat() {
 
   if (chatOpen.value) {
     hasNotification.value = false
-    nextTick(() => scrollToBottom())
+    nextTick(() => scrollToBottom(true))
   }
 }
 
@@ -301,7 +412,7 @@ function showToast(message, type = 'success') {
   })
 
   setTimeout(() => {
-    toasts.value = toasts.value.filter(t => t.id !== id)
+    toasts.value = toasts.value.filter((toast) => toast.id !== id)
   }, 3000)
 }
 
@@ -346,7 +457,7 @@ async function handleAddToCart(product, event) {
   })
 
   setTimeout(() => {
-    flyParticles.value = flyParticles.value.filter(p => p.id !== id)
+    flyParticles.value = flyParticles.value.filter((particle) => particle.id !== id)
   }, 700)
 }
 </script>
@@ -617,6 +728,19 @@ async function handleAddToCart(product, event) {
   display: flex;
   align-items: flex-end;
   gap: 8px;
+  animation: messageSlideIn 0.4s ease-out forwards;
+}
+
+@keyframes messageSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .ai-message-user {
@@ -688,6 +812,23 @@ async function handleAddToCart(product, event) {
   30% {
     transform: translateY(-6px);
     opacity: 1;
+  }
+}
+
+.product-card-animate {
+  animation: cardSlideIn 0.5s ease-out forwards;
+  animation-delay: var(--card-delay, 0ms);
+}
+
+@keyframes cardSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
 }
 

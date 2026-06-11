@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import compression from "compression";
 import dotenv from "dotenv";
 import authRoutes from "./routes/auth.js";
 import productRoutes from "./routes/products.js";
@@ -35,6 +36,14 @@ app.use(
 );
 
 app.use(express.json());
+
+// Disable compression untuk SSE endpoint (chat-ai)
+app.use((req, res, next) => {
+  if (req.path.includes("/chat-ai")) {
+    return next();
+  }
+  compression()(req, res, next);
+});
 
 app.use(
   "/uploads",

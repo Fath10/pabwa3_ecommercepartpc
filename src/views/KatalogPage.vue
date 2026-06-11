@@ -153,18 +153,28 @@
           </button>
         </div>
       </div>
-
-      <!-- Loading state -->
-      <div v-if="loading" class="text-center py-20">
-        <div class="inline-block w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
-        <p class="mt-4 text-sm" style="color: #6b7280;">Memuat produk…</p>
+      <!-- Loading skeleton -->
+      <div v-if="isLoading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div
+          v-for="i in 8"
+          :key="i"
+          class="rounded-xl overflow-hidden animate-pulse"
+          style="border: 1px solid #e5e7eb;"
+        >
+          <div class="h-44 bg-gray-200"></div>
+          <div class="p-3 space-y-2">
+            <div class="h-3 bg-gray-200 rounded w-3/4"></div>
+            <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+            <div class="h-8 bg-gray-200 rounded mt-3"></div>
+          </div>
+        </div>
       </div>
 
       <!-- Error state -->
-      <div v-else-if="loadError" class="text-center py-20">
+      <div v-else-if="isError" class="text-center py-20">
         <div class="text-6xl mb-4">⚠️</div>
         <h3 class="text-xl font-bold mb-2" style="color: #111827;">Gagal Memuat Produk</h3>
-        <p class="text-gray-400 mb-6">{{ loadError }}</p>
+        <p class="text-gray-400 mb-6">Pastikan server backend berjalan di port 3000.</p>
         <button
           @click="productStore.fetchAll(true)"
           class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition-all"
@@ -268,6 +278,7 @@ const emit = defineEmits(['add-to-cart'])
 const route = useRoute()
 const router = useRouter()
 
+// ── State ──────────────────────────────────────
 const search = ref('')
 const selectedCategory = ref('')
 const sortBy = ref('default')
@@ -280,7 +291,8 @@ const PRODUCTS_PER_PAGE = 12
 // Catalog data comes from the backend via the shared product store.
 const products = computed(() => productStore.items)
 const categories = computed(() => productStore.categories)
-const loading = computed(() => productStore.loading)
+const isLoading = computed(() => productStore.loading)
+const isError = computed(() => !!productStore.error)
 const loadError = computed(() => productStore.error)
 
 function closeDropdowns() {

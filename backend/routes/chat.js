@@ -3,7 +3,7 @@ import { chat } from "../controllers/chatController.js";
 
 const router = express.Router();
 
-// POST /api/chat-ai
 router.post("/", chat);
+router.options("/", (req, res) => res.sendStatus(200)); // ← CORS preflight
 
 export default router;

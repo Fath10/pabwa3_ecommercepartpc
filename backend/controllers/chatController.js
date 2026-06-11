@@ -154,11 +154,31 @@ function sanitizeOutput(text) {
   // Hapus pola yang terlihat seperti kode
   cleaned = cleaned.replace(/^\s*(function|def|class|import|const|let|var|<!DOCTYPE)\b.*$/gm, "");
 
+  // ── Hapus Markdown formatting ──
+  // Bold: **teks** atau __teks__
+  cleaned = cleaned.replace(/\*\*(.+?)\*\*/g, "$1");
+  cleaned = cleaned.replace(/__(.+?)__/g, "$1");
+
+  // Italic: *teks* atau _teks_
+  cleaned = cleaned.replace(/\*(.+?)\*/g, "$1");
+  cleaned = cleaned.replace(/_(.+?)_/g, "$1");
+
+  // Header: ### ## #
+  cleaned = cleaned.replace(/^#{1,6}\s+/gm, "");
+
+  // Bullet list: - item atau * item (di awal baris)
+  cleaned = cleaned.replace(/^\s*[-*]\s+/gm, "• ");
+
+  // Numbered list: 1. item → tetap, tapi hapus jika ada format aneh
+  // Horizontal rule: --- atau ***
+  cleaned = cleaned.replace(/^[-*]{3,}\s*$/gm, "");
+
   // Trim whitespace berlebih
   cleaned = cleaned.replace(/\n{3,}/g, "\n\n").trim();
 
   return cleaned;
 }
+
 
 // ══════════════════════════════════════════════
 // Helper: Levenshtein distance (untuk fuzzy matching typo)
@@ -568,11 +588,218 @@ function formatProductContext(products) {
 }
 
 // ══════════════════════════════════════════════
-// Helper: Panggil Ollama API
+// RAKIT PC: Deteksi & alokasi budget per komponen
 // ══════════════════════════════════════════════
-async function callOllama(messages) {
-  const baseUrl =
-    process.env.OLLAMA_BASE_URL || "http://localhost:11434";
+const RAKIT_PC_PATTERNS = [
+  // Eksplisit: rakit/build + pc
+  /\b(rakit|build|bangun|susun|bikin|buat)\b.{0,30}\b(pc|komputer|computer|gaming\s*pc|gaming\s*rig|rig)\b/i,
+  /\b(pc|komputer|gaming)\b.{0,30}\b(rakit|build|bangun|susun)\b/i,
+
+  // Rekomendasi + komponen/build/pc gaming
+  /\b(rekomendasikan?|sarankan?|suggest|recommend|kasih\s+rekom|beri\s+rekom)\b.{0,40}\b(rakitan|komponen|build|pc\s*gaming|spek|part)\b/i,
+  /\b(spek|spec|komponen|part|build)\b.{0,20}\b(pc|gaming|komputer)\b.{0,20}\d/i,
+  /\b(build|rakit|spek)\b.{0,20}\b(budget|bajet|anggaran)\b/i,
+
+  // "rekomendasi pc X juta" — pola paling umum
+  /\b(rekomendasi|rekom|saran|suggest)\b.{0,20}\b(pc|komputer|gaming)\b.{0,20}\d/i,
+  /\b(pc|komputer|gaming)\b.{0,10}\d+\s*(juta|jt|rb|ribu)/i,
+
+  // Langsung sebut budget + pc
+  /\d+\s*(juta|jt).{0,20}\b(pc|rakit|gaming|komputer|komponen)\b/i,
+  /\b(pc|gaming|komputer)\b.{0,10}(bajet|budget|anggaran).{0,10}\d/i,
+];
+
+function isRakitPCQuery(message) {
+  return RAKIT_PC_PATTERNS.some((p) => p.test(message));
+}
+
+// Alokasi budget per kategori (total 100%)
+const PC_BUILD_ALLOCATION = [
+  { category: "GPU",         pct: 0.30, label: "GPU / Kartu Grafis" },
+  { category: "Processor",   pct: 0.20, label: "Processor (CPU)"    },
+  { category: "Motherboard", pct: 0.15, label: "Motherboard"        },
+  { category: "RAM",         pct: 0.13, label: "RAM"                },
+  { category: "Storage",     pct: 0.10, label: "Storage (SSD/HDD)"  },
+  { category: "PSU",         pct: 0.05, label: "Power Supply (PSU)" },
+  { category: "Casing",      pct: 0.04, label: "Casing"             },
+  { category: "Cooling",     pct: 0.03, label: "CPU Cooler"         },
+];
+
+// Ambil semua kategori dari database (untuk mapping dinamis)
+async function getDBCategories() {
+  try {
+    const result = await pool.query(
+      `SELECT category_id, category_name FROM categories ORDER BY category_id ASC`
+    );
+    return result.rows; // [{ category_id, category_name }]
+  } catch (err) {
+    console.error("getDBCategories error:", err.message);
+    return [];
+  }
+}
+
+// Cari nama kategori DB yang paling cocok dengan slot build
+function matchCategory(slotCategory, dbCategories) {
+  const lower = slotCategory.toLowerCase();
+
+  // Sinonim mapping: slot name → kata kunci untuk mencocokkan kategori DB
+  const synonyms = {
+    gpu: ["gpu", "vga", "grafis", "graphic", "kartu grafis", "video"],
+    processor: ["processor", "prosesor", "cpu", "intel", "amd"],
+    motherboard: ["motherboard", "mobo", "mainboard"],
+    ram: ["ram", "memory", "memori", "ddr"],
+    storage: ["storage", "ssd", "hdd", "nvme", "harddisk"],
+    psu: ["psu", "power supply", "power"],
+    casing: ["casing", "case", "kabinet", "chassis"],
+    cooling: ["cooling", "cooler", "heatsink", "fan", "aio"],
+    monitor: ["monitor", "layar", "display"],
+    laptop: ["laptop", "notebook"],
+  };
+
+  const keywords = synonyms[lower] || [lower];
+
+  // Cari kategori DB yang namanya mengandung salah satu keyword
+  for (const kw of keywords) {
+    const match = dbCategories.find((c) =>
+      c.category_name.toLowerCase().includes(kw)
+    );
+    if (match) return match.category_name;
+  }
+  return null; // tidak ditemukan
+}
+
+// Ambil produk — algoritma greedy: sebanyak mungkin komponen dalam budget
+async function fetchPCBuild(totalBudget) {
+  const dbCategories = await getDBCategories();
+
+  // Step 1: Ambil produk TERMURAH per kategori dari DB
+  const cheapestPerSlot = [];
+  for (const slot of PC_BUILD_ALLOCATION) {
+    const realCategoryName = matchCategory(slot.category, dbCategories);
+    if (!realCategoryName) continue;
+
+    try {
+      const result = await pool.query(
+        `SELECT p.product_id, p.product_name, p.description, p.price, p.stock, c.category_name,
+           COALESCE((SELECT pi.image_url FROM product_images pi WHERE pi.product_id = p.product_id LIMIT 1), NULL) AS image_url
+         FROM products p
+         LEFT JOIN categories c ON p.category_id = c.category_id
+         WHERE p.is_active = TRUE AND p.stock > 0
+           AND LOWER(c.category_name) = LOWER($1)
+         ORDER BY p.price ASC LIMIT 1`,
+        [realCategoryName]
+      );
+      if (result.rows.length > 0) {
+        cheapestPerSlot.push({
+          ...result.rows[0],
+          slot_label: slot.label,
+          slot_category: slot.category,
+          realCategoryName,
+        });
+      }
+    } catch (err) {
+      console.error(`PC build cheapest fetch [${slot.category}]:`, err.message);
+    }
+  }
+
+  // Step 2: Urutkan dari termurah ke termahal → greedy pilih yang masuk budget
+  const sorted = [...cheapestPerSlot].sort((a, b) => Number(a.price) - Number(b.price));
+  let running = 0;
+  const selected = new Set();
+
+  for (const item of sorted) {
+    const price = Number(item.price);
+    if (running + price <= totalBudget) {
+      selected.add(item.slot_category);
+      item._selected = true;
+      running += price;
+    }
+  }
+
+  // Step 3: Dengan sisa budget, coba upgrade GPU atau CPU (prioritas tertinggi)
+  const UPGRADE_PRIORITY = ["GPU", "Processor", "Motherboard", "RAM", "Storage"];
+  const remaining = totalBudget - running;
+
+  for (const slotKey of UPGRADE_PRIORITY) {
+    const base = cheapestPerSlot.find(
+      (s) => s.slot_category.toLowerCase() === slotKey.toLowerCase() && s._selected
+    );
+    if (!base) continue;
+
+    const upgradeMax = remaining + Number(base.price);
+    try {
+      const upgraded = await pool.query(
+        `SELECT p.product_id, p.product_name, p.description, p.price, p.stock, c.category_name,
+           COALESCE((SELECT pi.image_url FROM product_images pi WHERE pi.product_id = p.product_id LIMIT 1), NULL) AS image_url
+         FROM products p
+         LEFT JOIN categories c ON p.category_id = c.category_id
+         WHERE p.is_active = TRUE AND p.stock > 0
+           AND LOWER(c.category_name) = LOWER($1)
+           AND p.price <= $2 AND p.price > $3
+         ORDER BY p.price DESC LIMIT 1`,
+        [base.realCategoryName, upgradeMax, Number(base.price)]
+      );
+      if (upgraded.rows.length > 0) {
+        // Ganti dengan versi upgrade
+        const upgradedPrice = Number(upgraded.rows[0].price);
+        running = running - Number(base.price) + upgradedPrice;
+        Object.assign(base, upgraded.rows[0]);
+        break; // Hanya upgrade satu komponen
+      }
+    } catch (err) {
+      console.error(`PC build upgrade [${slotKey}]:`, err.message);
+    }
+  }
+
+  // Step 4: Bangun hasil — hanya masukkan komponen yang masuk budget
+  const withinBudget = cheapestPerSlot.filter((s) => s._selected);
+
+  // Susun kembali sesuai urutan PC_BUILD_ALLOCATION
+  const slotOrder = PC_BUILD_ALLOCATION.map((s) => s.category.toLowerCase());
+  const sortBySlot = (a, b) =>
+    slotOrder.indexOf(a.slot_category.toLowerCase()) -
+    slotOrder.indexOf(b.slot_category.toLowerCase());
+
+  const buildParts = withinBudget.sort(sortBySlot).map((p) => ({ ...p, overBudget: false }));
+
+  return buildParts;
+}
+
+
+
+// Format build summary untuk context LLM
+function formatBuildContext(parts, totalBudget) {
+  const fmt = (n) =>
+    new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
+
+  const totalWithin = parts.reduce((s, p) => s + Number(p.price), 0);
+
+  const withinLines = parts.map(
+    (p) => `- [${p.slot_label}] ${p.product_name} | Harga: ${fmt(p.price)} | Stok: ${p.stock} unit`
+  );
+
+  const result = [
+    `Budget user: ${fmt(totalBudget)}`,
+    "",
+  ];
+
+  if (withinLines.length > 0) {
+    result.push("Komponen yang BISA DIDAPATKAN dengan budget ini:");
+    result.push(...withinLines);
+    result.push(`Subtotal: ${fmt(totalWithin)}`);
+    result.push(`Sisa budget: ${fmt(totalBudget - totalWithin)}`);
+  } else {
+    result.push("TIDAK ADA komponen apapun yang bisa didapatkan dengan budget ini. Harga part PC paling murah di toko melebihi budget user.");
+  }
+
+  return result.join("\n");
+}
+
+// ══════════════════════════════════════════════
+// Helper: Panggil Ollama API dengan Streaming
+// ══════════════════════════════════════════════
+async function callOllamaStream(messages, res) {
+  const baseUrl = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
   const model = process.env.OLLAMA_MODEL || "llama3.2";
 
   const response = await fetch(`${baseUrl}/api/chat`, {
@@ -581,42 +808,57 @@ async function callOllama(messages) {
     body: JSON.stringify({
       model,
       messages,
-      stream: false,
+      stream: true, // ← STREAMING ON
       options: {
-        temperature: 0.5,
-        top_p: 0.85,
-        num_predict: 512,
+        temperature: 0.1,   // sangat rendah = lebih akurat, tidak mengarang
+        top_p: 0.5,
+        num_predict: 400,
       },
     }),
   });
 
   if (!response.ok) {
-    const errText = await response.text();
-    throw new Error(
-      `Ollama API error (${response.status}): ${errText}`
-    );
+    throw new Error(`Ollama API error (${response.status})`);
   }
 
-  const data = await response.json();
-  return data.message?.content || "Maaf, saya tidak bisa memberikan jawaban saat ini.";
+  let fullText = "";
+  const decoder = new TextDecoder();
+
+  for await (const chunk of response.body) {
+    const line = decoder.decode(chunk).trim();
+    if (!line) continue;
+
+    try {
+      const parsed = JSON.parse(line);
+      const token = parsed.message?.content || "";
+      if (!token) continue; // Skip token kosong
+
+      fullText += token;
+
+      // Kirim token ke frontend via SSE dengan format yang benar
+      res.write(`data: ${JSON.stringify({ token })}\n\n`);
+      // Paksa kirim ke browser setiap token (jangan di-buffer)
+      if (res.flush) res.flush();
+    } catch (_) {}
+  }
+
+  return fullText;
 }
 
 // ══════════════════════════════════════════════
-// MAIN CONTROLLER: POST /api/chat-ai
+// MAIN CONTROLLER: POST /api/chat-ai (Streaming SSE)
 // ══════════════════════════════════════════════
 export const chat = async (req, res) => {
   try {
     const { message, history } = req.body;
 
     if (!message || !message.trim()) {
-      return res.status(400).json({
-        message: "Pesan tidak boleh kosong",
-      });
+      return res.status(400).json({ message: "Pesan tidak boleh kosong" });
     }
 
     const userMessage = message.trim();
 
-    // ── LAPIS 0: Cek salam / basa-basi → balas ramah tanpa LLM ──
+    // ── LAPIS 0: Salam → balas langsung tanpa LLM ──
     const greetingReply = getGreetingReply(userMessage);
     if (greetingReply) {
       return res.status(200).json({
@@ -626,7 +868,7 @@ export const chat = async (req, res) => {
       });
     }
 
-    // ── LAPIS 1: Cek input terlarang SEBELUM kirim ke LLM ──
+    // ── LAPIS 1: Input terlarang ──
     if (isBlockedInput(userMessage)) {
       return res.status(200).json({
         reply: REFUSAL_MESSAGE,
@@ -636,42 +878,143 @@ export const chat = async (req, res) => {
       });
     }
 
-    // 1. Deteksi apakah pesan berkaitan dengan produk PC
+    // ── LAPIS 2: Deteksi query rakit PC ──
+    const rakitPC = isRakitPCQuery(userMessage);
+    const budget = parseBudget(userMessage);
+
+    if (rakitPC && budget) {
+      // ── PATH: PC BUILD RECOMMENDATION ──
+      const buildParts = await fetchPCBuild(budget);
+      const buildContext = formatBuildContext(buildParts, budget);
+
+      const fmt = (n) =>
+        new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
+
+      const buildPrompt = `${SYSTEM_PROMPT_BASE}
+
+User meminta rekomendasi rakitan PC dengan budget ${fmt(budget)}.
+Berikut adalah komponen yang BISA DIDAPATKAN dengan budget tersebut dari toko ini:
+
+${buildContext}
+
+TUGASMU:
+- Sampaikan komponen apa saja yang mereka dapatkan berdasarkan teks di atas.
+- DILARANG KERAS menyarankan user untuk menambahkan budget atau menabung sejumlah uang tertentu.
+- DILARANG KERAS mengarang/merekomendasikan produk yang tidak ada di daftar di atas.
+- Jika komponen tidak lengkap (misal tidak ada GPU atau Processor), beritahu saja secara ramah bahwa dengan budget ini, komponen tersebut belum dapat dibeli.
+- Gunakan bahasa natural, ramah, singkat (3-4 kalimat), tanpa format markdown.
+- HANYA sebut produk yang ada di daftar di atas.`;
+
+      const ollamaMessages = [
+        { role: "system", content: buildPrompt }
+      ];
+
+      if (history && Array.isArray(history)) {
+        for (const msg of history.slice(-4)) {
+          ollamaMessages.push({
+            role: msg.role === "user" ? "user" : "assistant",
+            content: msg.text || msg.content || "",
+          });
+        }
+      }
+
+      ollamaMessages.push({
+        role: "user",
+        content: `Pertanyaan user: "${userMessage}"\nJawab sekarang:`,
+      });
+
+      // SET SSE HEADERS
+      res.setHeader("Content-Type", "text/event-stream");
+      res.setHeader("Cache-Control", "no-cache");
+      res.setHeader("Connection", "keep-alive");
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.flushHeaders();
+
+      // Stream AI explanation
+      await callOllamaStream(ollamaMessages, res);
+
+      // Format build parts sebagai product cards untuk frontend
+      const buildProductCards = buildParts.map((p) => ({
+        id: p.product_id,
+        name: p.product_name,
+        description: p.description,
+        price: Number(p.price),
+        stock: p.stock,
+        image: p.image_url || null,
+        category: p.category_name,
+        badge: p.overBudget ? `${p.slot_label} ⚠️` : p.slot_label,
+        badgeColor: p.overBudget ? "red" : "blue",
+        overBudget: p.overBudget || false,
+      }));
+
+      res.write(
+        `data: ${JSON.stringify({
+          type: "products",
+          products: buildProductCards,
+          productsFound: buildProductCards.length,
+          isBuild: true,
+          done: true,
+        })}\n\n`
+      );
+
+      return res.end();
+    }
+
+    // ── PATH NORMAL: RAG keyword search ──
     const isProductQuery = isProductRelatedQuery(userMessage);
-
-    // 2. Ekstrak kata kunci & budget dari pesan user
     const keywords = extractKeywords(userMessage);
-    const maxPrice = parseBudget(userMessage);
+    const maxPrice = budget; // pakai budget yang sudah di-parse
 
-    // 3. RAG — Query produk relevan HANYA jika pertanyaan tentang produk
     let relevantProducts = isProductQuery
       ? await fetchRelevantProducts(keywords, maxPrice)
       : [];
 
-    // 3b. Fallback: jika query tentang produk tapi hasil kosong (query terlalu umum),
-    //     ambil produk termurah per kategori sebagai konteks
     if (isProductQuery && relevantProducts.length === 0) {
-      relevantProducts = await fetchBroadCatalog(maxPrice);
+      // Jangan gunakan broad catalog jika user mencari keyword spesifik (misal "laptop") tapi tidak ketemu.
+      // Hanya gunakan broad catalog jika keyword kosong (misal user cuma nanya "budget 5 juta dapat apa").
+      if (keywords.length === 0) {
+        relevantProducts = await fetchBroadCatalog(maxPrice);
+      }
     }
 
-    const productContext = isProductQuery
-      ? formatProductContext(relevantProducts)
-      : "";
+    if (isProductQuery && relevantProducts.length === 0) {
+      const emptyMsg = "Maaf, saat ini kami tidak memiliki produk yang cocok dengan pencarian Anda di toko e-BuildPC. Ada komponen PC lain yang ingin Anda cari?";
+      
+      res.setHeader("Content-Type", "text/event-stream");
+      res.setHeader("Cache-Control", "no-cache");
+      res.setHeader("Connection", "keep-alive");
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.flushHeaders();
+      
+      const tokens = emptyMsg.split(" ");
+      for (const t of tokens) {
+        res.write(`data: ${JSON.stringify({ token: t + " " })}\n\n`);
+        await new Promise(r => setTimeout(r, 30));
+      }
+      
+      res.write(`data: ${JSON.stringify({
+        type: "products",
+        products: [],
+        productsFound: 0,
+        done: true,
+      })}\n\n`);
+      
+      return res.end();
+    }
 
-    // 4. Bangun system prompt dengan konteks produk (LAPIS 2)
+    const productContext = formatProductContext(relevantProducts);
     const budgetNote = maxPrice
-      ? `\nPengguna meminta produk dengan harga MAKSIMAL Rp ${maxPrice.toLocaleString("id-ID")}. Tampilkan hanya produk yang sesuai budget tersebut.`
+      ? `\nPengguna meminta produk dengan harga MAKSIMAL Rp ${maxPrice.toLocaleString("id-ID")}.`
       : "";
-    const systemPrompt = isProductQuery
-      ? `${SYSTEM_PROMPT_BASE}${budgetNote}\n\nBerikut adalah DAFTAR PRODUK yang tersedia saat ini:\n${productContext}`
-      : SYSTEM_PROMPT_BASE;
 
-    // 5. Susun messages untuk Ollama
-    const ollamaMessages = [];
+    const systemPrompt = `${SYSTEM_PROMPT_BASE}${budgetNote}\n\nBerikut adalah DAFTAR PRODUK yang tersedia saat ini:\n${productContext}\n\nTUGASMU: Jawab HANYA menggunakan produk dari daftar di atas. DILARANG mengarang nama atau spesifikasi produk yang tidak ada di daftar.`;
 
-    // Masukkan riwayat chat (max 10 pesan terakhir)
+    const ollamaMessages = [
+      { role: "system", content: systemPrompt }
+    ];
+
     if (history && Array.isArray(history)) {
-      const recentHistory = history.slice(-10);
+      const recentHistory = history.slice(-6);
       for (const msg of recentHistory) {
         ollamaMessages.push({
           role: msg.role === "user" ? "user" : "assistant",
@@ -680,60 +1023,68 @@ export const chat = async (req, res) => {
       }
     }
 
-    // Tambahkan instruksi sistem dan pesan user
     ollamaMessages.push({
       role: "user",
-      content: `${systemPrompt}\n\nPertanyaan Pengguna: "${userMessage}"\nBerikan jawabanmu sekarang berdasarkan daftar produk di atas:`
+      content: `Pertanyaan Pengguna: "${userMessage}"\nBerikan jawabanmu sekarang:`,
     });
 
-    // 6. Panggil Ollama
-    let aiReply = await callOllama(ollamaMessages);
+    // ── SET SSE HEADERS ──
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.flushHeaders();
 
-    // ── LAPIS 3: Sanitasi output dari LLM ──
-    aiReply = sanitizeOutput(aiReply);
-
-    // 7. Format products for frontend ProductCard (hanya jika ada produk relevan)
-    let formattedProducts = relevantProducts.map((p) => ({
+    // Format produk untuk frontend
+    const formattedProducts = relevantProducts.map((p) => ({
       id: p.product_id,
       name: p.product_name,
       description: p.description,
       price: p.price,
       stock: p.stock,
-      image: "/placeholder.jpg",
+      image: p.image_url || null,
       category: p.category_name,
       badge: p.category_name || "Produk",
       badgeColor: "blue",
     }));
 
-    // Jika AI menolak menjawab karena di luar topik, kosongkan rekomendasi produk
-    if (aiReply.includes("Maaf, saya hanya bisa membantu seputar produk")) {
-      formattedProducts = [];
-    }
+    // ── STREAM AI RESPONSE ──
+    let fullReply = await callOllamaStream(ollamaMessages, res);
+    fullReply = sanitizeOutput(fullReply);
 
-    // 8. Kirim respons ke frontend
-    return res.status(200).json({
-      reply: aiReply,
-      productsFound: relevantProducts.length,
-      products: formattedProducts,
-    });
+    // Cek apakah AI menolak (di luar topik)
+    const isRefusal = fullReply.includes("Maaf, saya hanya bisa membantu seputar produk");
+
+    // Urutkan produk dari termurah ke termahal
+    const sortedProducts = isRefusal
+      ? []
+      : [...formattedProducts].sort((a, b) => a.price - b.price);
+
+    // Kirim produk SETELAH stream AI selesai
+    res.write(
+      `data: ${JSON.stringify({
+        type: "products",
+        products: sortedProducts,
+        productsFound: sortedProducts.length,
+        done: true,
+      })}\n\n`
+    );
+
+    res.end();
   } catch (error) {
     console.error("Chat AI Error:", error.message);
 
-    if (
+    const errorMsg =
       error.message.includes("ECONNREFUSED") ||
       error.message.includes("fetch failed")
-    ) {
-      return res.status(503).json({
-        reply:
-          "⚠️ Server Ollama tidak terdeteksi. Pastikan Ollama sudah berjalan di komputer Anda (jalankan perintah `ollama serve` di terminal).",
-        error: "OLLAMA_NOT_RUNNING",
-      });
+        ? "⚠️ Server Ollama tidak terdeteksi. Jalankan `ollama serve` di terminal."
+        : "⚠️ Maaf, terjadi kesalahan pada server. Silakan coba lagi.";
+
+    if (!res.headersSent) {
+      return res.status(503).json({ reply: errorMsg });
     }
 
-    return res.status(500).json({
-      reply:
-        "⚠️ Maaf, terjadi kesalahan pada server. Silakan coba lagi nanti.",
-      error: "SERVER_ERROR",
-    });
+    res.write(`data: ${JSON.stringify({ token: errorMsg, done: true })}\n\n`);
+    res.end();
   }
 };
