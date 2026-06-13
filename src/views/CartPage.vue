@@ -164,7 +164,7 @@
             </TransitionGroup>
 
             <!-- Free Shipping Badge -->
-            <div class="success-card flex items-center gap-3 p-4 rounded-xl">
+            <div v-if="selectedTotalPrice > 1500000" class="success-card flex items-center gap-3 p-4 rounded-xl">
               <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
                 <path
                   stroke-linecap="round"
@@ -214,7 +214,9 @@
 
                 <div class="flex justify-between text-sm">
                   <span class="page-muted">Ongkos Kirim</span>
-                  <span class="success-text font-bold">Gratis</span>
+                  <span :class="shippingCost === 0 ? 'success-text font-bold' : 'page-title font-semibold'">
+                    {{ shippingCost === 0 ? 'Gratis' : formatPrice(shippingCost) }}
+                  </span>
                 </div>
 
                 <div class="flex justify-between text-sm">
@@ -226,7 +228,7 @@
                   <div class="flex justify-between items-center">
                     <span class="page-title font-bold">Total</span>
                     <span class="price-text font-black text-xl">
-                      {{ formatPrice(selectedTotalPrice * 1.11) }}
+                      {{ formatPrice(cartGrandTotal) }}
                     </span>
                   </div>
                 </div>
@@ -365,6 +367,15 @@ const selectedTotalItems = computed(() => {
 
 const selectedTotalPrice = computed(() => {
   return selectedItems.value.reduce((sum, item) => sum + item.price * item.quantity, 0)
+})
+
+const shippingCost = computed(() => {
+  if (selectedTotalPrice.value === 0) return 0
+  return selectedTotalPrice.value > 1500000 ? 0 : 10000
+})
+
+const cartGrandTotal = computed(() => {
+  return selectedTotalPrice.value * 1.11 + shippingCost.value
 })
 
 const isAllSelected = computed({

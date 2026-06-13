@@ -387,6 +387,43 @@
           </article>
         </div>
       </section>
+      <!-- Custom Logout Confirmation Modal -->
+      <Transition name="fade">
+        <div
+          v-if="showLogoutConfirm"
+          class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+          @click="showLogoutConfirm = false"
+        >
+          <div
+            class="w-full max-w-sm rounded-3xl p-6 shadow-2xl transition-all border border-slate-800 transform scale-100"
+            style="background: #0f172a;"
+            @click.stop
+          >
+            <div class="flex flex-col items-center text-center">
+              <h3 class="text-lg font-black text-white mb-2">Konfirmasi Keluar</h3>
+              <p class="text-sm text-slate-400 mb-6">
+                Apakah Anda yakin ingin keluar dari akun Anda?
+              </p>
+              <div class="flex items-center gap-3 w-full">
+                <button
+                  type="button"
+                  @click="showLogoutConfirm = false"
+                  class="flex-1 py-2.5 text-sm font-bold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl transition-all duration-150"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  @click="confirmLogout"
+                  class="flex-1 py-2.5 text-sm font-extrabold text-white bg-rose-600 hover:bg-rose-500 rounded-xl transition-all duration-150 shadow-lg shadow-rose-900/30"
+                >
+                  Ya, Keluar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Transition>
     </div>
   </main>
 </template>
@@ -415,6 +452,7 @@ const isEditing = ref(false)
 const orders = ref([])
 const isOrdersLoading = ref(true)
 const ordersError = ref('')
+const showLogoutConfirm = ref(false)
 
 const statusConfig = {
   pending: {
@@ -482,6 +520,11 @@ function startEdit() {
 }
 
 function handleLogout() {
+  showLogoutConfirm.value = true
+}
+
+function confirmLogout() {
+  showLogoutConfirm.value = false
   userStore.logout()
   router.push('/login')
 }

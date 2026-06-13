@@ -1,7 +1,154 @@
 <template>
-  <div class="min-h-screen font-sans" style="background: #0d1117;">
-    <NavBar :cartCount="cartStore.totalItems" @open-cart="goToCart" />
+  <div class="min-h-screen font-sans flex text-white" style="background: #0d1117;">
+    <!-- Left Area: Main Page Content -->
+    <div class="flex-1 min-w-0 flex flex-col transition-all duration-300">
+      <NavBar :cartCount="cartStore.totalItems" :chatOpen="chatOpen && !isAdminRoute" @open-cart="goToCart" />
 
+      <div class="flex-1 pt-16">
+        <RouterView v-slot="{ Component }">
+          <Transition name="page" mode="out-in">
+            <component :is="Component" @add-to-cart="handleAddToCart" />
+          </Transition>
+        </RouterView>
+      </div>
+
+      <FooterSection v-if="!isAdminRoute" />
+    </div>
+
+    <!-- Right Area: Sidebar Chatbot Panel -->
+    <div
+      v-if="chatOpen && !isAdminRoute"
+      class="fixed inset-y-0 right-0 z-[80] w-full md:w-[400px] md:sticky md:top-0 md:h-screen flex flex-col border-l transition-all duration-300"
+      style="background: #111827; border-color: rgba(255,255,255,0.08);"
+    >
+      <div class="flex flex-col h-full overflow-hidden">
+        <div class="ai-chat-header shrink-0">
+          <div class="flex items-center gap-3">
+            <div class="ai-avatar-sm">🤖</div>
+
+            <div>
+              <p class="font-black text-white text-sm">
+                e-BuildPC AI
+              </p>
+
+              <div class="flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-green-400 inline-block ai-pulse"></span>
+                <span class="text-xs" style="color: #86efac;">
+                  Online sekarang
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <button @click="chatOpen = false" class="ai-close-btn">
+            ✕
+          </button>
+        </div>
+
+        <div class="ai-messages flex-1 overflow-y-auto" ref="messagesContainer">
+          <template v-for="(msg, i) in messages" :key="i">
+            <div
+              class="ai-message"
+              :class="msg.role === 'user' ? 'ai-message-user' : 'ai-message-bot'"
+            >
+              <div v-if="msg.role === 'bot'" class="ai-bot-avatar">
+                🤖
+              </div>
+
+                  <div
+                    class="ai-bubble"
+                    :class="msg.role === 'user' ? 'ai-bubble-user' : 'ai-bubble-bot'"
+                  >
+                    <div v-if="msg.role === 'bot'" class="markdown-body" v-html="renderMarkdown(msg.content)"></div>
+                    <div v-else>{{ msg.content }}</div>
+                    <!-- Selesai berfikir info -->
+                    <div v-if="msg.role === 'bot' && msg.thinkingDuration" class="text-[9px] text-slate-500 mt-1.5 font-bold border-t border-slate-800/50 pt-1 flex items-center gap-1 select-none">
+                      Selesai dalam {{ msg.thinkingDuration }} detik
+                    </div>
+                  </div>
+            </div>
+
+            <div
+              v-if="msg.products && msg.products.length > 0"
+              class="flex items-stretch gap-2 overflow-x-auto py-2 px-1 w-full snap-x snap-mandatory scrollbar-hide flex-shrink-0"
+              style="max-width: 100%;"
+            >
+              <div
+                v-for="(prod, idx) in msg.products"
+                :key="prod.id"
+                class="flex-shrink-0 snap-center product-card-animate"
+                style="width: 176px;"
+                :style="{ '--card-delay': `${idx * 80}ms` }"
+              >
+                <ProductCard
+                  :product="prod"
+                  mini
+                  @add-to-cart="handleAddToCart"
+                />
+              </div>
+            </div>
+
+          </template>
+
+          <div v-if="isTyping" class="ai-message ai-message-bot">
+            <div class="ai-bot-avatar">🤖</div>
+
+            <div class="flex flex-col gap-1 items-start">
+              <!-- Thinking Loader -->
+              <div class="ai-bubble ai-bubble-bot ai-typing">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+              <!-- Live Timer & State -->
+              <span class="text-[10px] text-slate-500 font-semibold px-3 flex items-center gap-1.5 animate-pulse">
+                {{ thinkingStep }} · {{ thinkingSeconds }}s
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="ai-quick-replies shrink-0" v-if="messages.length <= 1">
+          <button
+            v-for="q in quickReplies"
+            :key="q"
+            @click="sendQuickReply(q)"
+            class="ai-quick-btn"
+          >
+            {{ q }}
+          </button>
+        </div>
+
+        <div class="ai-input-area shrink-0">
+          <input
+            v-model="userInput"
+            @keydown.enter="sendMessage"
+            type="text"
+            placeholder="Tanya tentang komponen PC..."
+            class="ai-input"
+          />
+
+          <button
+            v-if="isTyping"
+            @click="cancelStreaming"
+            class="ai-cancel-btn"
+            title="Batal memproses"
+          >
+            ⏹
+          </button>
+          <button
+            v-else
+            @click="sendMessage"
+            class="ai-send-btn"
+            :disabled="!userInput.trim()"
+          >
+            ➤
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Teleports -->
     <Teleport to="body">
       <div class="fixed top-24 right-4 z-[9999] flex flex-col gap-3">
         <TransitionGroup name="toast">
@@ -25,14 +172,6 @@
         </TransitionGroup>
       </div>
     </Teleport>
-
-    <RouterView v-slot="{ Component }">
-      <Transition name="page" mode="out-in">
-        <component :is="Component" @add-to-cart="handleAddToCart" />
-      </Transition>
-    </RouterView>
-
-    <FooterSection v-if="!isAdminRoute" />
 
     <Teleport v-if="!isAdminRoute" to="body">
       <div
@@ -60,113 +199,6 @@
 
     <Teleport v-if="!isAdminRoute" to="body">
       <div class="ai-fab-wrapper">
-        <Transition name="chat-panel">
-          <div v-if="chatOpen" class="ai-chat-panel">
-            <div class="ai-chat-header">
-              <div class="flex items-center gap-3">
-                <div class="ai-avatar-sm">🤖</div>
-
-                <div>
-                  <p class="font-black text-white text-sm">
-                    e-BuildPC AI
-                  </p>
-
-                  <div class="flex items-center gap-1.5">
-                    <span class="w-2 h-2 rounded-full bg-green-400 inline-block ai-pulse"></span>
-                    <span class="text-xs" style="color: #86efac;">
-                      Online sekarang
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <button @click="chatOpen = false" class="ai-close-btn">
-                ✕
-              </button>
-            </div>
-
-            <div class="ai-messages" ref="messagesContainer">
-              <template v-for="(msg, i) in messages" :key="i">
-                <div
-                  class="ai-message"
-                  :class="msg.role === 'user' ? 'ai-message-user' : 'ai-message-bot'"
-                >
-                  <div v-if="msg.role === 'bot'" class="ai-bot-avatar">
-                    🤖
-                  </div>
-
-                  <div
-                    class="ai-bubble"
-                    :class="msg.role === 'user' ? 'ai-bubble-user' : 'ai-bubble-bot'"
-                  >
-                    {{ msg.role === 'bot' ? stripMarkdown(msg.content) : msg.content }}
-                  </div>
-                </div>
-
-                <div
-                  v-if="msg.products && msg.products.length > 0"
-                  class="flex items-stretch gap-2 overflow-x-auto py-2 px-1 w-full snap-x snap-mandatory scrollbar-hide flex-shrink-0"
-                  style="max-width: 100%;"
-                >
-                  <div
-                    v-for="(prod, idx) in msg.products"
-                    :key="prod.id"
-                    class="flex-shrink-0 snap-center product-card-animate"
-                    style="width: 176px;"
-                    :style="{ '--card-delay': `${idx * 80}ms` }"
-                  >
-                    <ProductCard
-                      :product="prod"
-                      mini
-                      @add-to-cart="handleAddToCart"
-                    />
-                  </div>
-                </div>
-
-              </template>
-
-              <div v-if="isTyping" class="ai-message ai-message-bot">
-                <div class="ai-bot-avatar">🤖</div>
-
-                <div class="ai-bubble ai-bubble-bot ai-typing">
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                </div>
-              </div>
-            </div>
-
-            <div class="ai-quick-replies" v-if="messages.length <= 1">
-              <button
-                v-for="q in quickReplies"
-                :key="q"
-                @click="sendQuickReply(q)"
-                class="ai-quick-btn"
-              >
-                {{ q }}
-              </button>
-            </div>
-
-            <div class="ai-input-area">
-              <input
-                v-model="userInput"
-                @keydown.enter="sendMessage"
-                type="text"
-                placeholder="Tanya tentang komponen PC..."
-                class="ai-input"
-              />
-
-              <button
-                @click="sendMessage"
-                class="ai-send-btn"
-                :disabled="!userInput.trim()"
-              >
-                ➤
-              </button>
-            </div>
-          </div>
-        </Transition>
-
         <Transition name="fab-toggle">
           <button
             v-if="!chatOpen"
@@ -190,8 +222,10 @@ import { useRouter, useRoute } from 'vue-router'
 import NavBar from './components/NavBar.vue'
 import FooterSection from './components/FooterSection.vue'
 import ProductCard from './components/ProductCard.vue'
-import { cartStore } from './store.js'
+import { cartStore, userStore, adminChatStore } from './store.js'
 import { API_BASE } from './api/client.js'
+import { reviewApi } from './api/index.js'
+import { marked } from 'marked'
 
 const router = useRouter()
 const route = useRoute()
@@ -201,21 +235,9 @@ const isAdminRoute = computed(() => route.path.startsWith('/admin'))
 const toasts = ref([])
 let toastId = 0
 
-function stripMarkdown(text) {
+function renderMarkdown(text) {
   if (!text) return ''
-
-  return text
-    .replace(/\*\*(.+?)\*\*/g, '$1')
-    .replace(/__(.+?)__/g, '$1')
-    .replace(/\*(.+?)\*/g, '$1')
-    .replace(/_(.+?)_/g, '$1')
-    .replace(/^#{1,6}\s+/gm, '')
-    .replace(/^\s*[-*]\s+/gm, '• ')
-    .replace(/^[-*]{3,}\s*$/gm, '')
-    .replace(/`[^`]+`/g, '')
-    .replace(/```[\s\S]*?```/g, '')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim()
+  return marked.parse(text)
 }
 
 const flyParticles = ref([])
@@ -229,6 +251,10 @@ const messagesContainer = ref(null)
 
 const confirmingEmptyCart = ref(false)
 
+const thinkingSeconds = ref(0)
+const thinkingStep = ref('Thinking')
+let thinkingInterval = null
+
 const messages = ref([
   {
     role: 'bot',
@@ -238,6 +264,7 @@ const messages = ref([
 
 // Simpan produk terakhir yang direkomendasikan AI
 const lastRecommendedProducts = ref([])
+const abortController = ref(null)
 
 const quickReplies = [
   '🖥️ Rakit PC Gaming 10 Juta',
@@ -372,6 +399,15 @@ function detectSelectedProducts(message, products) {
   }
 
   return Array.from(selected)
+}
+
+function cancelStreaming() {
+  if (abortController.value) {
+    abortController.value.abort()
+    abortController.value = null
+  }
+  isTyping.value = false
+  clearInterval(thinkingInterval)
 }
 
 async function sendMessage() {
@@ -540,8 +576,11 @@ async function sendMessage() {
       await scrollToBottom()
       
       if (total > 0) {
+        if (targetUrl === '/checkout') {
+          const addedIds = pickedProducts.map(p => p.id)
+          localStorage.setItem('selected_checkout_items', JSON.stringify(addedIds))
+        }
         await new Promise(r => setTimeout(r, 2000))
-        chatOpen.value = false
         await router.push(targetUrl)
       }
       return
@@ -635,8 +674,11 @@ async function sendMessage() {
     lastRecommendedProducts.value = []
 
     if (total > 0) {
+      if (targetUrl === '/checkout') {
+        const addedIds = eligible.map(p => p.id)
+        localStorage.setItem('selected_checkout_items', JSON.stringify(addedIds))
+      }
       await new Promise(r => setTimeout(r, 2000))
-      chatOpen.value = false
       await router.push(targetUrl)
     }
 
@@ -645,6 +687,8 @@ async function sendMessage() {
 
   userInput.value = ''
 
+  abortController.value = new AbortController()
+
   messages.value.push({
     role: 'user',
     content: userMsg,
@@ -652,15 +696,35 @@ async function sendMessage() {
 
   let aiMsg = null
 
+  // Start Thinking timer & state changes
+  thinkingSeconds.value = 0
+  thinkingStep.value = 'Thinking'
   isTyping.value = true
   await scrollToBottom(true)
 
+  const steps = ['Searching Database', 'Retrieving Context', 'Formulating Reply']
+  let stepIdx = 0
+  
+  thinkingInterval = setInterval(() => {
+    thinkingSeconds.value++
+    if (thinkingSeconds.value % 4 === 0) {
+      thinkingStep.value = steps[stepIdx % steps.length]
+      stepIdx++
+    }
+  }, 1000)
+
   try {
+    const headers = {
+      'Content-Type': 'application/json',
+    }
+    if (userStore.token) {
+      headers['Authorization'] = `Bearer ${userStore.token}`
+    }
+
     const response = await fetch(`${API_BASE}/api/chat-ai`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
+      signal: abortController.value.signal,
       body: JSON.stringify({
         message: userMsg,
         history: messages.value
@@ -677,21 +741,176 @@ async function sendMessage() {
       throw new Error('Gagal menghubungi server AI.')
     }
 
-    // ── Deteksi response non-streaming (JSON) — greeting, navigate, blocked ──
+    // ── Deteksi response non-streaming (JSON) — greeting, navigate, blocked, add_and_navigate ──
     const contentType = response.headers.get('content-type') || ''
     if (contentType.includes('application/json')) {
       const json = await response.json()
+      clearInterval(thinkingInterval)
       isTyping.value = false
+
+      // ── Aksi: Tambah produk ke keranjang LALU navigate ──
+      if (json.action === 'add_and_navigate' && json.products?.length > 0) {
+        const eligible = json.products.filter(p => p.stock > 0)
+
+        // Bubble awal loading
+        const streamMsg = {
+          role: 'bot',
+          content: 'Mencari produk di database...',
+          products: [],
+        }
+        messages.value.push(streamMsg)
+        await nextTick()
+        await scrollToBottom(true)
+
+        if (eligible.length === 0) {
+          streamMsg.content = 'Maaf, semua produk yang cocok sedang habis stok. Coba cari produk lain ya!'
+          await nextTick()
+          await scrollToBottom()
+          return
+        }
+
+        const addedNames = []
+        const failedNames = []
+
+        for (const product of eligible) {
+          const dots = ['⏳', '⌛']
+          let dotIdx = 0
+          const dotInterval = setInterval(() => {
+            const checklist = addedNames.map(n => `${n}`).join('\n')
+            const failed = failedNames.map(n => `${n} (gagal)`).join('\n')
+            const current = `${dots[dotIdx % 2]} Menambahkan ${product.name}...`
+            streamMsg.content = `Menambahkan produk ke keranjang...\n\n${[checklist, failed, current].filter(Boolean).join('\n')}`
+            dotIdx++
+          }, 300)
+
+          try {
+            await cartStore.addItem(product)
+            clearInterval(dotInterval)
+            addedNames.push(product.name)
+          } catch {
+            clearInterval(dotInterval)
+            failedNames.push(product.name)
+          }
+
+          const checklist = addedNames.map(n => `${n}`).join('\n')
+          const failed = failedNames.map(n => `${n} (gagal)`).join('\n')
+          streamMsg.content = `Menambahkan produk ke keranjang...\n\n${[checklist, failed].filter(Boolean).join('\n')}`
+          await nextTick()
+          await scrollToBottom()
+          await new Promise(r => setTimeout(r, 150))
+        }
+
+        const total = addedNames.length
+        const checklist = addedNames.map(n => `${n}`).join('\n')
+        const failed = failedNames.map(n => `${n} (stok habis)`).join('\n')
+        const targetLabel = json.label || 'halaman'
+
+        streamMsg.content = `${[checklist, failed].filter(Boolean).join('\n')}\n\n${
+          total > 0
+            ? `${total} produk berhasil ditambahkan!\n\nMengarahkan ke ${targetLabel}...`
+            : 'Tidak ada produk yang berhasil ditambahkan.'
+        }`
+
+        await nextTick()
+        await scrollToBottom()
+
+        if (total > 0) {
+          if (json.url === '/checkout') {
+            // Hanya checkout produk-produk yang baru ditambahkan via chat
+            const addedIds = eligible.map(p => p.id)
+            localStorage.setItem('selected_checkout_items', JSON.stringify(addedIds))
+            if (json.checkoutData) {
+              localStorage.setItem('checkout_prefill', JSON.stringify(json.checkoutData))
+            }
+          }
+          await new Promise(r => setTimeout(r, 2000))
+          await router.push(json.url)
+        }
+        return
+      }
 
       aiMsg = {
         role: 'bot',
-        content: json.reply || '⚠️ Tidak ada respons.',
+        content: json.reply || 'Tidak ada respons.',
         isStreaming: false,
         products: [],
         isNavigating: json.action === 'navigate',
       }
       messages.value.push(aiMsg)
       await scrollToBottom()
+
+      // Jika ada action profile_update, update data nama di userStore secara live
+      if (json.action === 'profile_update' && json.user) {
+        userStore.user = { ...userStore.user, name: json.user.name, email: json.user.email, phone: json.user.phone }
+        localStorage.setItem('user', JSON.stringify(userStore.user))
+        showToast('Profil berhasil diperbarui!', 'success')
+      }
+
+      // ── Aksi: Logout ──
+      if (json.action === 'logout') {
+        userStore.logout()
+        showToast('Berhasil keluar dari akun!', 'success')
+        await new Promise(r => setTimeout(r, 1500))
+        await router.push('/login')
+      }
+
+      // ── Aksi: Prefill Checkout ──
+      if (json.action === 'checkout_prefill' && json.checkoutData) {
+        localStorage.setItem('checkout_prefill', JSON.stringify(json.checkoutData))
+        window.dispatchEvent(new CustomEvent('checkout:update', { detail: json.checkoutData }))
+        await nextTick()
+        await scrollToBottom()
+        if (route.path !== '/checkout') {
+          await new Promise(r => setTimeout(r, 2000))
+          await router.push('/checkout')
+        }
+      }
+
+      // ── Aksi: Ubah Jumlah Produk di Keranjang ──
+      if (json.action === 'quantity_change' && json.quantityData) {
+        const { productKeyword, quantity } = json.quantityData
+        const matchedItem = cartStore.items.find(item =>
+          item.name.toLowerCase().includes(productKeyword.toLowerCase())
+        )
+        if (matchedItem) {
+          try {
+            await cartStore.updateQuantity(matchedItem.id, quantity)
+            if (quantity <= 0) {
+              showToast(`Berhasil menghapus ${matchedItem.name} dari keranjang 🗑️`, 'success')
+            } else {
+              showToast(`Jumlah ${matchedItem.name} diubah menjadi ${quantity} 🛒`, 'success')
+            }
+          } catch (err) {
+            showToast('Gagal mengubah jumlah produk', 'error')
+          }
+        } else {
+          showToast(`Produk "${productKeyword}" tidak ditemukan di keranjang`, 'error')
+        }
+      }
+
+      // ── Aksi: Beri Ulasan / Review ──
+      if (json.action === 'submit_review' && json.reviewData) {
+        try {
+          await reviewApi.create(json.reviewData.product_id, {
+            rating: json.reviewData.rating,
+            comment: 'Ulasan otomatis via chatbot e-BuildPC AI'
+          })
+          showToast(`Berhasil mengirimkan ulasan ${json.reviewData.rating} ⭐ untuk ${json.reviewData.product_name}!`, 'success')
+        } catch (err) {
+          showToast(err.message || 'Gagal mengirimkan ulasan', 'error')
+        }
+      }
+
+      // ── Aksi: Mulai Chat Admin ──
+      if (json.action === 'start_admin_chat' && json.productId) {
+        try {
+          await adminChatStore.startProductChat({ id: json.productId, name: json.productName })
+          window.dispatchEvent(new CustomEvent('admin-chat:open'))
+          showToast(`Membuka percakapan admin untuk ${json.productName}...`, 'success')
+        } catch (err) {
+          showToast('Gagal memulai chat admin', 'error')
+        }
+      }
 
       // Jika ada action navigate, tampilkan pesan dulu → tunggu user baca → redirect
       if (json.action === 'navigate' && json.url) {
@@ -700,7 +919,6 @@ async function sendMessage() {
         await scrollToBottom()
         // Tunggu user baca (4 detik), baru redirect
         await new Promise(r => setTimeout(r, 4000))
-        chatOpen.value = false
         await router.push(json.url)
       }
       return
@@ -751,6 +969,7 @@ async function sendMessage() {
       }
     }
 
+    clearInterval(thinkingInterval)
     isTyping.value = false
 
     aiMsg = {
@@ -758,6 +977,7 @@ async function sendMessage() {
       content: fullTextBuffer || '⚠️ Tidak ada respons dari server.',
       isStreaming: false,
       products: [],
+      thinkingDuration: thinkingSeconds.value // Simpan durasi berfikir
     }
 
     messages.value.push(aiMsg)
@@ -777,7 +997,19 @@ async function sendMessage() {
       }, 700)
     }
   } catch (err) {
+    clearInterval(thinkingInterval)
     console.error('Stream error:', err)
+
+    if (err.name === 'AbortError') {
+      messages.value.push({
+        role: 'bot',
+        content: '⏹️ Pemrosesan jawaban dibatalkan oleh pengguna.',
+        isStreaming: false,
+        products: [],
+      })
+      abortController.value = null
+      return
+    }
 
     if (!aiMsg) {
       messages.value.push({
@@ -793,7 +1025,9 @@ async function sendMessage() {
       aiMsg.isStreaming = false
     }
   } finally {
+    clearInterval(thinkingInterval)
     isTyping.value = false
+    abortController.value = null
     await scrollToBottom()
   }
 }
@@ -1357,6 +1591,25 @@ async function handleAddToCart(product, event) {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.ai-cancel-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, #ef4444, #b91c1c);
+  color: #fff;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ai-cancel-btn:hover {
+  transform: scale(1.08);
 }
 
 .ai-send-btn:hover:not(:disabled) {

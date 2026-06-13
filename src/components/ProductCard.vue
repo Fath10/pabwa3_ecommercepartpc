@@ -89,47 +89,48 @@
 
       <div class="flex-1"></div>
 
-      <!-- Add button -->
-      <button
-        @click.prevent.stop="product.stock > 0 && handleAddToCart($event)"
-        :id="`add-to-cart-${product.id}`"
-        :disabled="product.stock === 0"
-        class="add-cart-btn w-full rounded-lg text-white font-semibold flex items-center justify-center gap-1.5 transition-all duration-150"
-        :class="[
-          product.stock > 0 ? 'active:scale-95' : 'opacity-50 cursor-not-allowed',
-          mini ? 'py-1.5 add-cart-mini' : 'py-2 add-cart-normal'
-        ]"
-      >
-        <svg
-          v-if="product.stock > 0"
-          class="flex-shrink-0"
-          :class="mini ? 'w-2.5 h-2.5' : 'w-3 h-3'"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          stroke-width="2.5"
+      <!-- Action buttons -->
+      <div class="flex items-center gap-1.5 w-full" :class="mini ? 'flex-col' : 'flex-row'">
+        <button
+          @click.prevent.stop="product.stock > 0 && handleAddToCart($event)"
+          :id="`add-to-cart-${product.id}`"
+          :disabled="product.stock === 0"
+          class="add-cart-btn w-full rounded-lg text-white font-semibold flex items-center justify-center gap-1.5 transition-all duration-150"
+          :class="[
+            product.stock > 0 ? 'active:scale-95' : 'opacity-50 cursor-not-allowed',
+            mini ? 'py-1.5 add-cart-mini' : 'py-2 add-cart-normal'
+          ]"
         >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
-          />
-        </svg>
+          <svg
+            v-if="product.stock > 0"
+            class="flex-shrink-0"
+            :class="mini ? 'w-2.5 h-2.5' : 'w-3 h-3'"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            stroke-width="2.5"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+            />
+          </svg>
 
-        <span v-if="product.stock === 0">Habis</span>
-        <span v-else>+ Tambah</span>
-      </button>
+          <span v-if="product.stock === 0">Habis</span>
+          <span v-else>+ Tambah</span>
+        </button>
 
-      <button
-        v-if="!mini && !userStore.isAdmin"
-        @click.prevent.stop="openAdminChat"
-        class="admin-chat-btn w-full mt-2 py-2 rounded-lg font-semibold flex items-center justify-center gap-1.5 transition-all duration-150"
-      >
-        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M7 18.5 3.5 21v-4.6A8 8 0 1 1 7 18.5Z" />
-        </svg>
-        Chat Admin e-BuildPC
-      </button>
+        <button
+          v-if="product.stock > 0"
+          @click.prevent.stop="handleBuyNow"
+          :id="`buy-now-${product.id}`"
+          class="w-full rounded-lg text-white font-semibold flex items-center justify-center gap-1.5 transition-all duration-150 active:scale-95 bg-green-600 hover:bg-green-500 border border-emerald-400 shadow-[0_4px_12px_rgba(16,185,129,0.3)]"
+          :class="[mini ? 'py-1.5 add-cart-mini' : 'py-2 add-cart-normal']"
+        >
+          Beli Langsung
+        </button>
+      </div>
     </div>
   </RouterLink>
 </template>
@@ -137,7 +138,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { adminChatStore, formatPrice, userStore } from '../store.js'
+import { formatPrice, cartStore } from '../store.js'
 import { PLACEHOLDER_IMAGE } from '../api/index.js'
 
 const props = defineProps({
@@ -158,14 +159,10 @@ function handleAddToCart(event) {
   emit('add-to-cart', props.product, event)
 }
 
-async function openAdminChat() {
-  if (!userStore.isLoggedIn) {
-    router.push({ path: '/login', query: { redirect: `/produk/${props.product.id}` } })
-    return
-  }
-
-  await adminChatStore.startProductChat(props.product)
-  window.dispatchEvent(new CustomEvent('admin-chat:open'))
+async function handleBuyNow() {
+  await cartStore.addItem(props.product)
+  localStorage.setItem('selected_checkout_items', JSON.stringify([props.product.id]))
+  router.push('/checkout')
 }
 
 const API_BASE = 'http://localhost:3000'
@@ -228,8 +225,7 @@ const stockTextClass = computed(() => {
   color: #f8fafc;
   text-decoration: none;
   border-radius: 12px;
-  background:
-    linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(30, 27, 75, 0.86));
+  background: rgba(15, 23, 42, 0.96);
   border: 1px solid rgba(129, 140, 248, 0.22);
   box-shadow:
     0 1px 2px rgba(0, 0, 0, 0.3),
@@ -249,9 +245,7 @@ const stockTextClass = computed(() => {
 }
 
 .product-image-wrap {
-  background:
-    radial-gradient(circle at center, rgba(99, 102, 241, 0.14), transparent 48%),
-    rgba(226, 232, 240, 0.08);
+  background: rgba(22, 28, 45, 0.8);
   border-bottom: 1px solid rgba(129, 140, 248, 0.14);
 }
 
@@ -310,32 +304,19 @@ const stockTextClass = computed(() => {
 }
 
 .add-cart-btn {
-  background: linear-gradient(135deg, #1e293b, #312e81);
+  background: #1e293b;
   border: 1px solid rgba(129, 140, 248, 0.24);
   box-shadow: 0 10px 22px rgba(0, 0, 0, 0.2);
 }
 
 .add-cart-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #334155, #4f46e5);
+  background: #312e81;
   border-color: rgba(167, 139, 250, 0.5);
 }
 
 .add-cart-btn:disabled {
   background: rgba(100, 116, 139, 0.55);
   border-color: rgba(148, 163, 184, 0.2);
-}
-
-.admin-chat-btn {
-  color: #c7d2fe;
-  background: rgba(15, 23, 42, 0.72);
-  border: 1px solid rgba(129, 140, 248, 0.28);
-  font-size: 0.7rem;
-}
-
-.admin-chat-btn:hover {
-  color: #ffffff;
-  background: rgba(79, 70, 229, 0.22);
-  border-color: rgba(167, 139, 250, 0.48);
 }
 
 .add-cart-normal {

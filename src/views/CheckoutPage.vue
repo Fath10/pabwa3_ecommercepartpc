@@ -124,6 +124,45 @@
             </div>
           </section>
 
+          <!-- Alamat Pengiriman -->
+          <section class="panel-card rounded-2xl overflow-hidden">
+            <div class="panel-header px-6 py-4 flex items-center gap-3">
+              <div class="icon-box icon-blue w-8 h-8 rounded-lg flex items-center justify-center">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
+
+              <h2 class="page-title font-black text-base">
+                Alamat Pengiriman
+              </h2>
+
+              <span
+                v-if="!shippingAddress.trim()"
+                class="status-pill status-warning ml-auto text-xs px-2 py-0.5 rounded-full font-semibold"
+              >
+                Wajib diisi
+              </span>
+
+              <span
+                v-else
+                class="status-pill status-success ml-auto text-xs px-2 py-0.5 rounded-full font-semibold"
+              >
+                Lengkap
+              </span>
+            </div>
+
+            <div class="p-5">
+              <textarea
+                v-model="shippingAddress"
+                rows="3"
+                placeholder="Masukkan alamat pengiriman lengkap Anda (Jalan, No. Rumah, RT/RW, Kecamatan, Kota, Kode Pos)..."
+                class="w-full px-4 py-3 rounded-xl border border-slate-700/60 bg-slate-900/60 text-white text-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 placeholder-slate-500 resize-none"
+              ></textarea>
+            </div>
+          </section>
+
           <!-- Pilihan Kurir -->
           <section class="panel-card rounded-2xl overflow-hidden">
             <div class="panel-header px-6 py-4 flex items-center gap-3">
@@ -317,6 +356,21 @@
               <div class="flex items-center gap-3">
                 <div
                   class="check-dot w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-300"
+                  :class="shippingAddress.trim() ? 'check-dot-active' : ''"
+                >
+                  <svg class="w-3 h-3" fill="none" stroke="white" stroke-width="3" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+
+                <span class="text-sm" :class="shippingAddress.trim() ? 'page-title font-semibold' : 'page-muted'">
+                  Alamat pengiriman
+                </span>
+              </div>
+
+              <div class="flex items-center gap-3">
+                <div
+                  class="check-dot w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-300"
                   :class="selectedCourier ? 'check-dot-active' : ''"
                 >
                   <svg class="w-3 h-3" fill="none" stroke="white" stroke-width="3" viewBox="0 0 24 24">
@@ -357,7 +411,7 @@
               <button
                 id="confirm-checkout-btn"
                 :disabled="!canCheckout"
-                @click="handleConfirmCheckout"
+                @click="handlePreCheckout"
                 class="confirm-btn w-full py-4 rounded-2xl text-white font-black text-base transition-all duration-300 flex items-center justify-center gap-2"
                 :class="canCheckout ? 'hover:-translate-y-1' : 'confirm-disabled'"
               >
@@ -372,11 +426,11 @@
 
                 {{ isProcessing
                   ? 'Memproses Pesanan…'
-                  : (selectedCourier && selectedPayment ? 'Konfirmasi Pesanan' : 'Lengkapi Pilihan Terlebih Dahulu') }}
+                  : (selectedCourier && selectedPayment && shippingAddress.trim() ? 'Konfirmasi Pesanan' : 'Lengkapi Pilihan Terlebih Dahulu') }}
               </button>
 
-              <p v-if="!selectedCourier || !selectedPayment" class="page-muted text-center text-xs mt-2">
-                Pilih kurir dan metode pembayaran untuk melanjutkan
+              <p v-if="!selectedCourier || !selectedPayment || !shippingAddress.trim()" class="page-muted text-center text-xs mt-2">
+                Lengkapi alamat, kurir, dan pembayaran untuk melanjutkan
               </p>
             </div>
 
@@ -401,6 +455,71 @@
       </div>
     </div>
 
+    <!-- Virtual Account Modal -->
+    <Teleport to="body">
+      <Transition name="modal">
+        <div v-if="showVAModal" class="modal-backdrop fixed inset-0 z-[9999] flex items-center justify-center p-4">
+          <div class="modal-card rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl relative">
+            <button @click="closeVAModal" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors duration-200">
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            <div class="icon-box w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5 icon-purple">
+              <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+              </svg>
+            </div>
+
+            <h2 class="page-title text-xl font-black mb-1">
+              Pembayaran
+            </h2>
+            <p class="page-muted text-sm mb-6">
+              Selesaikan pembayaran pesanan Anda
+            </p>
+
+            <div class="bg-black/30 border border-slate-700/50 rounded-xl p-4 mb-6 text-left">
+              <p class="page-muted text-xs mb-1">Metode: <strong class="text-slate-300">{{ selectedPaymentData?.name || 'Virtual Account' }}</strong></p>
+              
+              <!-- QRIS (QR Code) Display -->
+              <div v-if="selectedPayment === 'qris'" class="flex flex-col items-center justify-center my-4 p-3 bg-white rounded-xl mx-auto w-44 h-44">
+                <svg viewBox="0 0 100 100" class="w-32 h-32 text-black" fill="currentColor">
+                  <!-- QR Code Border & Outer box -->
+                  <path d="M0 0h30v10H10v20H0zm70 0h30v30H90V10H70zm0 100h30v-30H90v20H70zM0 100h30v-10H10V70H0z" />
+                  <!-- Top-left finder pattern -->
+                  <path d="M5 5h20v20H5zm5 5h10v10H10z" />
+                  <!-- Top-right finder pattern -->
+                  <path d="M75 5h20v20H75zm5 5h10v10H80z" />
+                  <!-- Bottom-left finder pattern -->
+                  <path d="M5 75h20v20H5zm5 5h10v10H10z" />
+                  <!-- Dummy random QR blocks -->
+                  <path d="M35 15h10v10H35zm15 5h10v10H50zm10-15h5v5h-5zm0 15h10v10H60zm-25 25h10v10H35zm15 5h10v10H50zm15-5h10v10H65zm15 15h10v10H80zM35 65h10v10H35zm15-10h10v10H50zm25 15h10v10H75zM45 45h10v10H45z" />
+                </svg>
+                <span class="text-[9px] text-slate-800 font-bold mt-1">e-BuildPC QRIS Dummy</span>
+              </div>
+
+              <!-- VA Text Display -->
+              <div v-else class="flex items-center justify-between mb-4 mt-2">
+                <p class="page-title text-2xl font-bold tracking-widest">{{ virtualAccount }}</p>
+              </div>
+
+              <p class="page-muted text-xs mb-1">Total Tagihan</p>
+              <p class="price-text font-bold text-lg">{{ formatPrice(grandTotal) }}</p>
+            </div>
+
+            <div class="flex items-center justify-center gap-2 py-3 text-xs text-indigo-400 font-semibold mt-2">
+              <svg class="w-4 h-4 animate-spin text-indigo-500" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+              </svg>
+              <span>Memproses pembayaran otomatis...</span>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
     <!-- Success Modal -->
     <Teleport to="body">
       <Transition name="modal">
@@ -413,18 +532,11 @@
             </div>
 
             <h2 class="page-title text-2xl font-black mb-2">
-              Pesanan Dikonfirmasi!
+              Pembayaran Berhasil!
             </h2>
 
-            <p class="page-muted text-sm mb-2">
-              Terima kasih telah berbelanja di e-BuildPC.
-            </p>
-
             <p class="page-muted text-sm mb-6">
-              Pesanan Anda akan segera diproses dan dikirim melalui
-              <strong class="page-title">{{ selectedCourierData?.name }}</strong>
-              menggunakan
-              <strong class="page-title">{{ selectedPaymentData?.name }}</strong>.
+              Terima kasih, pesanan Anda telah dikonfirmasi dan akan segera diproses.
             </p>
 
             <div class="success-summary p-4 rounded-2xl mb-6">
@@ -438,17 +550,13 @@
               </p>
 
               <p class="success-text text-2xl font-black">
-                {{ formatPrice(grandTotal) }}
+                {{ formatPrice(finalGrandTotal) }}
               </p>
             </div>
 
-            <RouterLink
-              to="/"
-              @click="handleSuccessClose"
-              class="primary-btn block w-full py-3 rounded-xl text-white font-bold transition-all duration-200"
-            >
-              Kembali ke Beranda
-            </RouterLink>
+            <p class="text-xs text-indigo-400 font-semibold animate-pulse">
+              Mengalihkan ke riwayat pesanan...
+            </p>
           </div>
         </div>
       </Transition>
@@ -457,9 +565,12 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { cartStore, formatPrice } from '../store.js'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { cartStore, productStore, formatPrice } from '../store.js'
 import { orderApi } from '../api/index.js'
+
+const router = useRouter()
 
 const selectedCheckoutIds = ref([])
 
@@ -479,6 +590,15 @@ const checkoutTotalPrice = computed(() => {
   return checkoutItems.value.reduce((sum, item) => sum + item.price * item.quantity, 0)
 })
 
+function handleCheckoutUpdate(e) {
+  const data = e.detail
+  if (data) {
+    if (data.address) shippingAddress.value = data.address
+    if (data.courier) selectedCourier.value = data.courier.toLowerCase()
+    if (data.payment) selectedPayment.value = data.payment.toLowerCase()
+  }
+}
+
 onMounted(() => {
   const saved = localStorage.getItem('selected_checkout_items')
 
@@ -490,61 +610,82 @@ onMounted(() => {
     }
   }
 
+  const prefill = localStorage.getItem('checkout_prefill')
+  if (prefill) {
+    try {
+      const data = JSON.parse(prefill)
+      if (data.address) shippingAddress.value = data.address
+      if (data.courier) selectedCourier.value = data.courier.toLowerCase()
+      if (data.payment) selectedPayment.value = data.payment.toLowerCase()
+      localStorage.removeItem('checkout_prefill')
+    } catch (e) {
+      console.error('Error parsing prefill checkout data:', e)
+    }
+  }
+
+  window.addEventListener('checkout:update', handleCheckoutUpdate)
   cartStore.fetch()
 })
 
-const couriers = [
-  {
-    id: 'jne',
-    name: 'JNE Regular',
-    eta: 'Estimasi 3–5 hari kerja',
-    price: 0,
-    headerBg: '#fff7ed',
-    svgLogo: `<svg viewBox="0 0 120 36" height="28" xmlns="http://www.w3.org/2000/svg">
-      <rect width="120" height="36" rx="6" fill="#ff6600"/>
-      <text x="10" y="26" font-family="Arial Black,Arial" font-weight="900" font-size="22" fill="#fff" letter-spacing="1">JNE</text>
-      <text x="70" y="26" font-family="Arial,sans-serif" font-weight="700" font-size="11" fill="#ffe0c0">express</text>
-    </svg>`,
-  },
-  {
-    id: 'jnt',
-    name: 'J&T Express',
-    eta: 'Estimasi 2–4 hari kerja',
-    price: 0,
-    headerBg: '#fef2f2',
-    svgLogo: `<svg viewBox="0 0 120 36" height="28" xmlns="http://www.w3.org/2000/svg">
-      <rect width="120" height="36" rx="6" fill="#e30613"/>
-      <text x="8" y="26" font-family="Arial Black,Arial" font-weight="900" font-size="20" fill="#fff" letter-spacing="0.5">J&amp;T</text>
-      <text x="62" y="26" font-family="Arial,sans-serif" font-weight="700" font-size="11" fill="#ffb3b3">Express</text>
-    </svg>`,
-  },
-  {
-    id: 'sicepat',
-    name: 'SiCepat',
-    eta: 'Estimasi 1–2 hari kerja',
-    price: 15000,
-    headerBg: '#fffbeb',
-    svgLogo: `<svg viewBox="0 0 120 36" height="28" xmlns="http://www.w3.org/2000/svg">
-      <rect width="120" height="36" rx="6" fill="#f97316"/>
-      <circle cx="18" cy="18" r="12" fill="#fff"/>
-      <text x="13" y="23" font-family="Arial Black,Arial" font-weight="900" font-size="13" fill="#f97316">Si</text>
-      <text x="34" y="26" font-family="Arial Black,Arial" font-weight="900" font-size="18" fill="#fff">Cepat</text>
-    </svg>`,
-  },
-  {
-    id: 'gosend',
-    name: 'GoSend',
-    eta: 'Hari yang sama',
-    price: 25000,
-    headerBg: '#ecfdf5',
-    svgLogo: `<svg viewBox="0 0 120 36" height="28" xmlns="http://www.w3.org/2000/svg">
-      <rect width="120" height="36" rx="6" fill="#00aa5b"/>
-      <circle cx="18" cy="18" r="13" fill="#fff" opacity="0.15"/>
-      <text x="8" y="25" font-family="Arial Black,Arial" font-weight="900" font-size="18" fill="#fff">Go</text>
-      <text x="38" y="25" font-family="Arial,sans-serif" font-weight="700" font-size="15" fill="#d4f7e7">Send</text>
-    </svg>`,
-  },
-]
+onUnmounted(() => {
+  window.removeEventListener('checkout:update', handleCheckoutUpdate)
+})
+
+const couriers = computed(() => {
+  const isFree = checkoutTotalPrice.value > 1500000
+  return [
+    {
+      id: 'jne',
+      name: 'JNE Regular',
+      eta: 'Estimasi 3–5 hari kerja',
+      price: isFree ? 0 : 10000,
+      headerBg: '#fff7ed',
+      svgLogo: `<svg viewBox="0 0 120 36" height="28" xmlns="http://www.w3.org/2000/svg">
+        <rect width="120" height="36" rx="6" fill="#ff6600"/>
+        <text x="10" y="26" font-family="Arial Black,Arial" font-weight="900" font-size="22" fill="#fff" letter-spacing="1">JNE</text>
+        <text x="70" y="26" font-family="Arial,sans-serif" font-weight="700" font-size="11" fill="#ffe0c0">express</text>
+      </svg>`,
+    },
+    {
+      id: 'jnt',
+      name: 'J&T Express',
+      eta: 'Estimasi 2–4 hari kerja',
+      price: isFree ? 0 : 12000,
+      headerBg: '#fef2f2',
+      svgLogo: `<svg viewBox="0 0 120 36" height="28" xmlns="http://www.w3.org/2000/svg">
+        <rect width="120" height="36" rx="6" fill="#e30613"/>
+        <text x="8" y="26" font-family="Arial Black,Arial" font-weight="900" font-size="20" fill="#fff" letter-spacing="0.5">J&amp;T</text>
+        <text x="62" y="26" font-family="Arial,sans-serif" font-weight="700" font-size="11" fill="#ffb3b3">Express</text>
+      </svg>`,
+    },
+    {
+      id: 'sicepat',
+      name: 'SiCepat',
+      eta: 'Estimasi 1–2 hari kerja',
+      price: isFree ? 0 : 15000,
+      headerBg: '#fffbeb',
+      svgLogo: `<svg viewBox="0 0 120 36" height="28" xmlns="http://www.w3.org/2000/svg">
+        <rect width="120" height="36" rx="6" fill="#f97316"/>
+        <circle cx="18" cy="18" r="12" fill="#fff"/>
+        <text x="13" y="23" font-family="Arial Black,Arial" font-weight="900" font-size="13" fill="#f97316">Si</text>
+        <text x="34" y="26" font-family="Arial Black,Arial" font-weight="900" font-size="18" fill="#fff">Cepat</text>
+      </svg>`,
+    },
+    {
+      id: 'gosend',
+      name: 'GoSend',
+      eta: 'Hari yang sama',
+      price: isFree ? 0 : 25000,
+      headerBg: '#ecfdf5',
+      svgLogo: `<svg viewBox="0 0 120 36" height="28" xmlns="http://www.w3.org/2000/svg">
+        <rect width="120" height="36" rx="6" fill="#00aa5b"/>
+        <circle cx="18" cy="18" r="13" fill="#fff" opacity="0.15"/>
+        <text x="8" y="25" font-family="Arial Black,Arial" font-weight="900" font-size="18" fill="#fff">Go</text>
+        <text x="38" y="25" font-family="Arial,sans-serif" font-weight="700" font-size="15" fill="#d4f7e7">Send</text>
+      </svg>`,
+    },
+  ]
+})
 
 const paymentTabs = [
   { id: 'all', label: 'Semua' },
@@ -659,10 +800,14 @@ const paymentMethods = [
 const activePaymentTab = ref('all')
 const selectedCourier = ref('')
 const selectedPayment = ref('')
+const shippingAddress = ref('')
+const showVAModal = ref(false)
+const virtualAccount = ref('')
 const showSuccess = ref(false)
 const isProcessing = ref(false)
 const checkoutError = ref('')
 const placedOrder = ref(null)
+const finalGrandTotal = ref(0)
 
 const filteredPaymentMethods = computed(() => {
   if (activePaymentTab.value === 'all') return paymentMethods
@@ -670,7 +815,7 @@ const filteredPaymentMethods = computed(() => {
   return paymentMethods.filter(m => m.tab === activePaymentTab.value)
 })
 
-const selectedCourierData = computed(() => couriers.find(c => c.id === selectedCourier.value) || null)
+const selectedCourierData = computed(() => couriers.value.find(c => c.id === selectedCourier.value) || null)
 const selectedPaymentData = computed(() => paymentMethods.find(m => m.id === selectedPayment.value) || null)
 
 const grandTotal = computed(() => {
@@ -680,12 +825,39 @@ const grandTotal = computed(() => {
 })
 
 const canCheckout = computed(
-  () => !!selectedCourier.value && !!selectedPayment.value && !isProcessing.value
+  () => !!selectedCourier.value && !!selectedPayment.value && !!shippingAddress.value.trim() && !isProcessing.value
 )
+
+let autoPayTimeout = null
+
+function closeVAModal() {
+  showVAModal.value = false
+  if (autoPayTimeout) clearTimeout(autoPayTimeout)
+}
+
+async function handlePreCheckout() {
+  if (!canCheckout.value) return
+  
+  const randomSuffix = Math.floor(10000000 + Math.random() * 90000000)
+  virtualAccount.value = `88000${randomSuffix}`
+  showVAModal.value = true
+
+  if (autoPayTimeout) clearTimeout(autoPayTimeout)
+  autoPayTimeout = setTimeout(() => {
+    if (showVAModal.value) {
+      handleConfirmCheckout()
+    }
+  }, 3000)
+}
 
 async function handleConfirmCheckout() {
   if (!canCheckout.value) return
+  if (autoPayTimeout) clearTimeout(autoPayTimeout)
 
+  // Capture final grand total before modifying cart store state
+  finalGrandTotal.value = grandTotal.value
+
+  showVAModal.value = false
   checkoutError.value = ''
   isProcessing.value = true
 
@@ -694,7 +866,17 @@ async function handleConfirmCheckout() {
     placedOrder.value = result?.order || null
     localStorage.removeItem('selected_checkout_items')
     await cartStore.fetch()
+    await productStore.fetchAll(true) // Auto-update stock
+    
     showSuccess.value = true
+    setTimeout(() => {
+      showSuccess.value = false
+      if (placedOrder.value && placedOrder.value.order_id) {
+        router.push(`/orders/${placedOrder.value.order_id}`)
+      } else {
+        router.push('/profile')
+      }
+    }, 2000)
   } catch (err) {
     checkoutError.value = err.message || 'Checkout gagal. Silakan coba lagi.'
   } finally {

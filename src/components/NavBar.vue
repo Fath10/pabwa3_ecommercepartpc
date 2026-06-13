@@ -1,7 +1,10 @@
 <template>
   <nav
-    class="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
-    :class="isScrolled ? 'py-2' : 'py-3'"
+    class="fixed top-0 left-0 z-50 transition-all duration-300"
+    :class="[
+      isScrolled ? 'py-2' : 'py-3',
+      chatOpen ? 'right-0 md:right-[400px]' : 'right-0'
+    ]"
     style="background: #111111; border-bottom: 1px solid rgba(255,255,255,0.06);"
   >
     <div class="w-full px-3">
@@ -234,14 +237,6 @@
               ADMIN
             </span>
 
-            <button
-              @click="handleLogout"
-              id="logout-btn"
-              title="Logout"
-              class="flex items-center gap-1.5 px-3 h-9 rounded-lg text-rose-400 hover:text-rose-300 hover:bg-rose-950/20 border border-rose-500/20 transition-all duration-150 text-xs font-semibold"
-            >
-              🚪 <span class="hidden sm:inline">Keluar</span>
-            </button>
           </div>
 
           <button
@@ -383,6 +378,10 @@ defineProps({
   cartCount: {
     type: Number,
     default: 0,
+  },
+  chatOpen: {
+    type: Boolean,
+    default: false,
   },
 })
 

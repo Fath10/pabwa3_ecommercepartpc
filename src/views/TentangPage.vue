@@ -5,9 +5,7 @@
       <div class="absolute bottom-0 right-1/4 w-80 h-80 rounded-full pointer-events-none" style="background: radial-gradient(circle, rgba(124,58,237,0.15), transparent 70%); filter: blur(60px);"></div>
 
       <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-        <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold mb-6" style="background: rgba(79,70,229,0.2); border: 1px solid rgba(79,70,229,0.4); color: #a5b4fc;">
-          🎓 Kelompok PABWA3 — 2025/2026
-        </div>
+
 
         <h1 class="font-black mb-4 leading-tight" style="font-size: clamp(2rem, 5vw, 3.5rem);">
           Tentang
@@ -258,7 +256,7 @@ const roles = [
   {
     icon: '🧠',
     title: 'Backend',
-    count: 3,
+    count: 2,
     accent: '#93c5fd',
     bg: 'linear-gradient(135deg, rgba(14,165,233,0.12), rgba(37,99,235,0.05))',
     border: '1px solid rgba(59,130,246,0.25)',
@@ -267,7 +265,7 @@ const roles = [
   {
     icon: '🤖',
     title: 'LLM',
-    count: 1,
+    count: 2,
     accent: '#c4b5fd',
     bg: 'linear-gradient(135deg, rgba(124,58,237,0.12), rgba(168,85,247,0.05))',
     border: '1px solid rgba(168,85,247,0.25)',
