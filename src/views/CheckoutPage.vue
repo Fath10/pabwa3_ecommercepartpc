@@ -77,7 +77,7 @@
                 class="checkout-item flex gap-4 px-6 py-4 transition-colors duration-150"
               >
                 <div class="item-image w-20 h-20 rounded-xl flex-shrink-0 flex items-center justify-center">
-                  <img :src="item.image" :alt="item.name" class="w-full h-full object-contain p-2" />
+                  <img :src="assetUrl(item.image)" :alt="item.name" class="w-full h-full object-contain p-2" />
                 </div>
 
                 <div class="flex-1 min-w-0">
@@ -125,7 +125,7 @@
           </section>
 
           <!-- Alamat Pengiriman -->
-          <section class="panel-card rounded-2xl overflow-hidden">
+          <section id="shipping-address-section" class="panel-card rounded-2xl overflow-hidden">
             <div class="panel-header px-6 py-4 flex items-center gap-3">
               <div class="icon-box icon-blue w-8 h-8 rounded-lg flex items-center justify-center">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -155,6 +155,7 @@
 
             <div class="p-5">
               <textarea
+                id="shipping-address-textarea"
                 v-model="shippingAddress"
                 rows="3"
                 placeholder="Masukkan alamat pengiriman lengkap Anda (Jalan, No. Rumah, RT/RW, Kecamatan, Kota, Kode Pos)..."
@@ -164,7 +165,7 @@
           </section>
 
           <!-- Pilihan Kurir -->
-          <section class="panel-card rounded-2xl overflow-hidden">
+          <section id="courier-section" class="panel-card rounded-2xl overflow-hidden">
             <div class="panel-header px-6 py-4 flex items-center gap-3">
               <div class="icon-box icon-green w-8 h-8 rounded-lg flex items-center justify-center">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -233,7 +234,7 @@
           </section>
 
           <!-- Metode Pembayaran -->
-          <section class="panel-card rounded-2xl overflow-hidden">
+          <section id="payment-section" class="panel-card rounded-2xl overflow-hidden">
             <div class="panel-header px-6 py-4 flex items-center gap-3">
               <div class="icon-box icon-orange w-8 h-8 rounded-lg flex items-center justify-center">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -565,10 +566,10 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { cartStore, productStore, formatPrice } from '../store.js'
-import { orderApi } from '../api/index.js'
+import { cartStore, productStore, autopilotStore, formatPrice } from '../store.js'
+import { orderApi, assetUrl } from '../api/index.js'
 
 const router = useRouter()
 
@@ -593,9 +594,30 @@ const checkoutTotalPrice = computed(() => {
 function handleCheckoutUpdate(e) {
   const data = e.detail
   if (data) {
-    if (data.address) shippingAddress.value = data.address
-    if (data.courier) selectedCourier.value = data.courier.toLowerCase()
-    if (data.payment) selectedPayment.value = data.payment.toLowerCase()
+    runPrefillCheckoutSimulation(data)
+  }
+}
+
+function handleCheckoutRefresh() {
+  const saved = localStorage.getItem('selected_checkout_items')
+  if (saved) {
+    try {
+      selectedCheckoutIds.value = JSON.parse(saved)
+    } catch {
+      selectedCheckoutIds.value = []
+    }
+  }
+  const prefill = localStorage.getItem('checkout_prefill')
+  if (prefill) {
+    try {
+      const data = JSON.parse(prefill)
+      localStorage.removeItem('checkout_prefill')
+      setTimeout(() => {
+        runPrefillCheckoutSimulation(data)
+      }, 100)
+    } catch (e) {
+      console.error('Error parsing prefill checkout data:', e)
+    }
   }
 }
 
@@ -614,21 +636,267 @@ onMounted(() => {
   if (prefill) {
     try {
       const data = JSON.parse(prefill)
-      if (data.address) shippingAddress.value = data.address
-      if (data.courier) selectedCourier.value = data.courier.toLowerCase()
-      if (data.payment) selectedPayment.value = data.payment.toLowerCase()
       localStorage.removeItem('checkout_prefill')
+      setTimeout(() => {
+        runPrefillCheckoutSimulation(data)
+      }, 1000)
     } catch (e) {
       console.error('Error parsing prefill checkout data:', e)
     }
   }
 
   window.addEventListener('checkout:update', handleCheckoutUpdate)
+  window.addEventListener('checkout:refresh', handleCheckoutRefresh)
   cartStore.fetch()
+
+  if (autopilotStore.isActive && autopilotStore.step === 3) {
+    runCheckoutAutopilot()
+  }
 })
+
+watch(
+  () => [autopilotStore.isActive, autopilotStore.step],
+  ([active, step]) => {
+    if (active && step === 3) {
+      runCheckoutAutopilot()
+    }
+  }
+)
+
+async function runPrefillCheckoutSimulation(data) {
+  try {
+    // Step 1: Scroll ke & isi Alamat
+    if (data.address) {
+      const addressEl = document.getElementById('shipping-address-textarea')
+      if (addressEl) {
+        addressEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        await new Promise(r => setTimeout(r, 800))
+        
+        addressEl.style.transition = 'all 0.5s ease'
+        addressEl.style.borderColor = '#6366f1' // Indigo glow
+        addressEl.style.boxShadow = '0 0 0 4px rgba(99, 102, 241, 0.3)'
+        
+        shippingAddress.value = ''
+        const addr = data.address
+        for (let i = 0; i < addr.length; i++) {
+          shippingAddress.value += addr[i]
+          await new Promise(r => setTimeout(r, 45))
+        }
+        
+        await new Promise(r => setTimeout(r, 500))
+        addressEl.style.borderColor = ''
+        addressEl.style.boxShadow = ''
+      } else {
+        shippingAddress.value = data.address
+      }
+    }
+
+    // Step 2: Scroll ke & pilih Kurir
+    if (data.courier) {
+      const courierId = data.courier.toLowerCase()
+      const courierEl = document.getElementById(`courier-${courierId}`)
+      
+      const courierSection = document.getElementById('courier-section')
+      if (courierSection) {
+        courierSection.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      } else if (courierEl) {
+        courierEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+      
+      await new Promise(r => setTimeout(r, 800))
+
+      if (courierEl) {
+        courierEl.style.transition = 'all 0.5s ease'
+        courierEl.style.transform = 'scale(1.05)'
+        courierEl.style.boxShadow = '0 0 0 4px #10b981' // Green glow
+        await new Promise(r => setTimeout(r, 800))
+        
+        selectedCourier.value = courierId
+        
+        await new Promise(r => setTimeout(r, 400))
+        courierEl.style.transform = ''
+        courierEl.style.boxShadow = ''
+      } else {
+        selectedCourier.value = courierId
+      }
+    }
+
+    // Step 3: Scroll ke & pilih Pembayaran
+    if (data.payment) {
+      const paymentId = data.payment.toLowerCase()
+      
+      const matchedMethod = paymentMethods.find(m => m.id === paymentId)
+      if (matchedMethod) {
+        activePaymentTab.value = matchedMethod.tab
+      }
+      
+      const paymentSection = document.getElementById('payment-section')
+      if (paymentSection) {
+        paymentSection.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+      
+      await new Promise(r => setTimeout(r, 600)) // Tunggu tab render
+
+      const payEl = document.getElementById(`pay-${paymentId}`)
+      if (payEl) {
+        payEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        await new Promise(r => setTimeout(r, 600))
+        
+        payEl.style.transition = 'all 0.5s ease'
+        payEl.style.transform = 'scale(1.05)'
+        payEl.style.boxShadow = '0 0 0 4px #f97316' // Orange glow
+        await new Promise(r => setTimeout(r, 800))
+        
+        selectedPayment.value = paymentId
+        
+        await new Promise(r => setTimeout(r, 400))
+        payEl.style.transform = ''
+        payEl.style.boxShadow = ''
+      } else {
+        selectedPayment.value = paymentId
+      }
+    }
+
+    // Step 4: Scroll ke tombol konfirmasi
+    await new Promise(r => setTimeout(r, 600))
+    const confirmBtn = document.getElementById('confirm-checkout-btn')
+    if (confirmBtn) {
+      confirmBtn.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      await new Promise(r => setTimeout(r, 600))
+      confirmBtn.style.transition = 'all 0.5s ease'
+      confirmBtn.style.boxShadow = '0 0 0 6px rgba(99, 102, 241, 0.4)'
+      
+      confirmBtn.style.transform = 'scale(1.02)'
+      await new Promise(r => setTimeout(r, 1000))
+      confirmBtn.style.transform = ''
+      confirmBtn.style.boxShadow = ''
+    }
+  } catch (err) {
+    console.error("Simulation Checkout error:", err)
+  }
+}
+
+async function runCheckoutAutopilot() {
+  try {
+    const checkoutData = autopilotStore.data?.checkoutData || {}
+
+    await new Promise(r => setTimeout(r, 800))
+
+    // Step 3: Isi Alamat
+    if (checkoutData.address) {
+      const addressEl = document.getElementById('shipping-address-textarea')
+      if (addressEl) {
+        addressEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        await new Promise(r => setTimeout(r, 600))
+        addressEl.style.transition = 'all 0.5s ease'
+        addressEl.style.borderColor = '#6366f1' // Indigo glow
+        addressEl.style.boxShadow = '0 0 0 4px rgba(99, 102, 241, 0.3)'
+      }
+      shippingAddress.value = ''
+      const addr = checkoutData.address
+      for (let i = 0; i < addr.length; i++) {
+        shippingAddress.value += addr[i]
+        await new Promise(r => setTimeout(r, 50))
+      }
+      if (addressEl) {
+        await new Promise(r => setTimeout(r, 300))
+        addressEl.style.borderColor = ''
+        addressEl.style.boxShadow = ''
+      }
+    }
+    
+    await new Promise(r => setTimeout(r, 1000))
+    autopilotStore.nextStep() // Lanjut ke Step 4
+
+    // Step 4: Pilih Kurir
+    if (checkoutData.courier) {
+      const courierId = checkoutData.courier.toLowerCase()
+      const courierEl = document.getElementById(`courier-${courierId}`)
+      
+      const courierSection = document.getElementById('courier-section')
+      if (courierSection) {
+        courierSection.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      } else if (courierEl) {
+        courierEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+      await new Promise(r => setTimeout(r, 600))
+      
+      if (courierEl) {
+        courierEl.style.transition = 'all 0.5s ease'
+        courierEl.style.transform = 'scale(1.05)'
+        courierEl.style.boxShadow = '0 0 0 4px #10b981' // Green glow
+        await new Promise(r => setTimeout(r, 800))
+        
+        selectedCourier.value = courierId
+        
+        await new Promise(r => setTimeout(r, 400))
+        courierEl.style.transform = ''
+        courierEl.style.boxShadow = ''
+      } else {
+        selectedCourier.value = courierId
+      }
+    }
+
+    await new Promise(r => setTimeout(r, 1000))
+    autopilotStore.nextStep() // Lanjut ke Step 5
+
+    // Step 5: Pilih Pembayaran
+    if (checkoutData.payment) {
+      const paymentId = checkoutData.payment.toLowerCase()
+      
+      const matchedMethod = paymentMethods.find(m => m.id === paymentId)
+      if (matchedMethod) {
+        activePaymentTab.value = matchedMethod.tab
+      }
+      
+      const paymentSection = document.getElementById('payment-section')
+      if (paymentSection) {
+        paymentSection.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+      await new Promise(r => setTimeout(r, 600)) // Tunggu tab render
+
+      const payEl = document.getElementById(`pay-${paymentId}`)
+      if (payEl) {
+        payEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        await new Promise(r => setTimeout(r, 600))
+        
+        payEl.style.transition = 'all 0.5s ease'
+        payEl.style.transform = 'scale(1.05)'
+        payEl.style.boxShadow = '0 0 0 4px #f97316' // Orange glow
+        await new Promise(r => setTimeout(r, 800))
+        
+        selectedPayment.value = paymentId
+        
+        await new Promise(r => setTimeout(r, 400))
+        payEl.style.transform = ''
+        payEl.style.boxShadow = ''
+      } else {
+        selectedPayment.value = paymentId
+      }
+    }
+
+    await new Promise(r => setTimeout(r, 1000))
+    autopilotStore.nextStep() // Lanjut ke Step 6
+
+    // Step 6: Highlight tombol Konfirmasi (Berhenti disini)
+    const confirmBtn = document.getElementById('confirm-checkout-btn')
+    if (confirmBtn) {
+      confirmBtn.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      await new Promise(r => setTimeout(r, 600))
+      confirmBtn.style.transition = 'all 0.5s ease'
+      confirmBtn.style.boxShadow = '0 0 0 6px rgba(99, 102, 241, 0.4)'
+      confirmBtn.style.animation = 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+    }
+  } catch (err) {
+    console.error("Autopilot Checkout error:", err)
+  } finally {
+    autopilotStore.stop() // Auto-Pilot selesai, user lanjut sendiri
+  }
+}
 
 onUnmounted(() => {
   window.removeEventListener('checkout:update', handleCheckoutUpdate)
+  window.removeEventListener('checkout:refresh', handleCheckoutRefresh)
 })
 
 const couriers = computed(() => {

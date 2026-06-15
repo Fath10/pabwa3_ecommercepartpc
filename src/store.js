@@ -404,6 +404,31 @@ export const adminChatStore = reactive({
   },
 })
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// AUTO-PILOT STORE (For Agentic Visual Macros)
+// ═══════════════════════════════════════════════════════════════════════════════
+export const autopilotStore = reactive({
+  isActive: false,
+  step: 0, 
+  data: null, // { product: {...}, checkoutData: {...} }
+
+  start(payload) {
+    this.isActive = true
+    this.step = 1
+    this.data = payload
+  },
+
+  nextStep() {
+    this.step++
+  },
+
+  stop() {
+    this.isActive = false
+    this.step = 0
+    this.data = null
+  }
+})
+
 // ════════════════════════════════════════════════════════════
 // Helpers
 // ════════════════════════════════════════════════════════════

@@ -526,7 +526,9 @@ function handleLogout() {
 function confirmLogout() {
   showLogoutConfirm.value = false
   userStore.logout()
-  router.push('/login')
+  if (router.currentRoute.value.meta.requiresAuth) {
+    router.push('/')
+  }
 }
 
 function getStatusConfig(status) {

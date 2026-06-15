@@ -294,10 +294,10 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ProductCard from '../components/ProductCard.vue'
-import { productStore } from '../store.js'
+import { productStore, autopilotStore, cartStore } from '../store.js'
 
 const emit = defineEmits(['add-to-cart'])
 
@@ -531,7 +531,114 @@ function resetFilters() {
 onMounted(() => {
   productStore.fetchAll()
   document.addEventListener('click', closeDropdowns)
+
+  if (autopilotStore.isActive && autopilotStore.step === 1) {
+    runKatalogAutopilot()
+  }
 })
+
+watch(
+  () => [autopilotStore.isActive, autopilotStore.step],
+  ([active, step]) => {
+    if (active && step === 1) {
+      runKatalogAutopilot()
+    }
+  }
+)
+
+async function runKatalogAutopilot() {
+  const { product, sortPref } = autopilotStore.data || {}
+  if (!product) {
+    autopilotStore.stop()
+    return
+  }
+  
+  // Bersihkan search box
+  search.value = ''
+  currentPage.value = 1
+  
+  await new Promise(r => setTimeout(r, 200))
+  
+  // Ketik nama produk karakter demi karakter
+  const query = product.name || ''
+  for (let i = 0; i < query.length; i++) {
+    search.value += query[i]
+    await new Promise(r => setTimeout(r, 40))
+  }
+  
+  await new Promise(r => setTimeout(r, 300))
+  
+  // Step 1: Filter Kategori & Urutkan Harga (Visual Auto-Filter)
+  if (product.category) {
+    selectCategory(product.category)
+    
+    // Beri efek highlight pada pill kategori yang terpilih
+    await nextTick()
+    const pills = document.querySelectorAll('.category-pill')
+    pills.forEach(pill => {
+      if (pill.textContent.trim().toLowerCase() === product.category.toLowerCase()) {
+        pill.style.transition = 'all 0.3s ease'
+        pill.style.boxShadow = '0 0 0 3px #6366f1'
+        setTimeout(() => {
+          pill.style.boxShadow = ''
+        }, 800)
+      }
+    })
+  }
+
+  if (sortPref === 'cheapest') {
+    selectSort('price-asc')
+  } else if (sortPref === 'most_expensive') {
+    selectSort('price-desc')
+  } else {
+    selectSort('default')
+  }
+  
+  await new Promise(r => setTimeout(r, 400))
+
+  // Tunggu loading selesai dan cards muncul di DOM (maksimal 2 detik)
+  for (let attempt = 0; attempt < 20; attempt++) {
+    if (!loading.value) {
+      await new Promise(r => setTimeout(r, 100))
+      const cards = document.querySelectorAll('.product-grid > article, .product-grid > div')
+      if (cards && cards.length > 0) break
+    }
+    await new Promise(r => setTimeout(r, 50))
+  }
+  
+  // Scroll ke produk
+  const gridEl = document.querySelector('.product-grid')
+  if (gridEl) {
+    gridEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
+  
+  await new Promise(r => setTimeout(r, 300))
+
+  // Menyorot produk pertama hasil pencarian
+  let targetProduct = product
+  try {
+    const cards = document.querySelectorAll('.product-grid > article, .product-grid > div')
+    if (cards && cards.length > 0) {
+      const targetCard = cards[0]
+      targetCard.style.transition = 'all 0.3s ease'
+      targetCard.style.transform = 'scale(1.03)'
+      targetCard.style.boxShadow = '0 0 0 3px #6366f1, 0 15px 20px -5px rgba(0, 0, 0, 0.4)'
+      targetCard.style.zIndex = '10'
+      
+      await new Promise(r => setTimeout(r, 800))
+      
+      // Hapus sorotan sebelum pindah halaman
+      targetCard.style.transform = ''
+      targetCard.style.boxShadow = ''
+      targetCard.style.zIndex = ''
+    }
+  } catch (e) {
+    console.error("Autopilot highlight error:", e)
+  }
+  
+  autopilotStore.nextStep() // Lanjut ke step 2 (ProductDetailPage)
+  router.push(`/produk/${targetProduct.id}`)
+}
 
 onBeforeUnmount(() => {
   document.removeEventListener('click', closeDropdowns)

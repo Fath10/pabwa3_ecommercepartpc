@@ -157,7 +157,7 @@
           <!-- Right Column: Summary -->
           <div class="lg:col-span-1 space-y-6">
             
-            <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200 sticky top-24">
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
               <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 pb-4 border-b border-gray-100">Rincian Pembayaran</h2>
               
               <div class="space-y-3 mb-6">

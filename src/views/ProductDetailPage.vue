@@ -254,7 +254,7 @@ import { computed, ref, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ProductCard from '../components/ProductCard.vue'
 import ReviewSection from '../components/ReviewSection.vue'
-import { adminChatStore, productStore, formatPrice, userStore } from '../store.js'
+import { adminChatStore, productStore, formatPrice, userStore, autopilotStore, cartStore } from '../store.js'
 import { productApi } from '../api/index.js'
 
 const emit = defineEmits(['add-to-cart'])
@@ -393,6 +393,72 @@ function addToCart() {
     emit('add-to-cart', product.value)
   }
 }
+
+async function runProductDetailAutopilot() {
+  const { product: targetProduct } = autopilotStore.data || {}
+  if (!targetProduct || !product.value) return
+
+  await new Promise(r => setTimeout(r, 800))
+
+  const intent = autopilotStore.data?.intent || 'checkout'
+
+  if (intent === 'cart' || intent === 'checkout') {
+    // Highlight tombol "Tambahkan ke Keranjang"
+    const btn = document.getElementById('detail-add-to-cart')
+    if (btn) {
+      btn.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      await new Promise(r => setTimeout(r, 600))
+      btn.style.transition = 'all 0.5s ease'
+      btn.style.boxShadow = '0 0 0 4px #10b981'
+      btn.style.transform = 'scale(1.05)'
+      await new Promise(r => setTimeout(r, 800))
+      
+      // Panggil fungsi tambah ke keranjang
+      addToCart()
+      
+      btn.style.transform = ''
+      btn.style.boxShadow = ''
+    } else {
+      addToCart()
+    }
+  } else {
+    // Jika hanya pencarian ('detail'), scroll ke nama produk untuk dibaca
+    const titleEl = document.querySelector('.product-info h1')
+    if (titleEl) {
+      titleEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      titleEl.style.transition = 'all 0.5s ease'
+      titleEl.style.textShadow = '0 0 10px rgba(99, 102, 241, 0.6)'
+      await new Promise(r => setTimeout(r, 1200))
+      titleEl.style.textShadow = ''
+    }
+  }
+
+  if (intent === 'checkout') {
+    const addedIds = [product.value.id]
+    localStorage.setItem('selected_checkout_items', JSON.stringify(addedIds))
+    await new Promise(r => setTimeout(r, 800))
+    autopilotStore.nextStep() // Langkah 3 (Halaman Checkout)
+    router.push('/checkout')
+  } else {
+    await new Promise(r => setTimeout(r, 800))
+    autopilotStore.stop()
+  }
+}
+
+watch(
+  () => [autopilotStore.isActive, autopilotStore.step, loading.value],
+  ([active, step, isLoading]) => {
+    if (active && step === 2 && !isLoading) {
+      runProductDetailAutopilot()
+    }
+  }
+)
+
+onMounted(() => {
+  if (autopilotStore.isActive && autopilotStore.step === 2 && !loading.value) {
+    runProductDetailAutopilot()
+  }
+})
 </script>
 
 <style scoped>

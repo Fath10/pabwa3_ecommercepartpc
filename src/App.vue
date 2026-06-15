@@ -69,12 +69,12 @@
             </div>
 
             <div
-              v-if="msg.products && msg.products.length > 0"
+              v-if="msg.products && msg.products.filter(p => p.stock > 0).length > 0"
               class="flex items-stretch gap-2 overflow-x-auto py-2 px-1 w-full snap-x snap-mandatory scrollbar-hide flex-shrink-0"
               style="max-width: 100%;"
             >
               <div
-                v-for="(prod, idx) in msg.products"
+                v-for="(prod, idx) in msg.products.filter(p => p.stock > 0)"
                 :key="prod.id"
                 class="flex-shrink-0 snap-center product-card-animate"
                 style="width: 176px;"
@@ -217,15 +217,23 @@
 </template>
 
 <script setup>
-import { ref, nextTick, computed } from 'vue'
+import { ref, nextTick, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import NavBar from './components/NavBar.vue'
 import FooterSection from './components/FooterSection.vue'
 import ProductCard from './components/ProductCard.vue'
-import { cartStore, userStore, adminChatStore } from './store.js'
+import { cartStore, userStore, adminChatStore, autopilotStore } from './store.js'
 import { API_BASE } from './api/client.js'
-import { reviewApi } from './api/index.js'
+import { reviewApi, assetUrl, PLACEHOLDER_IMAGE } from './api/index.js'
 import { marked } from 'marked'
+
+function normalizeChatbotProducts(productsList) {
+  if (!productsList) return []
+  return productsList.map(p => ({
+    ...p,
+    image: p.image ? assetUrl(p.image) : PLACEHOLDER_IMAGE
+  }))
+}
 
 const router = useRouter()
 const route = useRoute()
@@ -258,7 +266,15 @@ let thinkingInterval = null
 const messages = ref([
   {
     role: 'bot',
-    content: 'Halo! 👋 Saya e-BuildPC AI. Saya bisa membantu Anda memilih komponen PC yang tepat. Ada yang ingin ditanyakan?',
+    content: `Halo! Saya **e-BuildPC AI**. Saya bisa membantu Anda memilih komponen PC yang tepat.
+
+Berikut adalah beberapa hal yang bisa saya lakukan untuk Anda:
+1. **Rakit PC sesuai Budget**: Ketik *"Rakit PC budget 20 juta"* untuk mendapatkan rekomendasi rakitan otomatis.
+2. **Cari & Bandingkan Produk**: Ketik *"Cari RAM DDR4"* atau *"Bandingkan RTX 4060 vs RTX 4080"*.
+3. **Auto-Pilot Belanja & Checkout**: Ketik *"Beli SSD termurah dengan alamat Giri Rejo, kurir JNE, pembayaran QRIS"* untuk checkout otomatis secara langsung!
+4. **Kelola Keranjang**: Ubah jumlah atau hapus barang (contoh: *"Hapus RAM"* atau *"Kosongkan keranjang"*).
+
+Ada yang bisa saya bantu hari ini?`,
   },
 ])
 
@@ -266,11 +282,58 @@ const messages = ref([
 const lastRecommendedProducts = ref([])
 const abortController = ref(null)
 
+const agenticProducts = ref([])
+const agenticSearchQuery = ref('')
+const pendingAgenticSearchFollowup = ref(false)
+
+const lastAutopilotData = ref(null)
+
+watch(
+  () => autopilotStore.isActive,
+  async (newVal, oldVal) => {
+    if (newVal === true) {
+      lastAutopilotData.value = { ...autopilotStore.data }
+    }
+    if (oldVal === true && newVal === false && pendingAgenticSearchFollowup.value) {
+      pendingAgenticSearchFollowup.value = false
+      
+      // Beri sedikit jeda agar transisi halaman selesai
+      await new Promise(r => setTimeout(r, 100))
+      
+      // Gunakan nama kategori / query
+      const queryName = agenticSearchQuery.value || 'produk'
+      const data = lastAutopilotData.value
+      
+      if (data && data.intent === 'cart' && data.product) {
+        messages.value.push({
+          role: 'bot',
+          content: `Saya telah berhasil menemukan dan memasukkan **${data.product.name}** ke keranjang belanja Anda! 🛒`,
+          products: []
+        })
+      } else {
+        // Masukkan pesan chatbot baru
+        messages.value.push({
+          role: 'bot',
+          content: `Berikut merupakan **${queryName}** termurah yang toko kami miliki:`,
+          products: [...agenticProducts.value]
+        })
+        
+        // Simpan di lastRecommendedProducts agar user bisa klik/tambah ke keranjang
+        lastRecommendedProducts.value = [...agenticProducts.value]
+      }
+      
+      // Pastikan chat panel terbuka
+      chatOpen.value = true
+      
+      await nextTick()
+      await scrollToBottom()
+    }
+  }
+)
+
 const quickReplies = [
-  '🖥️ Rakit PC Gaming 10 Juta',
   '🖥️ Rakit PC Gaming 20 Juta',
   '💻 Rekomendasi PC Gaming',
-  '💰 Budget 5 Jutaan',
 ]
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -300,8 +363,8 @@ function isAddToCartIntent(message) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Deteksi pilih SATU produk spesifik dari rekomendasi
 // ─────────────────────────────────────────────────────────────────────────────
-// Trigger: pesan harus mengandung kata "tambah/masukkan/beli/order"
-const SINGLE_ADD_TRIGGER = /\b(masukkan|masukin|tambahkan|tambahin|beli|add|order|pesan|ambil|mau)\b/i
+// Trigger: pesan harus mengandung kata "tambah/masukkan/beli/order/checkout/bayar"
+const SINGLE_ADD_TRIGGER = /\b(masukkan|masukin|tambahkan|tambahin|beli|add|order|pesan|ambil|mau|checkout|chekout|cekout|bayar)\b/i
 
 // Ordinal → index
 const ORDINAL_MAP = [
@@ -324,7 +387,12 @@ const STOP_WORDS = new Set([
 
 function detectSelectedProducts(message, products) {
   if (!products || products.length === 0) return []
-  const lower = message.toLowerCase().trim()
+  let lower = message.toLowerCase().trim()
+
+  // Pisahkan kata gabungan huruf-angka (seperti rtx4080 -> rtx 4080)
+  lower = lower
+    .replace(/([a-z])(\d)/g, '$1 $2')
+    .replace(/(\d)([a-z])/g, '$1 $2')
 
   // Harus ada kata trigger "tambah/masukkan/beli/..."
   if (!SINGLE_ADD_TRIGGER.test(lower)) return []
@@ -354,6 +422,7 @@ function detectSelectedProducts(message, products) {
   // 2. Cek berdasarkan keyword yang cocok dengan nama, kategori, atau deskripsi
   const words = lower.split(/\s+/).filter(w => !STOP_WORDS.has(w) && w.length >= 2)
   if (words.length > 0) {
+    const scoredProducts = []
     for (const product of products) {
       const name = (product.name || '').toLowerCase()
       const category = (product.category || '').toLowerCase()
@@ -361,6 +430,7 @@ function detectSelectedProducts(message, products) {
       const brand = (product.brand || '').toLowerCase()
       
       let score = 0
+      let rejected = false
       for (let word of words) {
         // Hapus akhiran -nya, -ku, -mu agar "ramnya" jadi "ram"
         word = word.replace(/(nya|ku|mu)$/i, '')
@@ -390,15 +460,109 @@ function detectSelectedProducts(message, products) {
             break
           }
         }
-        if (wordMatched) score++
+        if (wordMatched) {
+          score++
+        } else {
+          const isBrandWord = ['corsair', 'kingston', 'g.skill', 'gskill', 'amd', 'intel', 'nvidia', 'seasonic', 'asus', 'msi', 'gigabyte', 'noctua', 'axioo', 'wd', 'samsung', 'seagate', 'cooler', 'fractal', 'lian', 'quiet'].includes(word)
+          if (isBrandWord) {
+            rejected = true
+            break
+          } else if (/\d/.test(word)) {
+            // Jika kata mengandung angka dan produk tidak cocok sama sekali dengan kata ini,
+            // kita tolak produk ini (karena angka menunjukkan spesifikasi model yang sangat krusial)
+            rejected = true
+            break
+          }
+        }
       }
-      if (score > 0) {
-        selected.add(product)
+      if (score > 0 && !rejected) {
+        scoredProducts.push({ product, score })
       }
+    }
+
+    if (scoredProducts.length > 0) {
+      const maxScore = Math.max(...scoredProducts.map(p => p.score))
+      // Hanya masukkan produk yang memiliki skor maksimal
+      scoredProducts
+        .filter(p => p.score === maxScore)
+        .forEach(p => selected.add(p.product))
     }
   }
 
   return Array.from(selected)
+}
+
+const COURIER_MAP = {
+  jne: 'jne', jn: 'jne',
+  'j&t': 'jnt', jnt: 'jnt', 'j and t': 'jnt', 'jandt': 'jnt',
+  sicepat: 'sicepat', 'si cepat': 'sicepat',
+  gosend: 'gosend', 'go send': 'gosend', gojek: 'gosend',
+}
+
+const PAYMENT_MAP = {
+  bca: 'bca',
+  mandiri: 'mandiri',
+  bri: 'bri',
+  bni: 'bni',
+  gopay: 'gopay', 'go pay': 'gopay',
+  ovo: 'ovo',
+  dana: 'dana',
+  shopeepay: 'shopeepay', 'shopee pay': 'shopeepay', spay: 'shopeepay',
+  qris: 'qris', qr: 'qris',
+}
+
+function extractCheckoutData(message) {
+  const lower = message.toLowerCase()
+
+  // 1. Extract Courier
+  let courier = null
+  for (const [key, id] of Object.entries(COURIER_MAP)) {
+    if (lower.includes(key)) {
+      courier = id
+      break
+    }
+  }
+
+  // 2. Extract Payment
+  let payment = null
+  const sortedPaymentKeys = Object.keys(PAYMENT_MAP).sort((a, b) => b.length - a.length)
+  for (const key of sortedPaymentKeys) {
+    if (lower.includes(key)) {
+      payment = PAYMENT_MAP[key]
+      break
+    }
+  }
+
+  // 3. Extract Address
+  let address = null
+  const patterns = [
+    /(?:alamat|ke\s+alamat|kirim\s+ke|dikirim\s+ke|pengiriman\s+ke)\s+(.+?)(?:\s*(?:,\s*)?(?:pengiriman|kurir|kirim|pakai|pake|dengan|bayar|pembayaran|metode)|$)/i
+  ]
+  for (const p of patterns) {
+    const m = message.match(p)
+    if (m && m[1]) {
+      let addr = m[1].trim()
+      // Remove courier/payment keywords that might be captured
+      for (const key of Object.keys(COURIER_MAP)) {
+        addr = addr.replace(new RegExp(`\\b${key}\\b`, 'gi'), '').trim()
+      }
+      for (const key of Object.keys(PAYMENT_MAP)) {
+        addr = addr.replace(new RegExp(`\\b${key}\\b`, 'gi'), '').trim()
+      }
+      // Clean up trailing punctuation or spaces
+      addr = addr.replace(/[,\s]+$/, '').trim()
+      if (addr.length >= 3) {
+        address = addr
+        break
+      }
+    }
+  }
+
+  const result = {}
+  if (address) result.address = address
+  if (courier) result.courier = courier
+  if (payment) result.payment = payment
+  return Object.keys(result).length > 0 ? result : null
 }
 
 function cancelStreaming() {
@@ -579,9 +743,17 @@ async function sendMessage() {
         if (targetUrl === '/checkout') {
           const addedIds = pickedProducts.map(p => p.id)
           localStorage.setItem('selected_checkout_items', JSON.stringify(addedIds))
+          const prefill = extractCheckoutData(userMsg)
+          if (prefill) {
+            localStorage.setItem('checkout_prefill', JSON.stringify(prefill))
+          }
         }
         await new Promise(r => setTimeout(r, 2000))
-        await router.push(targetUrl)
+        if (route.path === targetUrl) {
+          window.dispatchEvent(new CustomEvent('checkout:refresh'))
+        } else {
+          await router.push(targetUrl)
+        }
       }
       return
     }
@@ -589,100 +761,117 @@ async function sendMessage() {
 
   // ── Prioritas 2: Tambah SEMUA produk rekomendasi ke keranjang ──
   if (lastRecommendedProducts.value.length > 0 && isAddToCartIntent(userMsg)) {
-    userInput.value = ''
+    // Cek apakah ada kata pencarian produk spesifik di pesan
+    let cleanMsg = userMsg.toLowerCase()
+      .replace(/([a-z])(\d)/g, '$1 $2')
+      .replace(/(\d)([a-z])/g, '$1 $2')
+    const words = cleanMsg.split(/\s+/).filter(w => !STOP_WORDS.has(w) && w.length >= 2)
+    const hasSpecificProductKeyword = words.length > 0 && !words.some(w => ['semua', 'semuanya', 'all', 'everything'].includes(w))
 
-    messages.value.push({ role: 'user', content: userMsg })
+    if (!hasSpecificProductKeyword) {
+      userInput.value = ''
 
-    const eligible = lastRecommendedProducts.value.filter(p => p.stock > 0)
+      messages.value.push({ role: 'user', content: userMsg })
 
-    isTyping.value = true
-    await scrollToBottom(true)
-    await new Promise(r => setTimeout(r, 400))
-    isTyping.value = false
+      const eligible = lastRecommendedProducts.value.filter(p => p.stock > 0)
 
-    // 1. Bubble awal — loading state
-    const streamMsg = {
-      role: 'bot',
-      content: 'Sedang menambahkan produk ke keranjang... 🛒',
-      products: [],
-    }
+      isTyping.value = true
+      await scrollToBottom(true)
+      await new Promise(r => setTimeout(r, 400))
+      isTyping.value = false
 
-    if (eligible.length === 0) {
-      streamMsg.content = 'Maaf, semua produk yang saya rekomendasikan sedang habis stok. Coba cari produk lain ya! 😊'
+      // 1. Bubble awal — loading state
+      const streamMsg = {
+        role: 'bot',
+        content: 'Sedang menambahkan produk ke keranjang... 🛒',
+        products: [],
+      }
+
+      if (eligible.length === 0) {
+        streamMsg.content = 'Maaf, semua produk yang saya rekomendasikan sedang habis stok. Coba cari produk lain ya! 😊'
+        messages.value.push(streamMsg)
+        await nextTick()
+        await scrollToBottom()
+        lastRecommendedProducts.value = []
+        return
+      }
+
       messages.value.push(streamMsg)
+      await nextTick()
+      await scrollToBottom(true)
+
+      // 2. Tambahkan tiap produk satu per satu & update bubble secara live
+      const addedNames = []
+      const failedNames = []
+
+      for (const product of eligible) {
+        // Animasi loading dots saat menambahkan produk ini
+        const dots = ['⏳', '⌛']
+        let dotIdx = 0
+        const dotInterval = setInterval(() => {
+          const checklist = addedNames.map(n => `✅ ${n}`).join('\n')
+          const failed = failedNames.map(n => `❌ ${n}`).join('\n')
+          const current = `${dots[dotIdx % 2]} Menambahkan ${product.name}...`
+          streamMsg.content = `Sedang menambahkan produk ke keranjang... 🛒\n\n${[checklist, failed, current].filter(Boolean).join('\n')}`
+          dotIdx++
+        }, 300)
+
+        try {
+          await cartStore.addItem(product)
+          clearInterval(dotInterval)
+          addedNames.push(product.name)
+        } catch {
+          clearInterval(dotInterval)
+          failedNames.push(product.name)
+        }
+
+        // Update bubble setelah produk ini selesai
+        const checklist = addedNames.map(n => `✅ ${n}`).join('\n')
+        const failed = failedNames.map(n => `❌ ${n} (gagal)`).join('\n')
+        streamMsg.content = `Sedang menambahkan produk ke keranjang... 🛒\n\n${[checklist, failed].filter(Boolean).join('\n')}`
+        await nextTick()
+        await scrollToBottom()
+        await new Promise(r => setTimeout(r, 150))
+      }
+
+      // 3. Pesan akhir — ringkasan hasil
+      const isCheckoutIntent = /\b(checkout|chekout|cekout|bayar|pesan)\b/i.test(lowerMsg)
+      const targetUrl = isCheckoutIntent ? '/checkout' : '/cart'
+      const targetLabel = isCheckoutIntent ? 'halaman Checkout' : 'halaman Keranjang'
+
+      const total = addedNames.length
+      const checklist = addedNames.map(n => `✅ ${n}`).join('\n')
+      const failed = failedNames.map(n => `❌ ${n} (stok habis)`).join('\n')
+
+      streamMsg.content = `${[checklist, failed].filter(Boolean).join('\n')}\n\n${
+        total > 0
+          ? `🎉 ${total} produk berhasil ditambahkan!\n\n⏳ Mengarahkan ke ${targetLabel}...`
+          : '⚠️ Tidak ada produk yang berhasil ditambahkan.'
+      }`
+
       await nextTick()
       await scrollToBottom()
       lastRecommendedProducts.value = []
+
+      if (total > 0) {
+        if (targetUrl === '/checkout') {
+          const addedIds = eligible.map(p => p.id)
+          localStorage.setItem('selected_checkout_items', JSON.stringify(addedIds))
+          const prefill = extractCheckoutData(userMsg)
+          if (prefill) {
+            localStorage.setItem('checkout_prefill', JSON.stringify(prefill))
+          }
+        }
+        await new Promise(r => setTimeout(r, 2000))
+        if (route.path === targetUrl) {
+          window.dispatchEvent(new CustomEvent('checkout:refresh'))
+        } else {
+          await router.push(targetUrl)
+        }
+      }
+
       return
     }
-
-    messages.value.push(streamMsg)
-    await nextTick()
-    await scrollToBottom(true)
-
-    // 2. Tambahkan tiap produk satu per satu & update bubble secara live
-    const addedNames = []
-    const failedNames = []
-
-    for (const product of eligible) {
-      // Animasi loading dots saat menambahkan produk ini
-      const dots = ['⏳', '⌛']
-      let dotIdx = 0
-      const dotInterval = setInterval(() => {
-        const checklist = addedNames.map(n => `✅ ${n}`).join('\n')
-        const failed = failedNames.map(n => `❌ ${n}`).join('\n')
-        const current = `${dots[dotIdx % 2]} Menambahkan ${product.name}...`
-        streamMsg.content = `Sedang menambahkan produk ke keranjang... 🛒\n\n${[checklist, failed, current].filter(Boolean).join('\n')}`
-        dotIdx++
-      }, 300)
-
-      try {
-        await cartStore.addItem(product)
-        clearInterval(dotInterval)
-        addedNames.push(product.name)
-      } catch {
-        clearInterval(dotInterval)
-        failedNames.push(product.name)
-      }
-
-      // Update bubble setelah produk ini selesai
-      const checklist = addedNames.map(n => `✅ ${n}`).join('\n')
-      const failed = failedNames.map(n => `❌ ${n} (gagal)`).join('\n')
-      streamMsg.content = `Sedang menambahkan produk ke keranjang... 🛒\n\n${[checklist, failed].filter(Boolean).join('\n')}`
-      await nextTick()
-      await scrollToBottom()
-      await new Promise(r => setTimeout(r, 150))
-    }
-
-    // 3. Pesan akhir — ringkasan hasil
-    const isCheckoutIntent = /\b(checkout|chekout|cekout|bayar|pesan)\b/i.test(lowerMsg)
-    const targetUrl = isCheckoutIntent ? '/checkout' : '/cart'
-    const targetLabel = isCheckoutIntent ? 'halaman Checkout' : 'halaman Keranjang'
-
-    const total = addedNames.length
-    const checklist = addedNames.map(n => `✅ ${n}`).join('\n')
-    const failed = failedNames.map(n => `❌ ${n} (stok habis)`).join('\n')
-
-    streamMsg.content = `${[checklist, failed].filter(Boolean).join('\n')}\n\n${
-      total > 0
-        ? `🎉 ${total} produk berhasil ditambahkan!\n\n⏳ Mengarahkan ke ${targetLabel}...`
-        : '⚠️ Tidak ada produk yang berhasil ditambahkan.'
-    }`
-
-    await nextTick()
-    await scrollToBottom()
-    lastRecommendedProducts.value = []
-
-    if (total > 0) {
-      if (targetUrl === '/checkout') {
-        const addedIds = eligible.map(p => p.id)
-        localStorage.setItem('selected_checkout_items', JSON.stringify(addedIds))
-      }
-      await new Promise(r => setTimeout(r, 2000))
-      await router.push(targetUrl)
-    }
-
-    return
   }
 
   userInput.value = ''
@@ -750,7 +939,8 @@ async function sendMessage() {
 
       // ── Aksi: Tambah produk ke keranjang LALU navigate ──
       if (json.action === 'add_and_navigate' && json.products?.length > 0) {
-        const eligible = json.products.filter(p => p.stock > 0)
+        const normalizedProds = normalizeChatbotProducts(json.products)
+        const eligible = normalizedProds.filter(p => p.stock > 0)
 
         // Bubble awal loading
         const streamMsg = {
@@ -819,13 +1009,66 @@ async function sendMessage() {
             // Hanya checkout produk-produk yang baru ditambahkan via chat
             const addedIds = eligible.map(p => p.id)
             localStorage.setItem('selected_checkout_items', JSON.stringify(addedIds))
-            if (json.checkoutData) {
-              localStorage.setItem('checkout_prefill', JSON.stringify(json.checkoutData))
+            const prefill = json.checkoutData || extractCheckoutData(userMsg)
+            if (prefill) {
+              localStorage.setItem('checkout_prefill', JSON.stringify(prefill))
             }
           }
           await new Promise(r => setTimeout(r, 2000))
-          await router.push(json.url)
+          if (route.path === json.url) {
+            window.dispatchEvent(new CustomEvent('checkout:refresh'))
+          } else {
+            await router.push(json.url)
+          }
         }
+        return
+      }
+
+      // ── Aksi: Agentic Checkout & Search (multi-step: search → cart → checkout/detail) ──
+      if ((json.action === 'agentic_checkout' || json.action === 'agentic_search') && json.products?.length > 0) {
+        const agenticMsg = {
+          role: 'bot',
+          content: '🤖 **Mode Agentic AI** — Mengambil alih layar Anda...',
+          products: [],
+        }
+        messages.value.push(agenticMsg)
+        await nextTick()
+        await scrollToBottom(true)
+
+        const normalizedProds = normalizeChatbotProducts(json.products)
+        const product = normalizedProds[0]
+        
+        // Cek apakah ada intent tambah ke keranjang
+        const isCartIntent = /\b(tambah|tambahkan|masuk|masukkan|input)\b.*\b(keranjang|cart)\b/i.test(userMsg)
+
+        // Memulai Auto-Pilot Store
+        autopilotStore.start({
+          product: product,
+          checkoutData: json.checkoutData || {},
+          sortPref: json.sortPref || 'cheapest',
+          intent: json.action === 'agentic_search'
+            ? (isCartIntent ? 'cart' : 'detail')
+            : 'checkout'
+        })
+
+        if (json.action === 'agentic_search') {
+          agenticProducts.value = normalizedProds
+          agenticSearchQuery.value = product.category || 'produk'
+          pendingAgenticSearchFollowup.value = true
+          if (isCartIntent) {
+            agenticMsg.content += `\n\n✈️ **Auto-Pilot Aktif!**\nSilakan perhatikan layar. Saya akan menambahkan **${product.name}** ke keranjang melalui halaman detail...`
+          } else {
+            agenticMsg.content += `\n\n✈️ **Auto-Pilot Aktif!**\nSilakan perhatikan layar. Saya akan mencarikan **${product.name}** untuk Anda...`
+          }
+        } else {
+          agenticMsg.content += `\n\n✈️ **Auto-Pilot Aktif!**\nSilakan perhatikan layar. Saya akan memandu Anda membeli **${product.name}**...`
+        }
+        await nextTick()
+        await scrollToBottom()
+        await new Promise(r => setTimeout(r, 1500))
+        
+        // Arahkan ke katalog
+        await router.push({ path: '/katalog' })
         return
       }
 
@@ -851,7 +1094,9 @@ async function sendMessage() {
         userStore.logout()
         showToast('Berhasil keluar dari akun!', 'success')
         await new Promise(r => setTimeout(r, 1500))
-        await router.push('/login')
+        if (router.currentRoute.value.meta.requiresAuth) {
+          await router.push('/')
+        }
       }
 
       // ── Aksi: Prefill Checkout ──
@@ -863,6 +1108,8 @@ async function sendMessage() {
         if (route.path !== '/checkout') {
           await new Promise(r => setTimeout(r, 2000))
           await router.push('/checkout')
+        } else {
+          window.dispatchEvent(new CustomEvent('checkout:refresh'))
         }
       }
 
@@ -917,9 +1164,21 @@ async function sendMessage() {
         // Pastikan Vue render pesan dulu
         await nextTick()
         await scrollToBottom()
+
+        if (json.url === '/checkout') {
+          const prefill = extractCheckoutData(userMsg)
+          if (prefill) {
+            localStorage.setItem('checkout_prefill', JSON.stringify(prefill))
+          }
+        }
+
         // Tunggu user baca (4 detik), baru redirect
         await new Promise(r => setTimeout(r, 4000))
-        await router.push(json.url)
+        if (route.path === json.url) {
+          window.dispatchEvent(new CustomEvent('checkout:refresh'))
+        } else {
+          await router.push(json.url)
+        }
       }
       return
     }
@@ -962,7 +1221,7 @@ async function sendMessage() {
         if (json.token) {
           fullTextBuffer += json.token
         } else if (json.type === 'products') {
-          productsBuffer = json.products || []
+          productsBuffer = normalizeChatbotProducts(json.products) || []
         } else if (json.reply) {
           fullTextBuffer += json.reply
         }

@@ -101,7 +101,7 @@
                 <!-- Product Image -->
                 <div class="cart-image w-24 h-24 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center">
                   <img
-                    :src="item.image"
+                    :src="assetUrl(item.image)"
                     :alt="item.name"
                     class="w-full h-full object-contain p-2"
                   />
@@ -199,7 +199,7 @@
 
           <!-- Order Summary -->
           <div class="lg:col-span-1">
-            <div class="summary-card sticky top-24 rounded-2xl overflow-hidden">
+            <div class="summary-card rounded-2xl overflow-hidden">
               <div class="summary-header px-6 py-5">
                 <h2 class="page-title font-black text-lg">
                   Ringkasan Pesanan
@@ -341,6 +341,7 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import ProductCard from '../components/ProductCard.vue'
 import { cartStore, productStore, formatPrice } from '../store.js'
+import { assetUrl } from '../api/index.js'
 
 const router = useRouter()
 
